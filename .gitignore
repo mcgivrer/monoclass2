@@ -1,0 +1,10 @@
+/target
+/.vscode
+/.idea
+/out
+.settings/
+*.iml
+.classpath
+.project
+**/*.class
+**/*.jar
