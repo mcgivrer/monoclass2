@@ -462,15 +462,16 @@ public class Application extends JFrame implements KeyListener {
         e.dx += 0.5 * (e.ax * elapsed);
         e.dy += 0.5 * (e.ay + (e.mass * -world.gravity) * elapsed);
 
-        e.setX(e.x + e.dx);
-        e.setY(e.y + e.dy);
-
-        e.ax = 0.0;
-        e.ay = 0.0;
-
         e.dx *= e.friction;
         e.dy *= e.friction;
 
+        e.setX(e.x + e.dx);
+        e.setY(e.y + e.dy);
+
+        /*
+        e.ax = 0.0;
+        e.ay = 0.0;
+        */
     }
 
     private void constrainsEntity(Entity e) {
