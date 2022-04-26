@@ -59,6 +59,10 @@ public class Application extends JFrame implements KeyListener {
     public static class I18n {
         private static ResourceBundle messages = ResourceBundle.getBundle("i18n.messages");
 
+        private I18n() {
+
+        }
+
         public static String get(String key) {
             return messages.getString(key);
         }
@@ -79,10 +83,14 @@ public class Application extends JFrame implements KeyListener {
         public Image image;
         public Color color = Color.BLUE;
 
+        public int priority;
+
         public double ax = 0.0, ay = 0.0;
         public double dx = 0.0, dy = 0.0;
         public double mass = 1.0;
-        public int priority;
+        public double elasticity = 1.0, friction = 1.0;
+
+
         public Map<String, Object> attributes = new HashMap<>();
 
         public Entity(String name) {
@@ -117,7 +125,7 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public boolean isAlive() {
-            return (life > 0 || life == -1);
+            return (life > 0);
         }
 
         public Entity setX(double x) {
@@ -147,6 +155,33 @@ public class Application extends JFrame implements KeyListener {
 
         public Object getAttribute(String attrName, Object defaultValue) {
             return (this.attributes.containsKey(attrName) ? this.attributes.get(attrName) : defaultValue);
+        }
+
+        public Entity setMass(double m) {
+            this.mass = m;
+            return this;
+        }
+
+        public Entity setElasticity(double e) {
+            this.elasticity = e;
+            return this;
+        }
+
+        public Entity setFriction(double f) {
+            this.friction = f;
+            return this;
+        }
+
+        public Entity setSpeed(double dx, double dy) {
+            this.dx = dx;
+            this.dy = dy;
+            return this;
+        }
+
+        public Entity setAcceleration(double ax, double ay) {
+            this.ax = ax;
+            this.ay = ay;
+            return this;
         }
     }
 
@@ -203,12 +238,26 @@ public class Application extends JFrame implements KeyListener {
         dispose();
     }
 
-    private void initialize(String[] args) throws IOException, FontFormatException {
+    private void initialize(String[] args) {
         loadConfig(appProps);
         parseArgs(args);
         createWindow();
         buffer = new BufferedImage((int) width, (int) height, BufferedImage.TYPE_INT_ARGB);
-        createScene();
+        try {
+            createScene();
+        } catch (IOException | FontFormatException e) {
+            System.out.println("ERR: Unable to initialize scene: " + e.getLocalizedMessage());
+        }
+    }
+
+    private void reset() {
+        try {
+            gPipeline.clear();
+            entities.clear();
+            createScene();
+        } catch (IOException | FontFormatException e) {
+            System.out.println("ERR : Reset scene issue: " + e.getLocalizedMessage());
+        }
     }
 
     private void loadConfig(Properties config) {
@@ -264,21 +313,34 @@ public class Application extends JFrame implements KeyListener {
         setMaximumSize(dim);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setFocusTraversalKeysEnabled(true);
+        setLocationRelativeTo(null);
         addKeyListener(this);
         pack();
         setVisible(true);
     }
 
     protected void createScene() throws IOException, FontFormatException {
+        world.setGravity(0.0);
         // A main player Entity.
         Entity player = new Entity("player")
                 .setType(RECTANGLE)
                 .setPosition(width * 0.5, height * 0.5)
+                .setElasticity(0.95)
+                .setFriction(0.30)
+                .setSize(24, 24)
                 .setColor(Color.RED)
-                .setPriority(1);
+                .setPriority(1)
+                .setMass(10.0)
+                .setAttribute("life", 5)
+                .setAttribute("score", 0)
+                .setAttribute("energy", 100)
+                .setAttribute("mana", 100);
         addEntity(player);
-        // A welcome text
-        Font wlcFont = Font.createFont(Font.PLAIN, this.getClass().getResourceAsStream("/fonts/FreePixel.ttf"))
+
+        //generateEntity("ball_", 10);
+
+        // A welcome Text
+        /*Font wlcFont = Font.createFont(Font.PLAIN, this.getClass().getResourceAsStream("/fonts/FreePixel.ttf"))
                 .deriveFont(12.0f);
         TextEntity welcomeMsg = (TextEntity) new TextEntity("welcome")
                 .setText(I18n.get("app.message.welcome"))
@@ -288,6 +350,34 @@ public class Application extends JFrame implements KeyListener {
                 .setColor(Color.WHITE)
                 .setLife(5000);
         addEntity(welcomeMsg);
+        */
+        // Score Display
+        /*
+        int score = (int) player.getAttribute("score", 0);
+        Font scoreFont = wlcFont.deriveFont(16.0f);
+        TextEntity scoreTxt = (TextEntity) new TextEntity("score")
+                .setText(String.format("%60d", score))
+                .setAlign(TextAlign.CENTER)
+                .setFont(wlcFont)
+                .setPosition(20, 20)
+                .setColor(Color.WHITE)
+                .setLife(-1);
+        addEntity(scoreTxt);
+        */
+    }
+
+    private void generateEntity(String namePrefix, int nbEntity) {
+        for (int i = 0; i < nbEntity; i++) {
+            Entity e = new Entity(namePrefix + i)
+                    .setType(ELLIPSE)
+                    .setSize(8, 8)
+                    .setPosition(Math.random() * width, Math.random() * height)
+                    .setAcceleration(Math.random() * 2.0, Math.random() * 2.0)
+                    .setColor(new Color((float) Math.random(), (float) Math.random(), (float) Math.random()))
+                    .setLife((int) ((Math.random() * 5) + 5) * 1000)
+                    .setMass(Math.random() * 10);
+            addEntity(e);
+        }
     }
 
     private void addEntity(Entity entity) {
@@ -308,7 +398,7 @@ public class Application extends JFrame implements KeyListener {
             double elapsed = start - previous;
 
             input();
-            update(elapsed);
+            update(Math.min(elapsed, frameTime));
             draw();
 
             // wait at least 1ms.
@@ -325,10 +415,8 @@ public class Application extends JFrame implements KeyListener {
     }
 
     private void input() {
-        double speed = 2.0;
         Entity p = entities.get("player");
-
-        boolean jumping = (boolean) p.getAttribute("jumping", false);
+        double speed = (double) p.getAttribute("accStep", 2.0);
 
         if (getKeyPressed(KeyEvent.VK_LEFT)) {
             p.ax = -speed;
@@ -336,12 +424,14 @@ public class Application extends JFrame implements KeyListener {
         if (getKeyPressed(KeyEvent.VK_RIGHT)) {
             p.ax = speed;
         }
-        if (getKeyPressed(KeyEvent.VK_UP) && !jumping) {
-            p.ax = 4.0 * speed;
-            p.setAttribute("jumping", true);
+        if (getKeyPressed(KeyEvent.VK_UP)) {
+            p.ay = 4.0 * -speed;
         }
         if (getKeyPressed(KeyEvent.VK_DOWN)) {
-            p.ax = -speed;
+            p.ay = speed;
+        }
+        if (getKeyReleased(KeyEvent.VK_ESCAPE)) {
+            reset();
         }
 
     }
@@ -352,7 +442,11 @@ public class Application extends JFrame implements KeyListener {
                 updateEntity(e, elapsed);
             }
             if (e.isAlive()) {
-                e.life -= elapsed;
+                if (e.life >= 0 & e.life != -1) {
+                    e.life -= Math.max(elapsed, 1.0);
+                } else {
+                    e.life = 0;
+                }
             }
         });
     }
@@ -362,54 +456,66 @@ public class Application extends JFrame implements KeyListener {
         constrainsEntity(e);
     }
 
-    private void constrainsEntity(Entity e) {
-        constrainToWorld(e, world);
-    }
-
     private void applyPhysicRuleToEntity(Entity e, double elapsed) {
+        elapsed *= 0.4;
 
-        e.dx = 0.5 * (e.ax * elapsed);
-        e.dy = 0.5 * (e.ay + e.mass * world.gravity) * elapsed;
+        e.dx += 0.5 * (e.ax * elapsed);
+        e.dy += 0.5 * (e.ay + (e.mass * -world.gravity) * elapsed);
 
         e.setX(e.x + e.dx);
         e.setY(e.y + e.dy);
 
         e.ax = 0.0;
         e.ay = 0.0;
+
+        e.dx *= e.friction;
+        e.dy *= e.friction;
+
+    }
+
+    private void constrainsEntity(Entity e) {
+        constrainToWorld(e, world);
     }
 
     private void constrainToWorld(Entity e, World world) {
-        if (!world.area.contains(e)) {
-            if (e.getX() < 0.0) {
-                e.setX(0.0);
-            }
-            if (e.getY() < 0.0) {
-                e.setY(0.0);
-            }
-            if (e.getMaxX() > world.area.getMaxX()) {
-                e.setX(world.area.getMaxX() - e.getWidth());
-            }
-            if (e.getMaxY() > world.area.getMaxY()) {
-                e.setX(world.area.getMaxY() - e.getHeight());
-            }
+        if (e.getX() <= 0.0) {
+            e.setX(0.0);
+            e.dx *= -e.dx * e.elasticity;
+        }
+        if (e.getY() <= 0.0) {
+            e.setY(0.0);
+            e.dy *= -e.dy * e.elasticity;
+        }
+        if (e.getX() + e.getWidth() >= world.area.getWidth()) {
+            e.setX(world.area.getWidth() - e.getWidth());
+            e.dx *= -e.dx * e.elasticity;
+        }
+        if (e.getY() + e.getHeight() >= world.area.getHeight()) {
+            e.setY(world.area.getHeight() - e.getHeight());
+            e.dy *= -e.dy * e.elasticity;
         }
     }
 
     private void draw() {
         Graphics2D g = buffer.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, (int) width, (int) height);
-        gPipeline.stream().filter(e -> e.isAlive())
+        gPipeline.stream().filter(e -> e.isAlive() || e.life == -1)
                 .forEach(e -> {
                     g.setColor(e.color);
                     switch (e) {
-                        // this is a TextEntity
+
+                        // This is a TextEntity
                         case TextEntity te -> {
                             g.setFont(te.font);
                             int size = g.getFontMetrics().stringWidth(te.text);
-                            double offsetX = te.align.equals(TextAlign.RIGHT) ? -size : te.align.equals(TextAlign.CENTER) ? -size * 0.5 : 0;
+                            double offsetX = te.align.equals(TextAlign.RIGHT) ? -size
+                                    : te.align.equals(TextAlign.CENTER) ? -size * 0.5 : 0;
                             g.drawString(te.text, (int) (te.x + offsetX), (int) te.y);
                         }
+
                         // This is a basic entity
                         case Entity ee -> {
                             switch (ee.type) {
