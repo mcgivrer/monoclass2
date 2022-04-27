@@ -1,0 +1,14 @@
+@startuml
+
+hide methods
+hide attributes
+class Application
+class Application::I18n
+class Application::Entity
+class Application::TextEntity extends Application::Entity
+class Application::Camera extends Application::Entity
+
+Application --> Application::Camera:activeCamera
+Application --> Application::Entity:entities
+Application --> Application::I18n
+@enduml
