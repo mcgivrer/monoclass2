@@ -90,7 +90,6 @@ public class Application extends JFrame implements KeyListener {
         public double mass = 1.0;
         public double elasticity = 1.0, friction = 1.0;
 
-
         public Map<String, Object> attributes = new HashMap<>();
 
         public Entity(String name) {
@@ -211,6 +210,38 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    public static class Camera extends Entity {
+
+        private Entity target;
+        private double tweenFactor;
+        private Rectangle2D viewport;
+
+        public Camera(String name) {
+            super(name);
+            this.physicType = PhysicType.STATIC;
+        }
+
+        public Camera setTarget(Entity target) {
+            this.target = target;
+            return this;
+        }
+
+        public Camera setTweenFactor(double tf) {
+            this.tweenFactor = tf;
+            return this;
+        }
+
+        public Camera setViewport(Rectangle2D vp) {
+            this.viewport = vp;
+            return this;
+        }
+
+        public void update(double elapsed) {
+            setX(getCenterX() + (target.getCenterX() - getCenterX()) * tweenFactor * elapsed);
+            setY(getCenterY() + (target.getCenterY() - getCenterY()) * tweenFactor * elapsed);
+        }
+    }
+
     Properties appProps = new Properties();
 
     private boolean exit;
@@ -225,6 +256,8 @@ public class Application extends JFrame implements KeyListener {
 
     private List<Entity> gPipeline = new ArrayList<>();
     private Map<String, Entity> entities = new HashMap<>();
+
+    Camera activeCamera;
 
     private World world;
 
@@ -337,6 +370,12 @@ public class Application extends JFrame implements KeyListener {
                 .setAttribute("mana", 100);
         addEntity(player);
 
+        Camera cam = new Camera("cam01")
+                .setViewport(new Rectangle2D.Double(0, 0, width, height))
+                .setTarget(player)
+                .setTweenFactor(0.02);
+        addCamera(cam);
+
         generateEntity("ball_", 10);
 
         // A welcome Text
@@ -351,7 +390,7 @@ public class Application extends JFrame implements KeyListener {
                 .setLife(5000);
         addEntity(welcomeMsg);
         // Score Display
-        
+
         int score = (int) player.getAttribute("score", 0);
         Font scoreFont = wlcFont.deriveFont(16.0f);
         TextEntity scoreTxt = (TextEntity) new TextEntity("score")
@@ -362,7 +401,7 @@ public class Application extends JFrame implements KeyListener {
                 .setColor(Color.WHITE)
                 .setLife(-1);
         addEntity(scoreTxt);
-        
+
     }
 
     private void generateEntity(String namePrefix, int nbEntity) {
@@ -387,6 +426,10 @@ public class Application extends JFrame implements KeyListener {
             });
             entities.put(entity.name, entity);
         }
+    }
+
+    private void addCamera(Camera cam) {
+        this.activeCamera = cam;
     }
 
     private void loop() {
@@ -436,6 +479,7 @@ public class Application extends JFrame implements KeyListener {
     }
 
     private void update(double elapsed) {
+        // update entities
         entities.values().stream().forEach((e) -> {
             if (e.physicType.equals(PhysicType.DYNAMIC)) {
                 updateEntity(e, elapsed);
@@ -448,6 +492,10 @@ public class Application extends JFrame implements KeyListener {
                 }
             }
         });
+        // update active camera
+        if (Optional.ofNullable(activeCamera).isPresent()) {
+            activeCamera.update(elapsed);
+        }
     }
 
     private void updateEntity(Entity e, double elapsed) {
@@ -468,9 +516,9 @@ public class Application extends JFrame implements KeyListener {
         e.setY(e.y + e.dy);
 
         /*
-        e.ax = 0.0;
-        e.ay = 0.0;
-        */
+         * e.ax = 0.0;
+         * e.ay = 0.0;
+         */
     }
 
     private void constrainsEntity(Entity e) {
@@ -504,6 +552,9 @@ public class Application extends JFrame implements KeyListener {
         g.fillRect(0, 0, (int) width, (int) height);
         gPipeline.stream().filter(e -> e.isAlive() || e.life == -1)
                 .forEach(e -> {
+                    if (Optional.ofNullable(activeCamera).isPresent()) {
+                        moveCamera(g, activeCamera, 1);
+                    }
                     g.setColor(e.color);
                     switch (e) {
 
@@ -531,6 +582,9 @@ public class Application extends JFrame implements KeyListener {
                             }
                         }
                     }
+                    if (Optional.ofNullable(activeCamera).isPresent()) {
+                        moveCamera(g, activeCamera, -1);
+                    }
                 });
         g.dispose();
         renderToScreen();
@@ -544,6 +598,11 @@ public class Application extends JFrame implements KeyListener {
                 0, 0, (int) width, (int) height,
                 null);
         g2.dispose();
+    }
+
+    private void moveCamera(Graphics2D g, Camera cam, double direction) {
+        g.translate(cam.getX() * direction, cam.getY() * direction);
+
     }
 
     @Override
