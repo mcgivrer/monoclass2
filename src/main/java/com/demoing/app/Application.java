@@ -92,6 +92,7 @@ public class Application extends JFrame implements KeyListener {
         protected int life = -1;
         public Image image;
         public Color color = Color.BLUE;
+        public boolean stickToCamera;
 
         public int priority;
 
@@ -135,6 +136,15 @@ public class Application extends JFrame implements KeyListener {
 
         public boolean isAlive() {
             return (life > 0);
+        }
+
+        public boolean isStickToCamera() {
+            return stickToCamera;
+        }
+
+        public Entity setStickToCamera(boolean stc) {
+            this.stickToCamera = stc;
+            return this;
         }
 
         public Entity setX(double x) {
@@ -247,8 +257,20 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public void update(double elapsed) {
-            setX(getCenterX() + (target.getCenterX() - getCenterX()) * tweenFactor * elapsed);
-            setY(getCenterY() + (target.getCenterY() - getCenterY()) * tweenFactor * elapsed);
+
+            /**
+             * position.x += Math.round(
+             * (target.position.x + (target.size.x)
+             * - ((double) (viewport.getWidth()) * 0.5f)
+             * - this.position.x) * tweenFactor * Math.min(elapsed, 10));
+             * position.y += Math.round(
+             * (target.position.y + (target.size.y)
+             * - ((double) (viewport.getHeight()) * 0.5f)
+             * - this.position.y) * tweenFactor * Math.min(elapsed, 10));
+             */
+            x += Math.round((target.x + target.width - (viewport.getWidth() * 0.5) - x) * tweenFactor * elapsed);
+            y += Math.round((target.y + target.height - (viewport.getHeight() * 0.5) - y) * tweenFactor * elapsed);
+
         }
     }
 
@@ -383,7 +405,7 @@ public class Application extends JFrame implements KeyListener {
         Camera cam = new Camera("cam01")
                 .setViewport(new Rectangle2D.Double(0, 0, width, height))
                 .setTarget(player)
-                .setTweenFactor(0.02);
+                .setTweenFactor(0.001);
         addCamera(cam);
 
         generateEntity("ball_", 10);
@@ -397,7 +419,8 @@ public class Application extends JFrame implements KeyListener {
                 .setFont(wlcFont)
                 .setPosition(width * 0.5, height * 0.8)
                 .setColor(Color.WHITE)
-                .setLife(5000);
+                .setLife(5000)
+                .setStickToCamera(true);
         addEntity(welcomeMsg);
         // Score Display
 
@@ -409,7 +432,8 @@ public class Application extends JFrame implements KeyListener {
                 .setFont(wlcFont)
                 .setPosition(20, 20)
                 .setColor(Color.WHITE)
-                .setLife(-1);
+                .setLife(-1)
+                .setStickToCamera(true);
         addEntity(scoreTxt);
 
     }
@@ -536,19 +560,19 @@ public class Application extends JFrame implements KeyListener {
     }
 
     private void constrainToWorld(Entity e, World world) {
-        if (e.getX() <= 0.0) {
-            e.setX(0.0);
+        if (e.x < 0.0) {
+            e.x = 0.0;
             e.dx *= -e.dx * e.elasticity;
         }
-        if (e.getY() <= 0.0) {
-            e.setY(0.0);
+        if (e.x < 0.0) {
+            e.y = 0.0;
             e.dy *= -e.dy * e.elasticity;
         }
-        if (e.getX() + e.getWidth() >= world.area.getWidth()) {
+        if (e.getX() + e.getWidth() > world.area.getWidth()) {
             e.setX(world.area.getWidth() - e.getWidth());
             e.dx *= -e.dx * e.elasticity;
         }
-        if (e.getY() + e.getHeight() >= world.area.getHeight()) {
+        if (e.getY() + e.getHeight() > world.area.getHeight()) {
             e.setY(world.area.getHeight() - e.getHeight());
             e.dy *= -e.dy * e.elasticity;
         }
@@ -562,8 +586,8 @@ public class Application extends JFrame implements KeyListener {
         g.fillRect(0, 0, (int) width, (int) height);
         gPipeline.stream().filter(e -> e.isAlive() || e.life == -1)
                 .forEach(e -> {
-                    if (Optional.ofNullable(activeCamera).isPresent()) {
-                        moveCamera(g, activeCamera, 1);
+                    if (!e.isStickToCamera() && Optional.ofNullable(activeCamera).isPresent()) {
+                        moveCamera(g, activeCamera, -1);
                     }
                     g.setColor(e.color);
                     switch (e) {
@@ -592,8 +616,8 @@ public class Application extends JFrame implements KeyListener {
                             }
                         }
                     }
-                    if (Optional.ofNullable(activeCamera).isPresent()) {
-                        moveCamera(g, activeCamera, -1);
+                    if (!e.isStickToCamera() && Optional.ofNullable(activeCamera).isPresent()) {
+                        moveCamera(g, activeCamera, 1);
                     }
                 });
         g.dispose();
