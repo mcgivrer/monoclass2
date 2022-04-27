@@ -1,7 +1,10 @@
 @startuml
 
+!theme plain
+
 hide methods
 hide attributes
+
 class Application
 class Application::I18n
 class Application::Entity
