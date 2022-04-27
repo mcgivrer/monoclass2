@@ -37,6 +37,16 @@ public class Application extends JFrame implements KeyListener {
         RIGHT;
     }
 
+    public interface AppStatus {
+        long getNbEntities();
+
+        long getPipelineSize();
+
+        long getPauseSatus();
+
+        double getGravity();
+    }
+
     public static class World {
         private Rectangle2D area;
         public double gravity = 0.981;
