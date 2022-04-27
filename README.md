@@ -15,22 +15,8 @@ Have fun discover this beast of code, to learn and take benefits of some latest 
 
 The `Application` class (we can not talk about a project for a 500 LoCs class) is composed of some attribtues and methods (sic) and a limited number of subclasses.
 
-```plantuml
-@startuml
-
-hide methods
-hide attributes
-class Application
-class Application::I18n
-class Application::Entity
-class Application::TextEntity extends Application::Entity
-class Application::Camera extends Application::Entity
-
-Application --> Application::Camera:activeCamera
-Application --> Application::Entity:entities
-Application --> Application::I18n
-@enduml
-```
+![Application UML class diagram](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/mcgivrer/monoclass2/feature/add-camera-entity/docs/class-diagram.txt?token=GHSAT0AAAAAABSBHBPSAECVR3Q5SNLJJVICYTJ3JGA "Class Diagram for Application and its subclasses")
+_edit: https://github.com/mcgivrer/monoclass2/blob/feature/add-camera-entity/docs/class-diagram.txt_
 
 So, `I18n`, `Entity`, `TextEntity` and `Camera` are subclasses of `Application` master class, if you does not understand :P.
 
