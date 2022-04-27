@@ -327,7 +327,7 @@ public class Application extends JFrame implements KeyListener {
                 .setPosition(width * 0.5, height * 0.5)
                 .setElasticity(0.95)
                 .setFriction(0.30)
-                .setSize(24, 24)
+                .setSize(16, 16)
                 .setColor(Color.RED)
                 .setPriority(1)
                 .setMass(10.0)
@@ -337,10 +337,10 @@ public class Application extends JFrame implements KeyListener {
                 .setAttribute("mana", 100);
         addEntity(player);
 
-        //generateEntity("ball_", 10);
+        generateEntity("ball_", 10);
 
         // A welcome Text
-        /*Font wlcFont = Font.createFont(Font.PLAIN, this.getClass().getResourceAsStream("/fonts/FreePixel.ttf"))
+        Font wlcFont = Font.createFont(Font.PLAIN, this.getClass().getResourceAsStream("/fonts/FreePixel.ttf"))
                 .deriveFont(12.0f);
         TextEntity welcomeMsg = (TextEntity) new TextEntity("welcome")
                 .setText(I18n.get("app.message.welcome"))
@@ -350,9 +350,8 @@ public class Application extends JFrame implements KeyListener {
                 .setColor(Color.WHITE)
                 .setLife(5000);
         addEntity(welcomeMsg);
-        */
         // Score Display
-        /*
+        
         int score = (int) player.getAttribute("score", 0);
         Font scoreFont = wlcFont.deriveFont(16.0f);
         TextEntity scoreTxt = (TextEntity) new TextEntity("score")
@@ -363,7 +362,7 @@ public class Application extends JFrame implements KeyListener {
                 .setColor(Color.WHITE)
                 .setLife(-1);
         addEntity(scoreTxt);
-        */
+        
     }
 
     private void generateEntity(String namePrefix, int nbEntity) {
