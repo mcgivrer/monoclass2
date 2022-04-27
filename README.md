@@ -13,13 +13,13 @@ Have fun discover this beast of code, to learn and take benefits of some latest 
 >
 ## A bit of doc please
 
-The `Application` class (we can not talk about a project for a 500 LoCs class) is composed of some attribtues and methods (sic) and a limited number of subclasses.
+The `[Application](https://github.com/mcgivrer/monoclass2/blob/feature/add-camera-entity/src/main/java/com/demoing/app/Application.java#L17)` class (we can not talk about a project for a 500 LoCs class) is composed of some attribtues and methods (sic) and a limited number of subclasses.
 
 ![Application UML class diagram](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/mcgivrer/monoclass2/feature/add-camera-entity/docs/class-diagram.txt?token=GHSAT0AAAAAABSBHBPSAECVR3Q5SNLJJVICYTJ3JGA "Class Diagram for Application and its subclasses")
 
 _[edit](https://github.com/mcgivrer/monoclass2/blob/feature/add-camera-entity/docs/class-diagram.txt)_
 
-So, `I18n`, `Entity`, `TextEntity` and `Camera` are subclasses of `Application` master class, if you does not understand :P.
+So, `[I18n](https://github.com/mcgivrer/monoclass2/blob/feature/add-camera-entity/src/main/java/com/demoing/app/Application.java#L69)`, `Entity`, `TextEntity` and `Camera` are subclasses of `Application` master class, if you does not understand :P.
 
 ### Application
 
