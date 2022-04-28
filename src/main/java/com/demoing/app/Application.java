@@ -8,6 +8,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.JFrame;
 import javax.swing.text.html.HTMLDocument.HTMLReader.FormAction;
@@ -82,25 +83,39 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    public static class Vec2d {
+        public double x;
+        public double y;
+
+        public Vec2d(double x, double y) {
+            this.x = x;
+            this.y = y;
+        }
+    }
+
     public static class Entity extends Rectangle2D.Double {
 
+        // id & naming attributes
         protected long id = entityIndex++;
         protected String name = "entity_" + id;
-        protected EntityType type = RECTANGLE;
-        protected PhysicType physicType = PhysicType.DYNAMIC;
 
-        protected int life = -1;
+        // Rendering attributes
+        public int priority;
+        protected EntityType type = RECTANGLE;
         public Image image;
         public Color color = Color.BLUE;
         public boolean stickToCamera;
 
-        public int priority;
-
+        // Physic attributes
+        public List<Vec2d> forces = new ArrayList<>();
+        protected PhysicType physicType = PhysicType.DYNAMIC;
         public double ax = 0.0, ay = 0.0;
         public double dx = 0.0, dy = 0.0;
         public double mass = 1.0;
         public double elasticity = 1.0, friction = 1.0;
 
+        // internal attributes
+        protected int life = -1;
         public Map<String, Object> attributes = new HashMap<>();
 
         public Entity(String name) {
@@ -286,7 +301,7 @@ public class Application extends JFrame implements KeyListener {
 
     BufferedImage buffer;
 
-    private List<Entity> gPipeline = new ArrayList<>();
+    private List<Entity> gPipeline = new CopyOnWriteArrayList<>();
     private Map<String, Entity> entities = new HashMap<>();
 
     Camera activeCamera;
@@ -386,6 +401,7 @@ public class Application extends JFrame implements KeyListener {
 
     protected void createScene() throws IOException, FontFormatException {
         world.setGravity(0.0);
+
         // A main player Entity.
         Entity player = new Entity("player")
                 .setType(RECTANGLE)
@@ -395,7 +411,7 @@ public class Application extends JFrame implements KeyListener {
                 .setSize(16, 16)
                 .setColor(Color.RED)
                 .setPriority(1)
-                .setMass(10.0)
+                .setMass(30.0)
                 .setAttribute("life", 5)
                 .setAttribute("score", 0)
                 .setAttribute("energy", 100)
@@ -405,14 +421,31 @@ public class Application extends JFrame implements KeyListener {
         Camera cam = new Camera("cam01")
                 .setViewport(new Rectangle2D.Double(0, 0, width, height))
                 .setTarget(player)
-                .setTweenFactor(0.001);
+                .setTweenFactor(0.01);
         addCamera(cam);
 
         generateEntity("ball_", 10);
 
-        // A welcome Text
-        Font wlcFont = Font.createFont(Font.PLAIN, this.getClass().getResourceAsStream("/fonts/FreePixel.ttf"))
+        Font wlcFont = Font.createFont(
+                        Font.PLAIN,
+                        this.getClass().getResourceAsStream("/fonts/FreePixel.ttf"))
                 .deriveFont(12.0f);
+
+        // Score Display
+        int score = (int) player.getAttribute("score", 0);
+        Font scoreFont = wlcFont.deriveFont(16.0f);
+        String scoreTxt = String.format("%06d", score);
+        TextEntity scoreTxtE = (TextEntity) new TextEntity("score")
+                .setText(scoreTxt)
+                .setAlign(TextAlign.LEFT)
+                .setFont(scoreFont)
+                .setPosition(20, 30)
+                .setColor(Color.WHITE)
+                .setLife(-1)
+                .setStickToCamera(true);
+        addEntity(scoreTxtE);
+
+        // A welcome Text
         TextEntity welcomeMsg = (TextEntity) new TextEntity("welcome")
                 .setText(I18n.get("app.message.welcome"))
                 .setAlign(TextAlign.CENTER)
@@ -422,20 +455,6 @@ public class Application extends JFrame implements KeyListener {
                 .setLife(5000)
                 .setStickToCamera(true);
         addEntity(welcomeMsg);
-        // Score Display
-
-        int score = (int) player.getAttribute("score", 0);
-        Font scoreFont = wlcFont.deriveFont(16.0f);
-        TextEntity scoreTxt = (TextEntity) new TextEntity("score")
-                .setText(String.format("%60d", score))
-                .setAlign(TextAlign.CENTER)
-                .setFont(wlcFont)
-                .setPosition(20, 20)
-                .setColor(Color.WHITE)
-                .setLife(-1)
-                .setStickToCamera(true);
-        addEntity(scoreTxt);
-
     }
 
     private void generateEntity(String namePrefix, int nbEntity) {
@@ -444,10 +463,12 @@ public class Application extends JFrame implements KeyListener {
                     .setType(ELLIPSE)
                     .setSize(8, 8)
                     .setPosition(Math.random() * width, Math.random() * height)
-                    .setAcceleration(Math.random() * 2.0, Math.random() * 2.0)
+                    .setAcceleration((Math.random() * 3) - 1.5, (Math.random() * 3) - 1.5)
                     .setColor(new Color((float) Math.random(), (float) Math.random(), (float) Math.random()))
-                    .setLife((int) ((Math.random() * 5) + 5) * 1000)
-                    .setMass(Math.random() * 10);
+                    .setLife((int) ((Math.random() * 5) + 5) * 5000)
+                    .setElasticity(0.98)
+                    .setFriction(1.0)
+                    .setMass(1.0);
             addEntity(e);
         }
     }
@@ -495,16 +516,16 @@ public class Application extends JFrame implements KeyListener {
         double speed = (double) p.getAttribute("accStep", 2.0);
 
         if (getKeyPressed(KeyEvent.VK_LEFT)) {
-            p.ax = -speed;
+            p.forces.add(new Vec2d(-speed, 0.0));
         }
         if (getKeyPressed(KeyEvent.VK_RIGHT)) {
-            p.ax = speed;
+            p.forces.add(new Vec2d(speed, 0.0));
         }
         if (getKeyPressed(KeyEvent.VK_UP)) {
-            p.ay = 4.0 * -speed;
+            p.forces.add(new Vec2d(0.0, -4.0 * speed));
         }
         if (getKeyPressed(KeyEvent.VK_DOWN)) {
-            p.ay = speed;
+            p.forces.add(new Vec2d(0.0, 4.0 * speed));
         }
         if (getKeyReleased(KeyEvent.VK_ESCAPE)) {
             reset();
@@ -526,7 +547,7 @@ public class Application extends JFrame implements KeyListener {
                 }
             }
         });
-        // update active camera
+        // update active camera3
         if (Optional.ofNullable(activeCamera).isPresent()) {
             activeCamera.update(elapsed);
         }
@@ -535,11 +556,18 @@ public class Application extends JFrame implements KeyListener {
     private void updateEntity(Entity e, double elapsed) {
         applyPhysicRuleToEntity(e, elapsed);
         constrainsEntity(e);
+        e.ax = 0.0;
+        e.ay = 0.0;
     }
 
     private void applyPhysicRuleToEntity(Entity e, double elapsed) {
+        // a small reduction of time
         elapsed *= 0.4;
 
+        for (Vec2d v : e.forces) {
+            e.ax += v.x;
+            e.ay += v.y;
+        }
         e.dx += 0.5 * (e.ax * elapsed);
         e.dy += 0.5 * (e.ay + (e.mass * -world.gravity) * elapsed);
 
@@ -549,10 +577,7 @@ public class Application extends JFrame implements KeyListener {
         e.setX(e.x + e.dx);
         e.setY(e.y + e.dy);
 
-        /*
-         * e.ax = 0.0;
-         * e.ay = 0.0;
-         */
+        e.forces.clear();
     }
 
     private void constrainsEntity(Entity e) {
@@ -560,21 +585,25 @@ public class Application extends JFrame implements KeyListener {
     }
 
     private void constrainToWorld(Entity e, World world) {
-        if (e.x < 0.0) {
-            e.x = 0.0;
-            e.dx *= -e.dx * e.elasticity;
+        if (e.getX() < 0.0) {
+            e.setX(0.0);
+            e.dx *= -(e.dx * e.elasticity * 0.5 * e.ax);
+            e.ax = 0.0;
         }
-        if (e.x < 0.0) {
-            e.y = 0.0;
-            e.dy *= -e.dy * e.elasticity;
+        if (e.getY() < 0.0) {
+            e.setY(0.0);
+            e.dy *= -(e.dy * e.elasticity * 0.5 * e.ay);
+            e.ay = 0.0;
         }
         if (e.getX() + e.getWidth() > world.area.getWidth()) {
             e.setX(world.area.getWidth() - e.getWidth());
-            e.dx *= -e.dx * e.elasticity;
+            e.dx *= -(e.dx * e.elasticity * 0.5 * e.ax);
+            e.ax = 0.0;
         }
         if (e.getY() + e.getHeight() > world.area.getHeight()) {
             e.setY(world.area.getHeight() - e.getHeight());
-            e.dy *= -e.dy * e.elasticity;
+            e.dy *= -(e.dy * e.elasticity * 0.5 * e.ay);
+            e.ay = 0.0;
         }
     }
 
@@ -584,9 +613,12 @@ public class Application extends JFrame implements KeyListener {
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, (int) width, (int) height);
+        moveCamera(g, activeCamera, -1);
+        drawGrid(g, world, 16, 16);
+        moveCamera(g, activeCamera, 1);
         gPipeline.stream().filter(e -> e.isAlive() || e.life == -1)
                 .forEach(e -> {
-                    if (!e.isStickToCamera() && Optional.ofNullable(activeCamera).isPresent()) {
+                    if (!e.isStickToCamera()) {
                         moveCamera(g, activeCamera, -1);
                     }
                     g.setColor(e.color);
@@ -616,12 +648,23 @@ public class Application extends JFrame implements KeyListener {
                             }
                         }
                     }
-                    if (!e.isStickToCamera() && Optional.ofNullable(activeCamera).isPresent()) {
+                    if (!e.isStickToCamera()) {
                         moveCamera(g, activeCamera, 1);
                     }
                 });
         g.dispose();
         renderToScreen();
+    }
+
+    private void drawGrid(Graphics2D g, World world, double tw, double th) {
+        g.setColor(Color.BLUE);
+        for (double tx = 0; tx < world.area.getWidth(); tx += tw) {
+            for (double ty = 0; ty < world.area.getHeight(); ty += th) {
+                g.drawRect((int) tx, (int) ty, (int) tw, (int) th);
+            }
+        }
+        g.setColor(Color.DARK_GRAY);
+        g.drawRect(0, 0, (int) world.area.getWidth(), (int) world.area.getHeight());
     }
 
     private void renderToScreen() {
@@ -635,8 +678,9 @@ public class Application extends JFrame implements KeyListener {
     }
 
     private void moveCamera(Graphics2D g, Camera cam, double direction) {
-        g.translate(cam.getX() * direction, cam.getY() * direction);
-
+        if (Optional.ofNullable(activeCamera).isPresent()) {
+            g.translate(cam.getX() * direction, cam.getY() * direction);
+        }
     }
 
     @Override
