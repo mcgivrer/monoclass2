@@ -107,7 +107,7 @@ public class Application extends JFrame implements KeyListener {
         public boolean stickToCamera;
 
         // Position attributes
-        public Rectangle2D.Double box;
+        public Rectangle2D.Double box = new Rectangle2D.Double(0, 0, 0, 0);
         public double x = 0.0, y = 0.0;
         public double width = 0.0, height = 0.0;
 
@@ -130,6 +130,7 @@ public class Application extends JFrame implements KeyListener {
         public Entity setPosition(double x, double y) {
             this.x = x;
             this.y = y;
+            this.update(0);
             return this;
         }
 
@@ -222,6 +223,10 @@ public class Application extends JFrame implements KeyListener {
             this.ay = ay;
             return this;
         }
+
+        public void update(double elapsed) {
+            box.setRect(x, y, width, height);
+        }
     }
 
     public static class TextEntity extends Entity {
@@ -247,6 +252,10 @@ public class Application extends JFrame implements KeyListener {
         public TextEntity setAlign(TextAlign a) {
             this.align = a;
             return this;
+        }
+
+        @Override
+        public void update(double elapsed) {
         }
     }
 
@@ -303,8 +312,12 @@ public class Application extends JFrame implements KeyListener {
 
     private boolean[] prevKeys = new boolean[65536];
     private boolean[] keys = new boolean[65536];
+    private boolean anyKeyPressed;
+
 
     BufferedImage buffer;
+    private Font debugFont;
+    private int debug;
 
     private List<Entity> gPipeline = new CopyOnWriteArrayList<>();
     private Map<String, Entity> entities = new HashMap<>();
@@ -328,7 +341,13 @@ public class Application extends JFrame implements KeyListener {
         parseArgs(args);
         createWindow();
         buffer = new BufferedImage((int) width, (int) height, BufferedImage.TYPE_INT_ARGB);
+
         try {
+            Graphics2D g = buffer.createGraphics();
+            debugFont = Font.createFont(
+                            Font.PLAIN,
+                            this.getClass().getResourceAsStream("/fonts/FreePixel.ttf"))
+                    .deriveFont(8.0f);
             createScene();
         } catch (IOException | FontFormatException e) {
             System.out.println("ERR: Unable to initialize scene: " + e.getLocalizedMessage());
@@ -356,6 +375,7 @@ public class Application extends JFrame implements KeyListener {
                 .setGravity(parseDouble(config.getProperty("app.world.gravity", "400.0")));
         fps = parseInt(config.getProperty("app.render.fps", "" + FPS_DEFAULT));
         frameTime = (long) (1000 / fps);
+        debug = parseInt(config.getProperty("app.debug.level", "0"));
     }
 
     private void parseArgs(String[] args) {
@@ -374,6 +394,9 @@ public class Application extends JFrame implements KeyListener {
                 case "scale":
                     scale = parseDouble(values[1]);
                     break;
+                case "d":
+                case "debug":
+                    debug = parseInt(values[1]);
                 default:
                     System.out.printf("\nERR : Unknown argument %s\n", arg);
                     break;
@@ -385,7 +408,7 @@ public class Application extends JFrame implements KeyListener {
         return Double.parseDouble(stringValue);
     }
 
-    private double parseInt(String stringValue) {
+    private int parseInt(String stringValue) {
         return Integer.parseInt(stringValue);
     }
 
@@ -480,14 +503,14 @@ public class Application extends JFrame implements KeyListener {
             Entity e = new Entity(namePrefix + i)
                     .setType(ELLIPSE)
                     .setSize(8, 8)
-                    .setPosition(Math.random() * width, Math.random() * height)
+                    .setPosition(Math.random() * world.area.getWidth(), Math.random() * world.area.getHeight())
                     .setAcceleration(
                             (Math.random() * 2 * acc) - acc,
                             (Math.random() * 2 * acc) - acc)
                     .setColor(new Color((float) Math.random(), (float) Math.random(), (float) Math.random()))
                     .setLife((int) ((Math.random() * 5) + 5) * 5000)
-                    .setElasticity(0.35)
-                    .setFriction(0.89)
+                    .setElasticity(0.25)
+                    .setFriction(0.75)
                     .setMass(20.0);
             addEntity(e);
         }
@@ -532,23 +555,36 @@ public class Application extends JFrame implements KeyListener {
     }
 
     private void input() {
+        boolean action = false;
         Entity p = entities.get("player");
         double speed = (double) p.getAttribute("accStep", 4.0);
 
         if (getKeyPressed(KeyEvent.VK_LEFT)) {
             p.forces.add(new Vec2d(-speed, 0.0));
+            action = true;
         }
         if (getKeyPressed(KeyEvent.VK_RIGHT)) {
             p.forces.add(new Vec2d(speed, 0.0));
+            action = true;
         }
         if (getKeyPressed(KeyEvent.VK_UP)) {
             p.forces.add(new Vec2d(0.0, -speed));
+            action = true;
         }
         if (getKeyPressed(KeyEvent.VK_DOWN)) {
             p.forces.add(new Vec2d(0.0, speed));
+            action = true;
         }
         if (getKeyReleased(KeyEvent.VK_ESCAPE)) {
             reset();
+        }
+        if (getKeyReleased(KeyEvent.VK_D)) {
+            debug = debug + 1 < 5 ? debug + 1 : 0;
+        }
+
+        if (!action) {
+            p.ax *= p.friction;
+            p.ay *= p.friction;
         }
 
     }
@@ -558,6 +594,7 @@ public class Application extends JFrame implements KeyListener {
         entities.values().stream().forEach((e) -> {
             if (e.physicType.equals(PhysicType.DYNAMIC)) {
                 updateEntity(e, elapsed);
+                e.update(elapsed);
             }
             if (e.isAlive()) {
                 if (e.life >= 0 & e.life != -1) {
@@ -652,6 +689,9 @@ public class Application extends JFrame implements KeyListener {
                             double offsetX = te.align.equals(TextAlign.RIGHT) ? -size
                                     : te.align.equals(TextAlign.CENTER) ? -size * 0.5 : 0;
                             g.drawString(te.text, (int) (te.x + offsetX), (int) te.y);
+                            e.width = size;
+                            e.height = g.getFontMetrics().getHeight();
+                            e.box.setRect(e.x + offsetX, e.y - e.height + g.getFontMetrics().getDescent(), e.width, e.height);
                         }
 
                         // This is a basic entity
@@ -669,12 +709,37 @@ public class Application extends JFrame implements KeyListener {
                             }
                         }
                     }
+                    if (this.debug > 0) {
+                        drawDebugInfo(g, e);
+                    }
                     if (!e.isStickToCamera()) {
                         moveCamera(g, activeCamera, 1);
                     }
                 });
         g.dispose();
         renderToScreen();
+    }
+
+    private void drawDebugInfo(Graphics2D g, Entity e) {
+        g.setColor(Color.ORANGE);
+        if (Optional.ofNullable(e.box).isPresent()) g.draw(e.box);
+        if (debug > 0) {
+            g.setFont(debugFont);
+            int lineHeight = g.getFontMetrics().getHeight() + g.getFontMetrics().getDescent();
+            g.setColor(Color.ORANGE);
+            int offsetX = (int) (e.x + e.width + 4);
+            int offsetY = (int) (e.y - 8);
+            g.drawString(String.format("id:%d", e.id), offsetX, offsetY);
+            if (debug > 1) {
+                g.drawString(String.format("name:%s", e.name), offsetX, offsetY + lineHeight);
+                g.drawString(String.format("pos:%03.0f,%03.0f", e.x, e.y), offsetX, offsetY + (lineHeight * 2));
+                g.drawString(String.format("life:%d", e.life), offsetX, offsetY + (lineHeight * 3));
+                if (debug > 2) {
+                    g.drawString(String.format("spd:%03.2f,%03.2f", e.dx, e.dy), offsetX, offsetY + (lineHeight * 4));
+                    g.drawString(String.format("acc:%03.2f,%03.2f", e.ax, e.ay), offsetX, offsetY + (lineHeight * 5));
+                }
+            }
+        }
     }
 
     private void drawGrid(Graphics2D g, World world, double tw, double th) {
@@ -724,12 +789,15 @@ public class Application extends JFrame implements KeyListener {
     public void keyPressed(KeyEvent e) {
         prevKeys[e.getKeyCode()] = keys[e.getKeyCode()];
         keys[e.getKeyCode()] = true;
+        anyKeyPressed = true;
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
         prevKeys[e.getKeyCode()] = keys[e.getKeyCode()];
         keys[e.getKeyCode()] = false;
+        anyKeyPressed = false;
+
     }
 
     public boolean getKeyPressed(int keyCode) {
@@ -742,6 +810,10 @@ public class Application extends JFrame implements KeyListener {
         boolean status = !this.keys[keyCode] && prevKeys[keyCode];
         prevKeys[keyCode] = false;
         return status;
+    }
+
+    public boolean isAnyKeyPressed() {
+        return anyKeyPressed;
     }
 
     public static void main(String[] args) {
