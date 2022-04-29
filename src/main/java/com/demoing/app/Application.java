@@ -202,7 +202,7 @@ public class Application extends JFrame implements KeyListener {
                     g.setColor(Color.ORANGE);
                     int offsetX = (int) (e.x + e.width + 4);
                     int offsetY = (int) (e.y - 8);
-                    g.drawString(String.format("id:%d", e.id), offsetX, offsetY);
+                    g.drawString(String.format("#%d", e.id), e.x, offsetY);
                     if (config.debug > 1) {
                         g.drawString(String.format("name:%s", e.name), offsetX, offsetY + lineHeight);
                         g.drawString(String.format("pos:%03.0f,%03.0f", e.x, e.y), offsetX, offsetY + (lineHeight * 2));
@@ -273,6 +273,7 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public void dispose() {
+            clear();
             buffer = null;
         }
     }
