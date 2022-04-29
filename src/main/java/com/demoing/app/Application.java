@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.swing.JFrame;
@@ -114,7 +115,7 @@ public class Application extends JFrame implements KeyListener {
         BufferedImage buffer;
         private Font debugFont;
 
-        private final List<Entity> gPipeline = new CopyOnWriteArrayList<>();
+        private List<Entity> gPipeline = new CopyOnWriteArrayList<>();
         Camera activeCamera;
 
         public Render(Application a, Configuration c, World w) {
@@ -202,7 +203,7 @@ public class Application extends JFrame implements KeyListener {
                     g.setColor(Color.ORANGE);
                     int offsetX = (int) (e.x + e.width + 4);
                     int offsetY = (int) (e.y - 8);
-                    g.drawString(String.format("#%d", e.id), e.x, offsetY);
+                    g.drawString(String.format("#%d", e.id), (int) e.x, offsetY);
                     if (config.debug > 1) {
                         g.drawString(String.format("name:%s", e.name), offsetX, offsetY + lineHeight);
                         g.drawString(String.format("pos:%03.0f,%03.0f", e.x, e.y), offsetX, offsetY + (lineHeight * 2));
@@ -250,7 +251,12 @@ public class Application extends JFrame implements KeyListener {
             if (config.debug > 0) {
                 g2.setFont(debugFont.deriveFont(16.0f));
                 g2.setColor(Color.WHITE);
-                g2.drawString(String.format("fps:%d", realFps), 20, app.getHeight() - 30);
+                g2.drawString(String.format("[ dbg: %d| fps:%d | obj:%d | g:%f ]",
+                        config.debug,
+                        realFps,
+                        gPipeline.size(),
+                        world.gravity),
+                        20, app.getHeight() - 30);
             }
             g2.dispose();
         }
@@ -261,11 +267,17 @@ public class Application extends JFrame implements KeyListener {
             }
         }
 
-        public void addToPipeline(Entity entity) {
+        public Render addToPipeline(Entity entity) {
             if (!gPipeline.contains(entity)) {
                 gPipeline.add(entity);
                 gPipeline.sort((o1, o2) -> o1.priority < o2.priority ? -1 : 1);
             }
+            return this;
+        }
+
+        public Render addCamera(Camera cam) {
+            this.activeCamera = cam;
+            return this;
         }
 
         public void clear() {
@@ -275,6 +287,10 @@ public class Application extends JFrame implements KeyListener {
         public void dispose() {
             clear();
             buffer = null;
+        }
+
+        public void remove(Entity e) {
+            gPipeline.remove(e);
         }
     }
 
@@ -363,6 +379,32 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public void dispose() {
+
+        }
+    }
+
+    public static class ActionHandler implements KeyListener {
+        private final boolean[] prevKeys = new boolean[65536];
+        private final boolean[] keys = new boolean[65536];
+        private boolean anyKeyPressed;
+
+        private Map<Integer, Function> actionMapping = new HashMap<>();
+
+        @Override
+        public void keyTyped(KeyEvent e) {
+
+        }
+
+        @Override
+        public void keyPressed(KeyEvent e) {
+            if (actionMapping.containsKey(e.getKeyCode())) {
+                Function f = actionMapping.get(e.getKeyCode());
+                f.apply(e);
+            }
+        }
+
+        @Override
+        public void keyReleased(KeyEvent e) {
 
         }
     }
@@ -616,28 +658,27 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
-
     private boolean exit;
-
 
     private final boolean[] prevKeys = new boolean[65536];
     private final boolean[] keys = new boolean[65536];
     private boolean anyKeyPressed;
 
-    Configuration config;
+    private Configuration config;
     private Render render;
     private PhysicEngine physicEngine;
+    private ActionHandler actionHandler;
 
     private long realFps = 0;
 
-    private final Map<String, Entity> entities = new HashMap<>();
+    private Map<String, Entity> entities = new HashMap<>();
 
     private World world;
 
-    public Application(){
+    public Application() {
     }
 
-    protected void run(String[] args){
+    protected void run(String[] args) {
         initialize(args);
         loop();
         dispose();
@@ -650,6 +691,7 @@ public class Application extends JFrame implements KeyListener {
                 .setGravity(config.worldGravity);
         render = new Render(this, config, world);
         physicEngine = new PhysicEngine(this, world);
+        actionHandler = new ActionHandler();
         createWindow();
         try {
             createScene();
@@ -680,6 +722,7 @@ public class Application extends JFrame implements KeyListener {
         setFocusTraversalKeysEnabled(true);
         setLocationRelativeTo(null);
         addKeyListener(this);
+        addKeyListener(actionHandler);
         pack();
         setVisible(true);
     }
@@ -705,11 +748,38 @@ public class Application extends JFrame implements KeyListener {
                 .setAttribute("accStep", 0.15);
         addEntity(player);
 
+        actionHandler.actionMapping = Map.of(
+                KeyEvent.VK_ESCAPE, o -> {
+                    reset();
+                    return this;
+                },
+                KeyEvent.VK_D, o -> {
+                    config.debug = config.debug + 1 < 5 ? config.debug + 1 : 0;
+                    return this;
+                },
+                KeyEvent.VK_Z, o -> {
+                    emitPerturbationOnEntity("ball_", 2.5);
+                    return this;
+                },
+                KeyEvent.VK_PAGE_UP, o -> {
+                    generateEntity("ball_", 5, 2.5);
+                    return this;
+                },
+                KeyEvent.VK_PAGE_DOWN, o -> {
+                    removeEntity("ball_", 5);
+                    return this;
+                },
+                KeyEvent.VK_BACK_SPACE, o -> {
+                    removeEntity("ball_", -1);
+                    return this;
+                }
+        );
+
         Camera cam = new Camera("cam01")
                 .setViewport(new Rectangle2D.Double(0, 0, config.screenWidth, config.screenHeight))
                 .setTarget(player)
                 .setTweenFactor(0.005);
-        addCamera(cam);
+        render.addCamera(cam);
 
         generateEntity("ball_", 5, 2.5);
 
@@ -756,9 +826,21 @@ public class Application extends JFrame implements KeyListener {
         addEntity(welcomeMsg);
     }
 
+    private void removeEntity(String filterValue, int i) {
+        i = (i == -1) ? entities.size() : i;
+        List<Entity> etbr = entities.values().stream().filter(e -> e.name.contains(filterValue)).limit(i).toList();
+        for (int idx = 0; idx < i; idx++) {
+            if (idx < etbr.size()) {
+                Entity e = etbr.get(idx);
+                entities.remove(e.name);
+                render.remove(e);
+            }
+        }
+    }
+
     private void generateEntity(String namePrefix, int nbEntity, double acc) {
         for (int i = 0; i < nbEntity; i++) {
-            Entity e = new Entity(namePrefix + i)
+            Entity e = new Entity(namePrefix + entityIndex)
                     .setType(ELLIPSE)
                     .setSize(8, 8)
                     .setPosition(Math.random() * world.area.getWidth(), Math.random() * world.area.getHeight())
@@ -771,7 +853,6 @@ public class Application extends JFrame implements KeyListener {
                     .setFriction(0.98)
                     .setMass(20.0)
                     .setPriority(2);
-
             addEntity(e);
         }
     }
@@ -788,11 +869,6 @@ public class Application extends JFrame implements KeyListener {
     private void addEntity(Entity entity) {
         render.addToPipeline(entity);
         entities.put(entity.name, entity);
-    }
-
-
-    private void addCamera(Camera cam) {
-        render.activeCamera = cam;
     }
 
     private void loop() {
@@ -828,9 +904,9 @@ public class Application extends JFrame implements KeyListener {
     }
 
     private void input() {
-        boolean action = false;
         Entity p = entities.get("player");
         double speed = (double) p.getAttribute("accStep", 4.0);
+        boolean action = (boolean) p.getAttribute("action", false);
 
         if (getKeyPressed(KeyEvent.VK_LEFT)) {
             p.forces.add(new Vec2d(-speed, 0.0));
@@ -848,16 +924,6 @@ public class Application extends JFrame implements KeyListener {
             p.forces.add(new Vec2d(0.0, speed));
             action = true;
         }
-        if (getKeyReleased(KeyEvent.VK_ESCAPE)) {
-            reset();
-        }
-        if (getKeyReleased(KeyEvent.VK_D)) {
-            config.debug = config.debug + 1 < 5 ? config.debug + 1 : 0;
-        }
-
-        if (getKeyPressed(KeyEvent.VK_Z)) {
-            emitPerturbationOnEntity("ball_", 2.5);
-        }
 
         if (!action) {
             p.dx *= p.friction;
@@ -865,7 +931,6 @@ public class Application extends JFrame implements KeyListener {
         }
 
     }
-
 
     @Override
     public void paint(Graphics g) {
@@ -910,10 +975,6 @@ public class Application extends JFrame implements KeyListener {
         boolean status = !this.keys[keyCode] && prevKeys[keyCode];
         prevKeys[keyCode] = false;
         return status;
-    }
-
-    public boolean isAnyKeyPressed() {
-        return anyKeyPressed;
     }
 
     public static void main(String[] args) {
