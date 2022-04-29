@@ -9,9 +9,9 @@ import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 import javax.swing.JFrame;
-import javax.swing.text.html.HTMLDocument.HTMLReader.FormAction;
 
 import static com.demoing.app.Application.EntityType.*;
 
@@ -24,18 +24,18 @@ public class Application extends JFrame implements KeyListener {
     public enum EntityType {
         RECTANGLE,
         ELLIPSE,
-        IMAGE;
+        IMAGE
     }
 
     public enum PhysicType {
         DYNAMIC,
-        STATIC;
+        STATIC
     }
 
     public enum TextAlign {
         LEFT,
         CENTER,
-        RIGHT;
+        RIGHT
     }
 
     public interface AppStatus {
@@ -48,27 +48,326 @@ public class Application extends JFrame implements KeyListener {
         double getGravity();
     }
 
-    public static class World {
-        private Rectangle2D area;
-        public double gravity = 0.981;
+    public static class Configuration {
+        Properties appProps = new Properties();
+        private double screenWidth = 320.0, screenHeight = 200.0, displayScale = 2.0;
+        private double fps = 0.0;
+        private int debug;
+        private long frameTime = 0;
+        private double worldWidth = 0;
+        private double worldHeight = 0;
+        private double worldGravity = 1.0;
 
-        public World() {
-            area = new Rectangle2D.Double(0.0, 0.0, 320.0, 200.0);
+        public Configuration(String fileName) {
+            try {
+                appProps.load(this.getClass().getResourceAsStream(fileName));
+                loadConfig();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
-        public World setArea(double width, double height) {
-            area = new Rectangle2D.Double(0.0, 0.0, width, height);
+        private void loadConfig() {
+            screenWidth = parseDouble(appProps.getProperty("app.screen.width", "320.0"));
+            screenHeight = parseDouble(appProps.getProperty("app.screen.height", "200.0"));
+            displayScale = parseDouble(appProps.getProperty("app.screen.scale", "2.0"));
+            worldWidth = parseDouble(appProps.getProperty("app.world.width", "640.0"));
+            worldHeight = parseDouble(appProps.getProperty("app.world.height", "400.0"));
+            worldGravity = parseDouble(appProps.getProperty("app.world.gravity", "400.0"));
+            fps = parseInt(appProps.getProperty("app.render.fps", "" + FPS_DEFAULT));
+            frameTime = (long) (1000 / fps);
+            debug = parseInt(appProps.getProperty("app.debug.level", "0"));
+        }
+
+        private double parseDouble(String stringValue) {
+            return Double.parseDouble(stringValue);
+        }
+
+        private int parseInt(String stringValue) {
+            return Integer.parseInt(stringValue);
+        }
+
+        private Configuration parseArgs(String[] args) {
+            Arrays.asList(args).forEach(arg -> {
+                String[] values = arg.split("=");
+                switch (values[0].toLowerCase()) {
+                    case "w", "width" -> screenWidth = parseDouble(values[1]);
+                    case "h", "height" -> screenHeight = parseDouble(values[1]);
+                    case "s", "scale" -> displayScale = parseDouble(values[1]);
+                    case "d", "debug" -> debug = parseInt(values[1]);
+                    case "ww", "worldWidth" -> worldWidth = parseDouble(values[1]);
+                    case "wh", "worldHeight" -> worldHeight = parseDouble(values[1]);
+                    case "wg", "worldGravity" -> worldGravity = parseDouble(values[1]);
+                    case "f", "fps" -> fps = parseDouble(values[1]);
+                    default -> System.out.printf("\nERR : Unknown argument %s\n", arg);
+                }
+            });
             return this;
         }
 
-        public World setGravity(double g) {
-            this.gravity = g;
-            return this;
+    }
+
+    public static class Render {
+        private final Configuration config;
+        private final World world;
+        Application app;
+        BufferedImage buffer;
+        private Font debugFont;
+
+        private final List<Entity> gPipeline = new CopyOnWriteArrayList<>();
+        Camera activeCamera;
+
+        public Render(Application a, Configuration c, World w) {
+            this.app = a;
+            this.config = c;
+            this.world = w;
+            buffer = new BufferedImage((int) config.screenWidth, (int) config.screenHeight, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = buffer.createGraphics();
+            try {
+                debugFont = Font.createFont(
+                                Font.PLAIN,
+                                Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
+                        .deriveFont(9.0f);
+            } catch (FontFormatException | IOException e) {
+                System.out.println("ERR: Unable to initialize Render: " + e.getLocalizedMessage());
+            }
+        }
+
+        /**
+         * Drawing all object in the {@link Render#gPipeline}, according to the priority sort order.
+         *
+         * @param realFps the real measured Frame Per Second value to be displayed in debug mode (if required).
+         */
+        public void draw(long realFps) {
+            Graphics2D g = buffer.createGraphics();
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g.setColor(Color.BLACK);
+            g.fillRect(0, 0, (int) config.screenWidth, (int) config.screenHeight);
+            moveCamera(g, activeCamera, -1);
+            drawGrid(g, world, 16, 16);
+            moveCamera(g, activeCamera, 1);
+            gPipeline.stream().filter(e -> e.isAlive() || e.life == -1)
+                    .forEach(e -> {
+                        if (e.isNotStickToCamera()) {
+                            moveCamera(g, activeCamera, -1);
+                        }
+                        g.setColor(e.color);
+                        switch (e) {
+
+                            // This is a TextEntity
+                            case TextEntity te -> {
+                                g.setFont(te.font);
+                                int size = g.getFontMetrics().stringWidth(te.text);
+                                double offsetX = te.align.equals(TextAlign.RIGHT) ? -size
+                                        : te.align.equals(TextAlign.CENTER) ? -size * 0.5 : 0;
+                                g.drawString(te.text, (int) (te.x + offsetX), (int) te.y);
+                                e.width = size;
+                                e.height = g.getFontMetrics().getHeight();
+                                e.box.setRect(e.x + offsetX, e.y - e.height + g.getFontMetrics().getDescent(), e.width, e.height);
+                            }
+
+                            // This is a basic entity
+                            case Entity ee -> {
+                                switch (ee.type) {
+                                    case RECTANGLE -> g.fillRect((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height);
+                                    case ELLIPSE -> g.fillArc((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height, 0, 360);
+                                    case IMAGE -> g.drawImage(ee.image, (int) ee.x, (int) ee.y, null);
+                                }
+                            }
+                        }
+                        drawDebugInfo(g, e);
+                        if (e.isNotStickToCamera()) {
+                            moveCamera(g, activeCamera, 1);
+                        }
+                    });
+            g.dispose();
+            renderToScreen(realFps);
+
+        }
+
+        /**
+         * Display debug information on the {@link Entity } according to the current Application level of debug.
+         *
+         * @param g Graphics API to use to draw things !
+         * @param e the Entity to be displayed info to.
+         */
+        private void drawDebugInfo(Graphics2D g, Entity e) {
+            if (config.debug > 0) {
+                g.setColor(Color.ORANGE);
+                if (Optional.ofNullable(e.box).isPresent()) g.draw(e.box);
+                if (config.debug > 0) {
+                    g.setFont(debugFont);
+                    int lineHeight = g.getFontMetrics().getHeight();// + g.getFontMetrics().getDescent();
+                    g.setColor(Color.ORANGE);
+                    int offsetX = (int) (e.x + e.width + 4);
+                    int offsetY = (int) (e.y - 8);
+                    g.drawString(String.format("id:%d", e.id), offsetX, offsetY);
+                    if (config.debug > 1) {
+                        g.drawString(String.format("name:%s", e.name), offsetX, offsetY + lineHeight);
+                        g.drawString(String.format("pos:%03.0f,%03.0f", e.x, e.y), offsetX, offsetY + (lineHeight * 2));
+                        g.drawString(String.format("life:%d", e.life), offsetX, offsetY + (lineHeight * 3));
+                        if (config.debug > 2) {
+                            g.drawString(String.format("spd:%03.2f,%03.2f", e.dx, e.dy), offsetX, offsetY + (lineHeight * 4));
+                            g.drawString(String.format("acc:%03.2f,%03.2f", e.ax, e.ay), offsetX, offsetY + (lineHeight * 5));
+                        }
+                    }
+                }
+            }
+        }
+
+        /**
+         * Draw a global grid corresponding to the World object defining the play area.
+         *
+         * @param g     Graphics API to use to draw things !
+         * @param world the World object to be used as reference to build grid and debug info.
+         * @param tw    width of a grid cell.
+         * @param th    height of a grid cell.
+         */
+        private void drawGrid(Graphics2D g, World world, double tw, double th) {
+            g.setColor(Color.BLUE);
+            for (double tx = 0; tx < world.area.getWidth(); tx += tw) {
+                for (double ty = 0; ty < world.area.getHeight(); ty += th) {
+                    g.drawRect((int) tx, (int) ty, (int) tw, (int) th);
+                }
+            }
+            g.setColor(Color.DARK_GRAY);
+            g.drawRect(0, 0, (int) world.area.getWidth(), (int) world.area.getHeight());
+        }
+
+        /**
+         * After the Buffer rendering operation performed in {@link Render#draw(long)}, the buffer is coped to the JFrame content.
+         *
+         * @param realFps the measured frame rate per seconds
+         */
+        public void renderToScreen(long realFps) {
+            Graphics2D g2 = (Graphics2D) app.getGraphics();
+            g2.drawImage(
+                    buffer,
+                    0, 0, app.getWidth(), app.getHeight(),
+                    0, 0, (int) config.screenWidth, (int) config.screenHeight,
+                    null);
+            if (config.debug > 0) {
+                g2.setFont(debugFont.deriveFont(16.0f));
+                g2.setColor(Color.WHITE);
+                g2.drawString(String.format("fps:%d", realFps), 20, app.getHeight() - 30);
+            }
+            g2.dispose();
+        }
+
+        private void moveCamera(Graphics2D g, Camera cam, double direction) {
+            if (Optional.ofNullable(activeCamera).isPresent()) {
+                g.translate(cam.x * direction, cam.y * direction);
+            }
+        }
+
+        public void addToPipeline(Entity entity) {
+            if (!gPipeline.contains(entity)) {
+                gPipeline.add(entity);
+                gPipeline.sort((o1, o2) -> o1.priority < o2.priority ? -1 : 1);
+            }
+        }
+
+        public void clear() {
+            gPipeline.clear();
+        }
+
+        public void dispose() {
+            buffer = null;
+        }
+    }
+
+    public static class PhysicEngine {
+        private final Application app;
+        private final World world;
+
+        public PhysicEngine(Application a, World w) {
+            this.app = a;
+            this.world = w;
+        }
+
+        public void update(double elapsed) {
+            // update entities
+            app.entities.values().forEach((e) -> {
+                if (e.physicType.equals(PhysicType.DYNAMIC)) {
+                    updateEntity(e, elapsed);
+                    e.update(elapsed);
+                }
+                if (e.isAlive()) {
+                    if (e.life >= 0 & e.life != -1) {
+                        e.life -= Math.max(elapsed, 1.0);
+                    } else {
+                        e.life = 0;
+                    }
+                }
+            });
+            // update active camera3
+            if (Optional.ofNullable(app.render.activeCamera).isPresent()) {
+                app.render.activeCamera.update(elapsed);
+            }
+        }
+
+        private void updateEntity(Entity e, double elapsed) {
+            applyPhysicRuleToEntity(e, elapsed);
+            constrainsEntity(e);
+        }
+
+        private void applyPhysicRuleToEntity(Entity e, double elapsed) {
+            // a small reduction of time
+            elapsed *= 0.4;
+            e.ax = 0.0;
+            e.ay = 0.0;
+            e.forces.add(new Vec2d(0, e.mass * -world.gravity));
+            for (Vec2d v : e.forces) {
+                e.ax += v.x;
+                e.ay += v.y;
+            }
+            e.dx += 0.5 * (e.ax * elapsed);
+            e.dy += 0.5 * (e.ay * elapsed);
+
+            e.dx *= e.friction * world.friction;
+            e.dy *= e.friction * world.friction;
+
+            e.x = Math.round(e.x + e.dx);
+            e.y = Math.round(e.y + e.dy);
+
+            e.forces.clear();
+        }
+
+        private void constrainsEntity(Entity e) {
+            constrainToWorld(e, world);
+        }
+
+        private void constrainToWorld(Entity e, World world) {
+            if (e.x < 0.0) {
+                e.x = 0.0;
+                e.dx *= -1 * e.elasticity;
+                e.ax = 0.0;
+            }
+            if (e.y < 0.0) {
+                e.y = 0.0;
+                e.dy *= -1 * e.elasticity;
+                e.ay = 0.0;
+            }
+            if (e.x + e.width > world.area.getWidth()) {
+                e.x = world.area.getWidth() - e.width;
+                e.dx *= -1 * e.elasticity;
+                e.ax = 0.0;
+            }
+            if (e.y + e.height > world.area.getHeight()) {
+                e.y = world.area.getHeight() - e.height;
+                e.dy *= -1 * e.elasticity;
+                e.ay = 0.0;
+            }
+        }
+
+        public void dispose() {
+
         }
     }
 
     public static class I18n {
-        private static ResourceBundle messages = ResourceBundle.getBundle("i18n.messages");
+        private static final ResourceBundle messages = ResourceBundle.getBundle("i18n.messages");
 
         private I18n() {
 
@@ -90,6 +389,31 @@ public class Application extends JFrame implements KeyListener {
         public Vec2d(double x, double y) {
             this.x = x;
             this.y = y;
+        }
+    }
+
+    public static class World {
+        public double friction = 1.0;
+        private Rectangle2D area;
+        public double gravity = 0.981;
+
+        public World() {
+            area = new Rectangle2D.Double(0.0, 0.0, 320.0, 200.0);
+        }
+
+        public World setArea(double width, double height) {
+            area = new Rectangle2D.Double(0.0, 0.0, width, height);
+            return this;
+        }
+
+        public World setGravity(double g) {
+            this.gravity = g;
+            return this;
+        }
+
+        public World setFriction(double f) {
+            this.friction = f;
+            return this;
         }
     }
 
@@ -159,8 +483,8 @@ public class Application extends JFrame implements KeyListener {
             return (life > 0);
         }
 
-        public boolean isStickToCamera() {
-            return stickToCamera;
+        public boolean isNotStickToCamera() {
+            return !stickToCamera;
         }
 
         public Entity setStickToCamera(boolean stc) {
@@ -194,7 +518,7 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public Object getAttribute(String attrName, Object defaultValue) {
-            return (this.attributes.containsKey(attrName) ? this.attributes.get(attrName) : defaultValue);
+            return (this.attributes.getOrDefault(attrName, defaultValue));
         }
 
         public Entity setMass(double m) {
@@ -286,68 +610,47 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public void update(double elapsed) {
-
-            /**
-             * position.x += Math.round(
-             * (target.position.x + (target.size.x)
-             * - ((double) (viewport.getWidth()) * 0.5f)
-             * - this.position.x) * tweenFactor * Math.min(elapsed, 10));
-             * position.y += Math.round(
-             * (target.position.y + (target.size.y)
-             * - ((double) (viewport.getHeight()) * 0.5f)
-             * - this.position.y) * tweenFactor * Math.min(elapsed, 10));
-             */
             x += Math.round((target.x + target.width - (viewport.getWidth() * 0.5) - x) * tweenFactor * elapsed);
             y += Math.round((target.y + target.height - (viewport.getHeight() * 0.5) - y) * tweenFactor * elapsed);
-
         }
     }
 
-    Properties appProps = new Properties();
 
     private boolean exit;
-    private double width = 320.0, height = 200.0, scale = 2.0;
-    private double fps = 0.0;
-    private long frameTime = 0;
 
-    private boolean[] prevKeys = new boolean[65536];
-    private boolean[] keys = new boolean[65536];
+
+    private final boolean[] prevKeys = new boolean[65536];
+    private final boolean[] keys = new boolean[65536];
     private boolean anyKeyPressed;
 
+    Configuration config;
+    private Render render;
+    private PhysicEngine physicEngine;
 
-    BufferedImage buffer;
-    private Font debugFont;
-    private int debug;
+    private long realFps = 0;
 
-    private List<Entity> gPipeline = new CopyOnWriteArrayList<>();
-    private Map<String, Entity> entities = new HashMap<>();
-
-    Camera activeCamera;
+    private final Map<String, Entity> entities = new HashMap<>();
 
     private World world;
 
-    public Application() throws IOException {
-        appProps.load(this.getClass().getResourceAsStream("/app.properties"));
+    public Application(){
     }
 
-    protected void run(String[] args) throws Exception {
+    protected void run(String[] args){
         initialize(args);
         loop();
         dispose();
     }
 
     private void initialize(String[] args) {
-        loadConfig(appProps);
-        parseArgs(args);
+        config = new Configuration("/app.properties").parseArgs(args);
+        world = new World()
+                .setArea(config.worldWidth, config.worldHeight)
+                .setGravity(config.worldGravity);
+        render = new Render(this, config, world);
+        physicEngine = new PhysicEngine(this, world);
         createWindow();
-        buffer = new BufferedImage((int) width, (int) height, BufferedImage.TYPE_INT_ARGB);
-
         try {
-            Graphics2D g = buffer.createGraphics();
-            debugFont = Font.createFont(
-                            Font.PLAIN,
-                            this.getClass().getResourceAsStream("/fonts/FreePixel.ttf"))
-                    .deriveFont(8.0f);
             createScene();
         } catch (IOException | FontFormatException e) {
             System.out.println("ERR: Unable to initialize scene: " + e.getLocalizedMessage());
@@ -356,66 +659,19 @@ public class Application extends JFrame implements KeyListener {
 
     private void reset() {
         try {
-            gPipeline.clear();
+            render.clear();
             entities.clear();
+            entityIndex = 0;
             createScene();
         } catch (IOException | FontFormatException e) {
             System.out.println("ERR : Reset scene issue: " + e.getLocalizedMessage());
         }
     }
 
-    private void loadConfig(Properties config) {
-        width = parseDouble(config.getProperty("app.screen.width", "320.0"));
-        height = parseDouble(config.getProperty("app.screen.height", "200.0"));
-        scale = parseDouble(config.getProperty("app.screen.scale", "2.0"));
-        world = new World()
-                .setArea(
-                        parseDouble(config.getProperty("app.world.width", "640.0")),
-                        parseDouble(config.getProperty("app.world.height", "400.0")))
-                .setGravity(parseDouble(config.getProperty("app.world.gravity", "400.0")));
-        fps = parseInt(config.getProperty("app.render.fps", "" + FPS_DEFAULT));
-        frameTime = (long) (1000 / fps);
-        debug = parseInt(config.getProperty("app.debug.level", "0"));
-    }
-
-    private void parseArgs(String[] args) {
-        Arrays.asList(args).forEach(arg -> {
-            String[] values = arg.split("=");
-            switch (values[0].toLowerCase()) {
-                case "w":
-                case "width":
-                    width = parseDouble(values[1]);
-                    break;
-                case "h":
-                case "height":
-                    height = parseDouble(values[1]);
-                    break;
-                case "s":
-                case "scale":
-                    scale = parseDouble(values[1]);
-                    break;
-                case "d":
-                case "debug":
-                    debug = parseInt(values[1]);
-                default:
-                    System.out.printf("\nERR : Unknown argument %s\n", arg);
-                    break;
-            }
-        });
-    }
-
-    private double parseDouble(String stringValue) {
-        return Double.parseDouble(stringValue);
-    }
-
-    private int parseInt(String stringValue) {
-        return Integer.parseInt(stringValue);
-    }
-
     private void createWindow() {
-        setTitle(appProps.getProperty("app.window.title", "Application Demo"));
+        setTitle(I18n.get("app.title"));
         setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/sg-logo-image.png")));
-        Dimension dim = new Dimension((int) (width * scale), (int) (height * scale));
+        Dimension dim = new Dimension((int) (config.screenWidth * config.displayScale), (int) (config.screenHeight * config.displayScale));
         setSize(dim);
         setPreferredSize(dim);
         setMaximumSize(dim);
@@ -429,17 +685,18 @@ public class Application extends JFrame implements KeyListener {
 
     protected void createScene() throws IOException, FontFormatException {
         world.setGravity(-0.008);
+        world.setFriction(0.98);
 
         // A main player Entity.
         Entity player = new Entity("player")
                 .setType(RECTANGLE)
-                .setPosition(width * 0.5, height * 0.5)
-                .setElasticity(0.32)
-                .setFriction(0.89)
+                .setPosition(world.area.getWidth() * 0.5, world.area.getHeight() * 0.5)
+                .setElasticity(0.89)
+                .setFriction(0.98)
                 .setSize(16, 16)
                 .setColor(Color.RED)
                 .setPriority(1)
-                .setMass(10.0)
+                .setMass(40.0)
                 .setAttribute("life", 5)
                 .setAttribute("score", 0)
                 .setAttribute("energy", 100)
@@ -448,16 +705,16 @@ public class Application extends JFrame implements KeyListener {
         addEntity(player);
 
         Camera cam = new Camera("cam01")
-                .setViewport(new Rectangle2D.Double(0, 0, width, height))
+                .setViewport(new Rectangle2D.Double(0, 0, config.screenWidth, config.screenHeight))
                 .setTarget(player)
                 .setTweenFactor(0.005);
         addCamera(cam);
 
-        generateEntity("ball_", 50, 1.2);
+        generateEntity("ball_", 5, 2.5);
 
         Font wlcFont = Font.createFont(
                         Font.PLAIN,
-                        this.getClass().getResourceAsStream("/fonts/FreePixel.ttf"))
+                        Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
                 .deriveFont(12.0f);
 
         // Score Display
@@ -480,7 +737,7 @@ public class Application extends JFrame implements KeyListener {
                 .setText("5")
                 .setAlign(TextAlign.LEFT)
                 .setFont(lifeFont)
-                .setPosition(buffer.getWidth() - 40, 30)
+                .setPosition(config.screenWidth - 40, 30)
                 .setColor(Color.RED)
                 .setLife(-1)
                 .setStickToCamera(true);
@@ -491,7 +748,7 @@ public class Application extends JFrame implements KeyListener {
                 .setText(I18n.get("app.message.welcome"))
                 .setAlign(TextAlign.CENTER)
                 .setFont(wlcFont)
-                .setPosition(width * 0.5, height * 0.8)
+                .setPosition(world.area.getWidth() * 0.5, world.area.getHeight() * 0.8)
                 .setColor(Color.WHITE)
                 .setLife(5000)
                 .setStickToCamera(true);
@@ -509,28 +766,36 @@ public class Application extends JFrame implements KeyListener {
                             (Math.random() * 2 * acc) - acc)
                     .setColor(new Color((float) Math.random(), (float) Math.random(), (float) Math.random()))
                     .setLife((int) ((Math.random() * 5) + 5) * 5000)
-                    .setElasticity(0.25)
-                    .setFriction(0.75)
-                    .setMass(20.0);
+                    .setElasticity(0.65)
+                    .setFriction(0.98)
+                    .setMass(20.0)
+                    .setPriority(2);
+
             addEntity(e);
         }
     }
 
-    private void addEntity(Entity entity) {
-        if (!gPipeline.contains(entity)) {
-            gPipeline.add(entity);
-            gPipeline.sort((o1, o2) -> {
-                return o1.priority < o2.priority ? -1 : 1;
-            });
-            entities.put(entity.name, entity);
-        }
+    private void emitPerturbationOnEntity(String filterPrefix, double waveSize) {
+        entities.values()
+                .stream()
+                .filter(e -> e.name.startsWith(filterPrefix)).toList()
+                .forEach(e -> e.forces.add(new Vec2d(
+                        (Math.random() * 2 * waveSize) - waveSize,
+                        (Math.random() * 2 * waveSize) - waveSize)));
     }
 
+    private void addEntity(Entity entity) {
+        render.addToPipeline(entity);
+        entities.put(entity.name, entity);
+    }
+
+
     private void addCamera(Camera cam) {
-        this.activeCamera = cam;
+        render.activeCamera = cam;
     }
 
     private void loop() {
+        long timeFrame = 0, frames = 0;
         long previous = System.currentTimeMillis();
         while (!exit) {
 
@@ -538,12 +803,19 @@ public class Application extends JFrame implements KeyListener {
             double elapsed = start - previous;
 
             input();
-            update(Math.min(elapsed, frameTime));
-            draw();
+            physicEngine.update(Math.min(elapsed, config.frameTime));
+            render.draw(realFps);
 
             // wait at least 1ms.
-            long waitTime = (frameTime > elapsed) ? frameTime - (long) elapsed : 1;
+            long waitTime = (config.frameTime > elapsed) ? config.frameTime - (long) elapsed : 1;
 
+            timeFrame += elapsed;
+            frames += 1;
+            if (timeFrame > 1000) {
+                timeFrame = 0;
+                realFps = frames;
+                frames = 0;
+            }
             try {
                 Thread.sleep(waitTime);
             } catch (InterruptedException ie) {
@@ -568,7 +840,7 @@ public class Application extends JFrame implements KeyListener {
             action = true;
         }
         if (getKeyPressed(KeyEvent.VK_UP)) {
-            p.forces.add(new Vec2d(0.0, -speed));
+            p.forces.add(new Vec2d(0.0, -4 * speed));
             action = true;
         }
         if (getKeyPressed(KeyEvent.VK_DOWN)) {
@@ -579,205 +851,32 @@ public class Application extends JFrame implements KeyListener {
             reset();
         }
         if (getKeyReleased(KeyEvent.VK_D)) {
-            debug = debug + 1 < 5 ? debug + 1 : 0;
+            config.debug = config.debug + 1 < 5 ? config.debug + 1 : 0;
+        }
+
+        if (getKeyPressed(KeyEvent.VK_Z)) {
+            emitPerturbationOnEntity("ball_", 2.5);
         }
 
         if (!action) {
-            p.ax *= p.friction;
-            p.ay *= p.friction;
+            p.dx *= p.friction;
+            p.dx *= p.friction;
         }
 
     }
 
-    private void update(double elapsed) {
-        // update entities
-        entities.values().stream().forEach((e) -> {
-            if (e.physicType.equals(PhysicType.DYNAMIC)) {
-                updateEntity(e, elapsed);
-                e.update(elapsed);
-            }
-            if (e.isAlive()) {
-                if (e.life >= 0 & e.life != -1) {
-                    e.life -= Math.max(elapsed, 1.0);
-                } else {
-                    e.life = 0;
-                }
-            }
-        });
-        // update active camera3
-        if (Optional.ofNullable(activeCamera).isPresent()) {
-            activeCamera.update(elapsed);
-        }
-    }
-
-    private void updateEntity(Entity e, double elapsed) {
-        applyPhysicRuleToEntity(e, elapsed);
-        constrainsEntity(e);
-        e.ax = 0.0;
-        e.ay = 0.0;
-    }
-
-    private void applyPhysicRuleToEntity(Entity e, double elapsed) {
-        // a small reduction of time
-        elapsed *= 0.4;
-
-        e.forces.add(new Vec2d(0, e.mass * -world.gravity));
-        for (Vec2d v : e.forces) {
-            e.ax += v.x;
-            e.ay += v.y;
-        }
-        e.dx += 0.5 * (e.ax * elapsed);
-        e.dy += 0.5 * (e.ay * elapsed);
-
-        e.dx *= e.friction;
-        e.dy *= e.friction;
-
-        e.x = Math.round(e.x + e.dx);
-        e.y = Math.round(e.y + e.dy);
-
-        e.forces.clear();
-    }
-
-    private void constrainsEntity(Entity e) {
-        constrainToWorld(e, world);
-    }
-
-    private void constrainToWorld(Entity e, World world) {
-        if (e.x < 0.0) {
-            e.x = 0.0;
-            e.dx *= -(e.dx);
-            e.ax = 0.0;
-        }
-        if (e.y < 0.0) {
-            e.y = 0.0;
-            e.dy *= -(e.dy);
-            e.ay = 0.0;
-        }
-        if (e.x + e.width > world.area.getWidth()) {
-            e.x = world.area.getWidth() - e.width;
-            e.dx *= -(e.dx);
-            e.ax = 0.0;
-        }
-        if (e.y + e.height > world.area.getHeight()) {
-            e.y = world.area.getHeight() - e.height;
-            e.dy *= -(e.dy);
-            e.ay = 0.0;
-        }
-    }
-
-    private void draw() {
-        Graphics2D g = buffer.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        g.setColor(Color.BLACK);
-        g.fillRect(0, 0, (int) width, (int) height);
-        moveCamera(g, activeCamera, -1);
-        drawGrid(g, world, 16, 16);
-        moveCamera(g, activeCamera, 1);
-        gPipeline.stream().filter(e -> e.isAlive() || e.life == -1)
-                .forEach(e -> {
-                    if (!e.isStickToCamera()) {
-                        moveCamera(g, activeCamera, -1);
-                    }
-                    g.setColor(e.color);
-                    switch (e) {
-
-                        // This is a TextEntity
-                        case TextEntity te -> {
-                            g.setFont(te.font);
-                            int size = g.getFontMetrics().stringWidth(te.text);
-                            double offsetX = te.align.equals(TextAlign.RIGHT) ? -size
-                                    : te.align.equals(TextAlign.CENTER) ? -size * 0.5 : 0;
-                            g.drawString(te.text, (int) (te.x + offsetX), (int) te.y);
-                            e.width = size;
-                            e.height = g.getFontMetrics().getHeight();
-                            e.box.setRect(e.x + offsetX, e.y - e.height + g.getFontMetrics().getDescent(), e.width, e.height);
-                        }
-
-                        // This is a basic entity
-                        case Entity ee -> {
-                            switch (ee.type) {
-                                case RECTANGLE -> {
-                                    g.fillRect((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height);
-                                }
-                                case ELLIPSE -> {
-                                    g.fillArc((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height, 0, 360);
-                                }
-                                case IMAGE -> {
-                                    g.drawImage(ee.image, (int) ee.x, (int) ee.y, null);
-                                }
-                            }
-                        }
-                    }
-                    if (this.debug > 0) {
-                        drawDebugInfo(g, e);
-                    }
-                    if (!e.isStickToCamera()) {
-                        moveCamera(g, activeCamera, 1);
-                    }
-                });
-        g.dispose();
-        renderToScreen();
-    }
-
-    private void drawDebugInfo(Graphics2D g, Entity e) {
-        g.setColor(Color.ORANGE);
-        if (Optional.ofNullable(e.box).isPresent()) g.draw(e.box);
-        if (debug > 0) {
-            g.setFont(debugFont);
-            int lineHeight = g.getFontMetrics().getHeight() + g.getFontMetrics().getDescent();
-            g.setColor(Color.ORANGE);
-            int offsetX = (int) (e.x + e.width + 4);
-            int offsetY = (int) (e.y - 8);
-            g.drawString(String.format("id:%d", e.id), offsetX, offsetY);
-            if (debug > 1) {
-                g.drawString(String.format("name:%s", e.name), offsetX, offsetY + lineHeight);
-                g.drawString(String.format("pos:%03.0f,%03.0f", e.x, e.y), offsetX, offsetY + (lineHeight * 2));
-                g.drawString(String.format("life:%d", e.life), offsetX, offsetY + (lineHeight * 3));
-                if (debug > 2) {
-                    g.drawString(String.format("spd:%03.2f,%03.2f", e.dx, e.dy), offsetX, offsetY + (lineHeight * 4));
-                    g.drawString(String.format("acc:%03.2f,%03.2f", e.ax, e.ay), offsetX, offsetY + (lineHeight * 5));
-                }
-            }
-        }
-    }
-
-    private void drawGrid(Graphics2D g, World world, double tw, double th) {
-        g.setColor(Color.BLUE);
-        for (double tx = 0; tx < world.area.getWidth(); tx += tw) {
-            for (double ty = 0; ty < world.area.getHeight(); ty += th) {
-                g.drawRect((int) tx, (int) ty, (int) tw, (int) th);
-            }
-        }
-        g.setColor(Color.DARK_GRAY);
-        g.drawRect(0, 0, (int) world.area.getWidth(), (int) world.area.getHeight());
-    }
-
-    private void renderToScreen() {
-        Graphics2D g2 = (Graphics2D) getGraphics();
-        g2.drawImage(
-                buffer,
-                0, 0, getWidth(), getHeight(),
-                0, 0, (int) width, (int) height,
-                null);
-        g2.dispose();
-    }
-
-    private void moveCamera(Graphics2D g, Camera cam, double direction) {
-        if (Optional.ofNullable(activeCamera).isPresent()) {
-            g.translate(cam.x * direction, cam.y * direction);
-        }
-    }
 
     @Override
     public void paint(Graphics g) {
         super.paint(g);
-        draw();
+        render.draw(realFps);
     }
 
     @Override
     public void dispose() {
         super.dispose();
+        render.dispose();
+        physicEngine.dispose();
     }
 
     @Override
