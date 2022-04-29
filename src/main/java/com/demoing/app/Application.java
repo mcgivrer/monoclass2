@@ -773,7 +773,6 @@ public class Application extends JFrame implements KeyListener {
     }
 
     protected void createScene() throws IOException, FontFormatException {
-        world.setGravity(-0.008);
         world.setFriction(0.98);
 
         // A main player Entity.
