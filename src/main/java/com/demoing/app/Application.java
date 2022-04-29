@@ -141,8 +141,11 @@ public class Application extends JFrame implements KeyListener {
          */
         public void draw(long realFps) {
             Graphics2D g = buffer.createGraphics();
+
+            g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
             g.setColor(Color.BLACK);
             g.fillRect(0, 0, (int) config.screenWidth, (int) config.screenHeight);
             moveCamera(g, activeCamera, -1);
@@ -167,7 +170,15 @@ public class Application extends JFrame implements KeyListener {
                                 e.height = g.getFontMetrics().getHeight();
                                 e.box.setRect(e.x + offsetX, e.y - e.height + g.getFontMetrics().getDescent(), e.width, e.height);
                             }
-
+                            case GaugeEntity ge -> {
+                                g.setColor(Color.BLACK);
+                                g.fillRect((int) ge.x, (int) ge.y, (int) ge.width, (int) ge.height);
+                                g.setColor(ge.border);
+                                g.fillRect((int) ge.x, (int) ge.y, (int) ge.width, (int) ge.height);
+                                int value = (int) ((ge.value / ge.maxValue) * ge.width - 2);
+                                g.setColor(ge.color);
+                                g.fillRect((int) (ge.x) + 1, (int) (ge.y) + 1, value, (int) (ge.height) - 2);
+                            }
                             // This is a basic entity
                             case Entity ee -> {
                                 switch (ee.type) {
@@ -252,10 +263,10 @@ public class Application extends JFrame implements KeyListener {
                 g2.setFont(debugFont.deriveFont(16.0f));
                 g2.setColor(Color.WHITE);
                 g2.drawString(String.format("[ dbg: %d| fps:%d | obj:%d | g:%f ]",
-                        config.debug,
-                        realFps,
-                        gPipeline.size(),
-                        world.gravity),
+                                config.debug,
+                                realFps,
+                                gPipeline.size(),
+                                world.gravity),
                         20, app.getHeight() - 30);
             }
             g2.dispose();
@@ -626,6 +637,35 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    public static class GaugeEntity extends Entity {
+        double value = 0;
+        private double maxValue;
+        private double minValue;
+        private Color border = Color.GRAY;
+        private Color shadow = Color.DARK_GRAY;
+
+        public GaugeEntity(String name) {
+            super(name);
+            physicType = PhysicType.STATIC;
+            stickToCamera = true;
+        }
+
+        public GaugeEntity setValue(double v) {
+            this.value = v;
+            return this;
+        }
+
+        public GaugeEntity setMax(double mxV) {
+            this.maxValue = mxV;
+            return this;
+        }
+
+        public GaugeEntity setMin(double mnV) {
+            this.minValue = mnV;
+            return this;
+        }
+    }
+
     public static class Camera extends Entity {
 
         private Entity target;
@@ -713,13 +753,18 @@ public class Application extends JFrame implements KeyListener {
 
     private void createWindow() {
         setTitle(I18n.get("app.title"));
+
         setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/sg-logo-image.png")));
         Dimension dim = new Dimension((int) (config.screenWidth * config.displayScale), (int) (config.screenHeight * config.displayScale));
+
         setSize(dim);
         setPreferredSize(dim);
         setMaximumSize(dim);
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
         setFocusTraversalKeysEnabled(true);
+
         setLocationRelativeTo(null);
         addKeyListener(this);
         addKeyListener(actionHandler);
@@ -803,7 +848,7 @@ public class Application extends JFrame implements KeyListener {
         addEntity(scoreTxtE);
 
 
-        Font lifeFont = new Font("Noto Mono for Powerline", Font.PLAIN, 16);
+        Font lifeFont = new Font("Arial", Font.PLAIN, 16);
         TextEntity lifeTxt = (TextEntity) new TextEntity("score")
                 .setText("5")
                 .setAlign(TextAlign.LEFT)
@@ -811,17 +856,38 @@ public class Application extends JFrame implements KeyListener {
                 .setPosition(config.screenWidth - 40, 30)
                 .setColor(Color.RED)
                 .setLife(-1)
+                .setPriority(10)
                 .setStickToCamera(true);
         addEntity(lifeTxt);
+
+        GaugeEntity energyGauge = (GaugeEntity) new GaugeEntity("energy")
+                .setMax(100.0)
+                .setMin(0.0)
+                .setValue((int) player.getAttribute("energy", 100.0))
+                .setColor(Color.RED)
+                .setSize(32, 6)
+                .setPriority(10)
+                .setPosition(config.screenWidth - 40 - 4 - 32, 25);
+        addEntity(energyGauge);
+        GaugeEntity manaGauge = (GaugeEntity) new GaugeEntity("energy")
+                .setMax(100.0)
+                .setMin(0.0)
+                .setValue((int) player.getAttribute("mana", 100.0))
+                .setColor(Color.BLUE)
+                .setSize(32, 6)
+                .setPriority(10)
+                .setPosition(config.screenWidth - 40 - 4 - 32, 15);
+        addEntity(manaGauge);
 
         // A welcome Text
         TextEntity welcomeMsg = (TextEntity) new TextEntity("welcome")
                 .setText(I18n.get("app.message.welcome"))
                 .setAlign(TextAlign.CENTER)
                 .setFont(wlcFont)
-                .setPosition(world.area.getWidth() * 0.5, world.area.getHeight() * 0.8)
+                .setPosition(config.screenWidth * 0.5, config.screenHeight * 0.8)
                 .setColor(Color.WHITE)
                 .setLife(5000)
+                .setPriority(20)
                 .setStickToCamera(true);
         addEntity(welcomeMsg);
     }
@@ -982,7 +1048,9 @@ public class Application extends JFrame implements KeyListener {
             Application app = new Application();
             app.run(args);
         } catch (Exception e) {
-            System.out.printf("ERR: Unable to run application: %s", e.getLocalizedMessage());
+            System.out.printf("ERR: Unable to run application: %s",
+                    e.getLocalizedMessage()
+                            + " => " + e.getStackTrace().toString());
         }
     }
 
