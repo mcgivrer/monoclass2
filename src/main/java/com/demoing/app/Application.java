@@ -93,7 +93,7 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
-    public static class Entity extends Rectangle2D.Double {
+    public static class Entity {
 
         // id & naming attributes
         protected long id = entityIndex++;
@@ -105,6 +105,11 @@ public class Application extends JFrame implements KeyListener {
         public Image image;
         public Color color = Color.BLUE;
         public boolean stickToCamera;
+
+        // Position attributes
+        public Rectangle2D.Double box;
+        public double x = 0.0, y = 0.0;
+        public double width = 0.0, height = 0.0;
 
         // Physic attributes
         public List<Vec2d> forces = new ArrayList<>();
@@ -400,31 +405,32 @@ public class Application extends JFrame implements KeyListener {
     }
 
     protected void createScene() throws IOException, FontFormatException {
-        world.setGravity(0.0);
+        world.setGravity(-0.008);
 
         // A main player Entity.
         Entity player = new Entity("player")
                 .setType(RECTANGLE)
                 .setPosition(width * 0.5, height * 0.5)
-                .setElasticity(0.95)
-                .setFriction(0.30)
+                .setElasticity(0.32)
+                .setFriction(0.89)
                 .setSize(16, 16)
                 .setColor(Color.RED)
                 .setPriority(1)
-                .setMass(30.0)
+                .setMass(10.0)
                 .setAttribute("life", 5)
                 .setAttribute("score", 0)
                 .setAttribute("energy", 100)
-                .setAttribute("mana", 100);
+                .setAttribute("mana", 100)
+                .setAttribute("accStep", 0.15);
         addEntity(player);
 
         Camera cam = new Camera("cam01")
                 .setViewport(new Rectangle2D.Double(0, 0, width, height))
                 .setTarget(player)
-                .setTweenFactor(0.01);
+                .setTweenFactor(0.005);
         addCamera(cam);
 
-        generateEntity("ball_", 10);
+        generateEntity("ball_", 50, 1.2);
 
         Font wlcFont = Font.createFont(
                         Font.PLAIN,
@@ -445,6 +451,18 @@ public class Application extends JFrame implements KeyListener {
                 .setStickToCamera(true);
         addEntity(scoreTxtE);
 
+
+        Font lifeFont = new Font("Noto Mono for Powerline", Font.PLAIN, 16);
+        TextEntity lifeTxt = (TextEntity) new TextEntity("score")
+                .setText("5")
+                .setAlign(TextAlign.LEFT)
+                .setFont(lifeFont)
+                .setPosition(buffer.getWidth() - 40, 30)
+                .setColor(Color.RED)
+                .setLife(-1)
+                .setStickToCamera(true);
+        addEntity(lifeTxt);
+
         // A welcome Text
         TextEntity welcomeMsg = (TextEntity) new TextEntity("welcome")
                 .setText(I18n.get("app.message.welcome"))
@@ -457,18 +475,20 @@ public class Application extends JFrame implements KeyListener {
         addEntity(welcomeMsg);
     }
 
-    private void generateEntity(String namePrefix, int nbEntity) {
+    private void generateEntity(String namePrefix, int nbEntity, double acc) {
         for (int i = 0; i < nbEntity; i++) {
             Entity e = new Entity(namePrefix + i)
                     .setType(ELLIPSE)
                     .setSize(8, 8)
                     .setPosition(Math.random() * width, Math.random() * height)
-                    .setAcceleration((Math.random() * 3) - 1.5, (Math.random() * 3) - 1.5)
+                    .setAcceleration(
+                            (Math.random() * 2 * acc) - acc,
+                            (Math.random() * 2 * acc) - acc)
                     .setColor(new Color((float) Math.random(), (float) Math.random(), (float) Math.random()))
                     .setLife((int) ((Math.random() * 5) + 5) * 5000)
-                    .setElasticity(0.98)
-                    .setFriction(1.0)
-                    .setMass(1.0);
+                    .setElasticity(0.35)
+                    .setFriction(0.89)
+                    .setMass(20.0);
             addEntity(e);
         }
     }
@@ -513,7 +533,7 @@ public class Application extends JFrame implements KeyListener {
 
     private void input() {
         Entity p = entities.get("player");
-        double speed = (double) p.getAttribute("accStep", 2.0);
+        double speed = (double) p.getAttribute("accStep", 4.0);
 
         if (getKeyPressed(KeyEvent.VK_LEFT)) {
             p.forces.add(new Vec2d(-speed, 0.0));
@@ -522,10 +542,10 @@ public class Application extends JFrame implements KeyListener {
             p.forces.add(new Vec2d(speed, 0.0));
         }
         if (getKeyPressed(KeyEvent.VK_UP)) {
-            p.forces.add(new Vec2d(0.0, -4.0 * speed));
+            p.forces.add(new Vec2d(0.0, -speed));
         }
         if (getKeyPressed(KeyEvent.VK_DOWN)) {
-            p.forces.add(new Vec2d(0.0, 4.0 * speed));
+            p.forces.add(new Vec2d(0.0, speed));
         }
         if (getKeyReleased(KeyEvent.VK_ESCAPE)) {
             reset();
@@ -564,18 +584,19 @@ public class Application extends JFrame implements KeyListener {
         // a small reduction of time
         elapsed *= 0.4;
 
+        e.forces.add(new Vec2d(0, e.mass * -world.gravity));
         for (Vec2d v : e.forces) {
             e.ax += v.x;
             e.ay += v.y;
         }
         e.dx += 0.5 * (e.ax * elapsed);
-        e.dy += 0.5 * (e.ay + (e.mass * -world.gravity) * elapsed);
+        e.dy += 0.5 * (e.ay * elapsed);
 
         e.dx *= e.friction;
         e.dy *= e.friction;
 
-        e.setX(e.x + e.dx);
-        e.setY(e.y + e.dy);
+        e.x = Math.round(e.x + e.dx);
+        e.y = Math.round(e.y + e.dy);
 
         e.forces.clear();
     }
@@ -585,24 +606,24 @@ public class Application extends JFrame implements KeyListener {
     }
 
     private void constrainToWorld(Entity e, World world) {
-        if (e.getX() < 0.0) {
-            e.setX(0.0);
-            e.dx *= -(e.dx * e.elasticity * 0.5 * e.ax);
+        if (e.x < 0.0) {
+            e.x = 0.0;
+            e.dx *= -(e.dx);
             e.ax = 0.0;
         }
-        if (e.getY() < 0.0) {
-            e.setY(0.0);
-            e.dy *= -(e.dy * e.elasticity * 0.5 * e.ay);
+        if (e.y < 0.0) {
+            e.y = 0.0;
+            e.dy *= -(e.dy);
             e.ay = 0.0;
         }
-        if (e.getX() + e.getWidth() > world.area.getWidth()) {
-            e.setX(world.area.getWidth() - e.getWidth());
-            e.dx *= -(e.dx * e.elasticity * 0.5 * e.ax);
+        if (e.x + e.width > world.area.getWidth()) {
+            e.x = world.area.getWidth() - e.width;
+            e.dx *= -(e.dx);
             e.ax = 0.0;
         }
-        if (e.getY() + e.getHeight() > world.area.getHeight()) {
-            e.setY(world.area.getHeight() - e.getHeight());
-            e.dy *= -(e.dy * e.elasticity * 0.5 * e.ay);
+        if (e.y + e.height > world.area.getHeight()) {
+            e.y = world.area.getHeight() - e.height;
+            e.dy *= -(e.dy);
             e.ay = 0.0;
         }
     }
@@ -679,7 +700,7 @@ public class Application extends JFrame implements KeyListener {
 
     private void moveCamera(Graphics2D g, Camera cam, double direction) {
         if (Optional.ofNullable(activeCamera).isPresent()) {
-            g.translate(cam.getX() * direction, cam.getY() * direction);
+            g.translate(cam.x * direction, cam.y * direction);
         }
     }
 
