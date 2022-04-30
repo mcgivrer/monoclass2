@@ -8,6 +8,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -37,16 +38,6 @@ public class Application extends JFrame implements KeyListener {
         LEFT,
         CENTER,
         RIGHT
-    }
-
-    public interface AppStatus {
-        long getNbEntities();
-
-        long getPipelineSize();
-
-        long getPauseSatus();
-
-        double getGravity();
     }
 
     public static class Configuration {
@@ -341,6 +332,9 @@ public class Application extends JFrame implements KeyListener {
         }
 
         private void applyPhysicRuleToEntity(Entity e, double elapsed) {
+            e.oldPos.x = e.x;
+            e.oldPos.y = e.y;
+
             // a small reduction of time
             elapsed *= 0.4;
             e.ax = 0.0;
@@ -394,6 +388,52 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    public static class CollisionDetect {
+        public Map<String, Entity> colliders = new ConcurrentHashMap<>();
+
+        public CollisionDetect() {
+
+        }
+
+        public CollisionDetect add(Entity e) {
+            colliders.put(e.name, e);
+            return this;
+        }
+
+        public void update(double elapsed) {
+            detect();
+        }
+
+        private void detect() {
+            List<Entity> targets = colliders.values().stream().toList();
+            for (Entity e1 : colliders.values()) {
+                for (Entity e2 : targets) {
+                    if (e1.id != e2.id && e1.box.intersects(e2.box)) {
+                        resolve(e1, e2);
+                    }
+                }
+            }
+        }
+
+        private void resolve(Entity e1, Entity e2) {
+            double resMass = Math.min(e1.mass, e2.mass);
+            double friction = 1.0 / (e1.friction * e2.friction);
+            Vec2d c1 = new Vec2d(
+                    (e1.ax - e2.ax),
+                    (e1.ay - e2.ay)).normalize().multiply(resMass * friction * 0.1);
+            e2.forces.add(c1.maximize(0.6));
+
+            double cX1 = e1.x + (e1.width * 0.5);
+            double cY1 = e1.y + (e1.height * 0.5);
+            double cX2 = e2.x + (e2.width * 0.5);
+            double cY2 = e2.y + (e2.height * 0.5);
+
+            Vec2d delta = new Vec2d(cX1 - cX2, cY1 - cY2);
+
+            System.out.println("e1." + e1.name + " collides e2." + e2.name);
+        }
+    }
+
     public static class ActionHandler implements KeyListener {
         private final boolean[] prevKeys = new boolean[65536];
         private final boolean[] keys = new boolean[65536];
@@ -444,6 +484,31 @@ public class Application extends JFrame implements KeyListener {
             this.x = x;
             this.y = y;
         }
+
+        public Vec2d normalize() {
+            // sets length to 1
+            //
+            double length = Math.sqrt(x * x + y * y);
+
+            if (length != 0.0) {
+                double s = 1.0f / length;
+                x = x * s;
+                y = y * s;
+            }
+
+            return new Vec2d(x, y);
+        }
+
+        public Vec2d multiply(double v) {
+            return new Vec2d(x * v, y * v);
+        }
+
+        public Vec2d maximize(double v) {
+            return new Vec2d(
+                    Math.signum(x) * Math.max(Math.abs(x), v),
+                    Math.signum(y) * Math.max(Math.abs(y), v)
+            );
+        }
     }
 
     public static class World {
@@ -487,6 +552,7 @@ public class Application extends JFrame implements KeyListener {
         // Position attributes
         public Rectangle2D.Double box = new Rectangle2D.Double(0, 0, 0, 0);
         public double x = 0.0, y = 0.0;
+        public Vec2d oldPos = new Vec2d(0, 0);
         public double width = 0.0, height = 0.0;
 
         // Physic attributes
@@ -707,6 +773,7 @@ public class Application extends JFrame implements KeyListener {
     private Configuration config;
     private Render render;
     private PhysicEngine physicEngine;
+    private CollisionDetect collisionDetect;
     private ActionHandler actionHandler;
 
     private long realFps = 0;
@@ -731,6 +798,7 @@ public class Application extends JFrame implements KeyListener {
                 .setGravity(config.worldGravity);
         render = new Render(this, config, world);
         physicEngine = new PhysicEngine(this, world);
+        collisionDetect = new CollisionDetect();
         actionHandler = new ActionHandler();
         createWindow();
         try {
@@ -779,7 +847,7 @@ public class Application extends JFrame implements KeyListener {
         Entity player = new Entity("player")
                 .setType(RECTANGLE)
                 .setPosition(world.area.getWidth() * 0.5, world.area.getHeight() * 0.5)
-                .setElasticity(0.89)
+                .setElasticity(0.29)
                 .setFriction(0.98)
                 .setSize(16, 16)
                 .setColor(Color.RED)
@@ -916,7 +984,7 @@ public class Application extends JFrame implements KeyListener {
                     .setLife((int) ((Math.random() * 5) + 5) * 5000)
                     .setElasticity(0.65)
                     .setFriction(0.98)
-                    .setMass(20.0)
+                    .setMass(10.0)
                     .setPriority(2);
             addEntity(e);
         }
@@ -933,6 +1001,7 @@ public class Application extends JFrame implements KeyListener {
 
     private void addEntity(Entity entity) {
         render.addToPipeline(entity);
+        collisionDetect.add(entity);
         entities.put(entity.name, entity);
     }
 
@@ -945,7 +1014,9 @@ public class Application extends JFrame implements KeyListener {
             double elapsed = start - previous;
 
             input();
-            physicEngine.update(Math.min(elapsed, config.frameTime));
+            double maxElapsed = Math.min(elapsed, config.frameTime);
+            physicEngine.update(maxElapsed);
+            collisionDetect.update(maxElapsed);
             render.draw(realFps);
 
             // wait at least 1ms.
@@ -1048,8 +1119,8 @@ public class Application extends JFrame implements KeyListener {
             app.run(args);
         } catch (Exception e) {
             System.out.printf("ERR: Unable to run application: %s",
-                    e.getLocalizedMessage()
-                            + " => " + e.getStackTrace().toString());
+                    e.getLocalizedMessage());
+            e.printStackTrace();
         }
     }
 
