@@ -40,16 +40,6 @@ public class Application extends JFrame implements KeyListener {
         RIGHT
     }
 
-    public interface AppStatus {
-        long getNbEntities();
-
-        long getPipelineSize();
-
-        long getPauseSatus();
-
-        double getGravity();
-    }
-
     public static class Configuration {
         Properties appProps = new Properties();
         private double screenWidth = 320.0, screenHeight = 200.0, displayScale = 2.0;
@@ -342,6 +332,9 @@ public class Application extends JFrame implements KeyListener {
         }
 
         private void applyPhysicRuleToEntity(Entity e, double elapsed) {
+            e.oldPos.x = e.x;
+            e.oldPos.y = e.y;
+
             // a small reduction of time
             elapsed *= 0.4;
             e.ax = 0.0;
@@ -426,9 +419,17 @@ public class Application extends JFrame implements KeyListener {
             double resMass = Math.min(e1.mass, e2.mass);
             double friction = 1.0 / (e1.friction * e2.friction);
             Vec2d c1 = new Vec2d(
-                    ((e1.ax - e2.ax) * resMass) * friction,
-                    ((e1.ay - e2.ay) * resMass) * friction * 0.1);
-            e2.forces.add(c1);
+                    (e1.ax - e2.ax),
+                    (e1.ay - e2.ay)).normalize().multiply(resMass * friction * 0.1);
+            e2.forces.add(c1.maximize(0.6));
+
+            double cX1 = e1.x + (e1.width * 0.5);
+            double cY1 = e1.y + (e1.height * 0.5);
+            double cX2 = e2.x + (e2.width * 0.5);
+            double cY2 = e2.y + (e2.height * 0.5);
+
+            Vec2d delta = new Vec2d(cX1 - cX2, cY1 - cY2);
+
             System.out.println("e1." + e1.name + " collides e2." + e2.name);
         }
     }
@@ -483,6 +484,31 @@ public class Application extends JFrame implements KeyListener {
             this.x = x;
             this.y = y;
         }
+
+        public Vec2d normalize() {
+            // sets length to 1
+            //
+            double length = Math.sqrt(x * x + y * y);
+
+            if (length != 0.0) {
+                double s = 1.0f / length;
+                x = x * s;
+                y = y * s;
+            }
+
+            return new Vec2d(x, y);
+        }
+
+        public Vec2d multiply(double v) {
+            return new Vec2d(x * v, y * v);
+        }
+
+        public Vec2d maximize(double v) {
+            return new Vec2d(
+                    Math.signum(x) * Math.max(Math.abs(x), v),
+                    Math.signum(y) * Math.max(Math.abs(y), v)
+            );
+        }
     }
 
     public static class World {
@@ -526,6 +552,7 @@ public class Application extends JFrame implements KeyListener {
         // Position attributes
         public Rectangle2D.Double box = new Rectangle2D.Double(0, 0, 0, 0);
         public double x = 0.0, y = 0.0;
+        public Vec2d oldPos = new Vec2d(0, 0);
         public double width = 0.0, height = 0.0;
 
         // Physic attributes
@@ -988,8 +1015,8 @@ public class Application extends JFrame implements KeyListener {
 
             input();
             double maxElapsed = Math.min(elapsed, config.frameTime);
-            collisionDetect.update(maxElapsed);
             physicEngine.update(maxElapsed);
+            collisionDetect.update(maxElapsed);
             render.draw(realFps);
 
             // wait at least 1ms.
