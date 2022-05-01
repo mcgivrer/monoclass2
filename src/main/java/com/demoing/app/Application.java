@@ -726,6 +726,13 @@ public class Application extends JFrame implements KeyListener {
             return this;
         }
 
+        public Animation activate(String key) {
+            this.currentFrame = 0;
+            this.internalAnimationTime = 0;
+            this.currentAnimationSet = key;
+            return this;
+        }
+
         public void addAnimationSet(String key, String imgSrc, int tw, int th, int x, int y, int nbFrames) {
             try {
                 BufferedImage image = ImageIO.read(this.getClass().getResourceAsStream(imgSrc));
@@ -746,6 +753,13 @@ public class Application extends JFrame implements KeyListener {
                 internalAnimationTime = 0;
             }
             currentFrame = currentFrame < animationSet.get(currentAnimationSet).length ? currentFrame + 1 : 0;
+        }
+
+        public BufferedImage getFrame() {
+            if (animationSet.get(currentAnimationSet) != null) {
+                return animationSet.get(currentAnimationSet)[currentFrame];
+            }
+            return null;
         }
     }
 
