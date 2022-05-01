@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 
+import javax.imageio.ImageIO;
 import javax.management.*;
 import javax.swing.JFrame;
 
@@ -704,6 +705,47 @@ public class Application extends JFrame implements KeyListener {
 
         public void update(double elapsed) {
             box.setRect(x, y, width, height);
+        }
+    }
+
+    public static class Animation {
+        Map<String, BufferedImage[]> animationSet = new HashMap<>();
+        String currentAnimationSet;
+        int currentFrame;
+        private long internalAnimationTime;
+
+        private long frameDuration = 150; // frameDuration in ms
+
+        public Animation() {
+            currentAnimationSet = null;
+            currentFrame = 0;
+        }
+
+        public Animation setFrameDuration(long time) {
+            this.frameDuration = time;
+            return this;
+        }
+
+        public void addAnimationSet(String key, String imgSrc, int tw, int th, int x, int y, int nbFrames) {
+            try {
+                BufferedImage image = ImageIO.read(this.getClass().getResourceAsStream(imgSrc));
+                BufferedImage[] buffer = new BufferedImage[nbFrames];
+                for (int i = 0; i < nbFrames; i++) {
+                    BufferedImage frame = image.getSubimage(x, y + (i * th), tw, th);
+                    buffer[i] = frame;
+                }
+                animationSet.put(key, buffer);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        public void update(long elapsedTime) {
+            internalAnimationTime += elapsedTime;
+            if (internalAnimationTime > frameDuration) {
+                internalAnimationTime = 0;
+            }
+            currentFrame = currentFrame < animationSet.get(currentAnimationSet).length ? currentFrame + 1 : 0;
         }
     }
 
