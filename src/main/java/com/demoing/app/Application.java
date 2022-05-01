@@ -6,12 +6,13 @@ import java.awt.event.KeyListener;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
+import javax.management.*;
 import javax.swing.JFrame;
 
 import static com.demoing.app.Application.EntityType.*;
@@ -39,14 +40,108 @@ public class Application extends JFrame implements KeyListener {
         RIGHT
     }
 
-    public interface AppStatus {
-        long getNbEntities();
+    public interface AppStatusMBean {
+        Integer getDebugLevel();
 
-        long getPipelineSize();
+        void setDebugLevel(Integer d);
 
-        long getPauseSatus();
+        Integer getNbEntities();
 
-        double getGravity();
+        Integer getPipelineSize();
+
+        Boolean getPauseStatus();
+
+        void setPauseStatus(Boolean pause);
+
+        Long getTimeUpdate();
+
+        Long getTimeRendering();
+
+        Long getRealFPS();
+    }
+
+    public class AppStatus implements AppStatusMBean {
+        private int debugLevel;
+        private int nbEntities, pipelineSize;
+        boolean pauseStatus;
+        private long realFPS, timeRendering, timeUpdate;
+        private String programName;
+
+        public AppStatus(Application app, String name) {
+            this.programName = name;
+            this.nbEntities = 0;
+        }
+
+        public void register(Application app) {
+            try {
+                // Register the object in the MBeanServer
+                MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
+                ObjectName objectName = new ObjectName("com.demoing.app:name=" + programName);
+                platformMBeanServer.registerMBean(this, objectName);
+            } catch (InstanceAlreadyExistsException
+                    | MBeanRegistrationException
+                    | NotCompliantMBeanException
+                    | MalformedObjectNameException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        public synchronized void update(Application app) {
+            nbEntities = app.entities.size();
+            realFPS = app.realFps;
+            pipelineSize = app.render.gPipeline.size();
+            timeRendering = app.render.renderingTime;
+            timeUpdate = app.physicEngine.updateTime;
+            pauseStatus = app.pause;
+            debugLevel = app.config.debug;
+        }
+
+
+        @Override
+        public synchronized Integer getDebugLevel() {
+            return debugLevel;
+        }
+
+        @Override
+        public synchronized void setDebugLevel(Integer d) {
+            config.debug = d.intValue();
+        }
+
+        @Override
+        public synchronized Integer getNbEntities() {
+            return nbEntities;
+        }
+
+        @Override
+        public synchronized Integer getPipelineSize() {
+            return pipelineSize;
+        }
+
+        @Override
+        public synchronized Boolean getPauseStatus() {
+            return pauseStatus;
+        }
+
+        @Override
+        public void setPauseStatus(Boolean p) {
+            pause = p;
+        }
+
+        @Override
+        public synchronized Long getTimeUpdate() {
+            return timeUpdate;
+        }
+
+        @Override
+        public synchronized Long getTimeRendering() {
+            return timeRendering;
+        }
+
+        @Override
+        public synchronized Long getRealFPS() {
+            return realFPS;
+        }
     }
 
     public static class Configuration {
@@ -114,6 +209,7 @@ public class Application extends JFrame implements KeyListener {
         Application app;
         BufferedImage buffer;
         private Font debugFont;
+        long renderingTime = 0;
 
         private List<Entity> gPipeline = new CopyOnWriteArrayList<>();
         Camera activeCamera;
@@ -140,6 +236,7 @@ public class Application extends JFrame implements KeyListener {
          * @param realFps the real measured Frame Per Second value to be displayed in debug mode (if required).
          */
         public void draw(long realFps) {
+            long startTime = System.nanoTime();
             Graphics2D g = buffer.createGraphics();
 
             g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
@@ -195,7 +292,7 @@ public class Application extends JFrame implements KeyListener {
                     });
             g.dispose();
             renderToScreen(realFps);
-
+            renderingTime = System.nanoTime() - startTime;
         }
 
         /**
@@ -308,6 +405,7 @@ public class Application extends JFrame implements KeyListener {
     public static class PhysicEngine {
         private final Application app;
         private final World world;
+        public long updateTime;
 
         public PhysicEngine(Application a, World w) {
             this.app = a;
@@ -315,6 +413,7 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public void update(double elapsed) {
+            long start = System.nanoTime();
             // update entities
             app.entities.values().forEach((e) -> {
                 if (e.physicType.equals(PhysicType.DYNAMIC)) {
@@ -333,6 +432,7 @@ public class Application extends JFrame implements KeyListener {
             if (Optional.ofNullable(app.render.activeCamera).isPresent()) {
                 app.render.activeCamera.update(elapsed);
             }
+            updateTime = System.nanoTime() - start;
         }
 
         private void updateEntity(Entity e, double elapsed) {
@@ -698,7 +798,9 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
-    private boolean exit;
+    public boolean exit = false;
+
+    public boolean pause = false;
 
     private final boolean[] prevKeys = new boolean[65536];
     private final boolean[] keys = new boolean[65536];
@@ -708,6 +810,8 @@ public class Application extends JFrame implements KeyListener {
     private Render render;
     private PhysicEngine physicEngine;
     private ActionHandler actionHandler;
+
+    private AppStatus appStats;
 
     private long realFps = 0;
 
@@ -738,7 +842,16 @@ public class Application extends JFrame implements KeyListener {
         } catch (IOException | FontFormatException e) {
             System.out.println("ERR: Unable to initialize scene: " + e.getLocalizedMessage());
         }
+
+        createJMXStatus(this);
+
     }
+
+    private void createJMXStatus(Application application) {
+        appStats = new AppStatus(application, "Application");
+        appStats.register(application);
+    }
+
 
     private void reset() {
         try {
@@ -945,7 +1058,9 @@ public class Application extends JFrame implements KeyListener {
             double elapsed = start - previous;
 
             input();
-            physicEngine.update(Math.min(elapsed, config.frameTime));
+            if (!pause) {
+                physicEngine.update(Math.min(elapsed, config.frameTime));
+            }
             render.draw(realFps);
 
             // wait at least 1ms.
@@ -963,6 +1078,9 @@ public class Application extends JFrame implements KeyListener {
             } catch (InterruptedException ie) {
                 System.out.println("Unable to wait for " + waitTime + ": " + ie.getLocalizedMessage());
             }
+
+            // Update JMX metrics
+            appStats.update(this);
 
             previous = start;
         }
