@@ -283,10 +283,14 @@ public class Application extends JFrame implements KeyListener {
                                     case RECTANGLE -> g.fillRect((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height);
                                     case ELLIPSE -> g.fillArc((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height, 0, 360);
                                     case IMAGE -> {
-                                        if (ee.isAnimation()) {
-                                            g.drawImage(ee.animation.getFrame(), (int) ee.x, (int) ee.y, null);
+                                        BufferedImage sprite = (BufferedImage) (ee.isAnimation() ? ee.animation.getFrame() : ee.image);
+                                        if (ee.getDirection() > 0) {
+                                            g.drawImage(sprite, (int) ee.x, (int) ee.y, null);
                                         } else {
-                                            g.drawImage(ee.image, (int) ee.x, (int) ee.y, null);
+                                            g.drawImage(sprite,
+                                                    (int) (ee.x - ee.width), (int) ee.y, (int) (ee.width), (int) ee.height,
+                                                    (int) ee.x, (int) ee.y, (int) -ee.width, (int) ee.height,
+                                                    null);
                                         }
                                     }
                                 }
@@ -326,7 +330,12 @@ public class Application extends JFrame implements KeyListener {
                         if (config.debug > 2) {
                             g.drawString(String.format("spd:%03.2f,%03.2f", e.dx, e.dy), offsetX, offsetY + (lineHeight * 4));
                             g.drawString(String.format("acc:%03.2f,%03.2f", e.ax, e.ay), offsetX, offsetY + (lineHeight * 5));
+                            if (config.debug > 3 && e.isAnimation()) {
+                                g.drawString(String.format("anKey:%s", e.animation.currentAnimationSet), offsetX, offsetY + (lineHeight * 6));
+                                g.drawString(String.format("anFrm:%d", e.animation.currentFrame), offsetX, offsetY + (lineHeight * 7));
+                            }
                         }
+
                     }
                 }
             }
@@ -741,6 +750,10 @@ public class Application extends JFrame implements KeyListener {
             animation.setFrameDuration(frameDuration);
             return this;
         }
+
+        public int getDirection() {
+            return (int) Math.signum(x);
+        }
     }
 
     public static class Animation {
@@ -762,9 +775,11 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public Animation activate(String key) {
-            this.currentFrame = 0;
-            this.internalAnimationTime = 0;
             this.currentAnimationSet = key;
+            if (currentFrame > this.animationSet.get(key).length) {
+                this.currentFrame = 0;
+                this.internalAnimationTime = 0;
+            }
             return this;
         }
 
@@ -782,7 +797,7 @@ public class Application extends JFrame implements KeyListener {
             }
         }
 
-        public void update(long elapsedTime) {
+        public synchronized void update(long elapsedTime) {
             internalAnimationTime += elapsedTime;
             if (internalAnimationTime > frameDuration) {
                 internalAnimationTime = 0;
@@ -790,8 +805,9 @@ public class Application extends JFrame implements KeyListener {
             }
         }
 
-        public BufferedImage getFrame() {
+        public synchronized BufferedImage getFrame() {
             if (animationSet.get(currentAnimationSet) != null) {
+                currentFrame = currentFrame > animationSet.get(currentAnimationSet).length ? 0 : currentFrame;
                 return animationSet.get(currentAnimationSet)[currentFrame];
             }
             return null;
@@ -993,13 +1009,18 @@ public class Application extends JFrame implements KeyListener {
                 .setAttribute("score", 0)
                 .setAttribute("energy", 100)
                 .setAttribute("mana", 100)
-                .setAttribute("accStep", 0.15)
+                .setAttribute("accStep", 0.05)
                 .addAnimation("idle",
                         0, 0,
                         32, 32,
                         13,
                         "/images/sprites01.png")
-                .setFrameDuration(300)
+                .addAnimation("walk",
+                        0, 32,
+                        32, 32,
+                        8,
+                        "/images/sprites01.png")
+                .setFrameDuration(200)
                 .activateAnimation("idle");
 
         addEntity(player);
@@ -1188,14 +1209,16 @@ public class Application extends JFrame implements KeyListener {
     private void input() {
         Entity p = entities.get("player");
         if (Optional.ofNullable(p).isPresent()) {
-            double speed = (double) p.getAttribute("accStep", 4.0);
+            double speed = (double) p.getAttribute("accStep", 2.0);
             boolean action = (boolean) p.getAttribute("action", false);
-
+            p.activateAnimation("idle");
             if (getKeyPressed(KeyEvent.VK_LEFT)) {
+                p.activateAnimation("walk");
                 p.forces.add(new Vec2d(-speed, 0.0));
                 action = true;
             }
             if (getKeyPressed(KeyEvent.VK_RIGHT)) {
+                p.activateAnimation("walk");
                 p.forces.add(new Vec2d(speed, 0.0));
                 action = true;
             }
