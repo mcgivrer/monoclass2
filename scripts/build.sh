@@ -1,5 +1,5 @@
-#!/bin/bash
 #!/bin/sh
+#!/bin/bash
 # more info at https://gist.github.com/mcgivrer/a31510019029eba73edf5721a93c3dec
 # Copyright 2020 Frederic Delorme (McGivrer) fredericDOTdelormeATgmailDOTcom
 #
@@ -16,9 +16,9 @@ export TARGET=target
 export BUILD=$TARGET/build
 export CLASSES=$TARGET/classes
 export RESOURCES=$SRC/main/resources
-export COMPILATION_OPTS=-Xlint:deprecation --enable-preview -Xlint:preview 
+export COMPILATION_OPTS=--enable-preview -Xlint:deprecation -Xlint:preview 
 export JAR_OPTS=
-
+#
 function manifest(){
 	mkdir $TARGET
 	touch $TARGET/manifest.mf
@@ -33,7 +33,7 @@ function manifest(){
 	echo "Implementation-Author: $AUTHOR_NAME">>$TARGET/manifest.mf
 	echo "   |_ done"
 }
-
+#
 function compile(){
 	echo "compile sources "
 	echo "> from : $SRC"
@@ -44,38 +44,38 @@ function compile(){
 	rm -Rf $CLASSES/*
 	echo "|_ 2. compile sources from '$SRC' ..."
 	find $SRC -name '*.java'  > $LIBS/sources.lst
-	javac @$LIBS/options.txt $COMPILATION_OPTS @$LIBS/sources.lst -cp $CLASSES 
+	javac $COMPILATION_OPTS @$LIBS/options.txt  @$LIBS/sources.lst -cp $CLASSES 
 	echo "   done."
 }
-
+#
 function createJar(){
-	echo "|_ 3. package jar file '$PROGRAM_NAME.jar'..."
+	echo "|_ 3. package jar file '$PROGRAM_NAME-$PROGRAM_VERSION.jar'..."
 
 	if ([ $(ls $CLASSES | wc -l  | grep -w "0") ])
 	then
 		echo 'No compiled class files'
 	else
 		# Build JAR
-		jar -cfmv $JAR_OPTS $TARGET/$PROGRAM_NAME.jar $TARGET/manifest.mf -C $CLASSES . -C $RESOURCES .
+		jar -cfmv $JAR_OPTS $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar $TARGET/manifest.mf -C $CLASSES . -C $RESOURCES .
 	fi
 
 	echo "   |_ done."
 }
-
+#
 function wrapJar(){
 	# create runnable program
-	echo "|_ 4. create run file '$PROGRAM_NAME.run'..."
+	echo "|_ 4. create run file '$PROGRAM_NAME-$PROGRAM_VERSION.run'..."
 	mkdir -p $BUILD
-	cat $LIBS/stub.sh $TARGET/$PROGRAM_NAME.jar > $BUILD/$PROGRAM_NAME.run
-	chmod +x $BUILD/$PROGRAM_NAME.run
+	cat $LIBS/stub.sh $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar > $BUILD/$PROGRAM_NAME-$PROGRAM_VERSION.run
+	chmod +x $BUILD/$PROGRAM_NAME-$PROGRAM_VERSION.run
 	echo "   |_ done."
 }
-
+#
 function sign(){
         # must see here: https://docs.oracle.com/javase/tutorial/security/toolsign/signer.html
 	echo "not already implemented... sorry"
 }
-
+#
 function help(){
 	echo "build2 command line usage :"
 	echo "---------------------------"
@@ -90,9 +90,9 @@ function help(){
 	echo " (c)2020 MIT License Frederic Delorme (@McGivrer) fredericDOTdelormeATgmailDOTcom"
 	echo " --"
 }
-
+#
 function run(){
-	echo "Build of program '$PROGRAM_NAME' ..."
+	echo "Build of program '$PROGRAM_NAME-$PROGRAM_VERSION' ..."
 	echo "-----------"
 	case $1 in
 	  a|A|all)
@@ -121,5 +121,5 @@ function run(){
 	echo "-----------"
 	echo "... done".
 }
-
+#
 run $1

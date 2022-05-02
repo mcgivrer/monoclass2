@@ -6,11 +6,13 @@ import java.awt.event.KeyListener;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 
+import javax.management.*;
 import javax.swing.JFrame;
 
 import static com.demoing.app.Application.EntityType.*;
@@ -38,14 +40,139 @@ public class Application extends JFrame implements KeyListener {
         RIGHT
     }
 
-    public interface AppStatus {
-        long getNbEntities();
+    public interface AppStatusMBean {
+        Integer getDebugLevel();
 
-        long getPipelineSize();
+        void setDebugLevel(Integer d);
 
-        long getPauseSatus();
+        Integer getNbEntities();
 
-        double getGravity();
+        Integer getPipelineSize();
+
+        Boolean getPauseStatus();
+
+        void setPauseStatus(Boolean pause);
+
+        Long getTimeUpdate();
+
+        Long getTimeRendering();
+
+        Long getRealFPS();
+
+        void requestQuit();
+
+        void requestAddEntity(Integer add);
+
+        void requestremoveEntity(Integer add);
+
+        void requestReset();
+
+    }
+
+    public class AppStatus implements AppStatusMBean {
+        private Application app;
+        private int debugLevel;
+        private int nbEntities, pipelineSize;
+        boolean pauseStatus;
+        private long realFPS, timeRendering, timeUpdate;
+        private String programName;
+
+        public AppStatus(Application app, String name) {
+            this.programName = name;
+            this.nbEntities = 0;
+        }
+
+        public void register(Application app) {
+            this.app = app;
+            try {
+                // Register the object in the MBeanServer
+                MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
+                ObjectName objectName = new ObjectName("com.demoing.app:name=" + programName);
+                platformMBeanServer.registerMBean(this, objectName);
+            } catch (InstanceAlreadyExistsException
+                    | MBeanRegistrationException
+                    | NotCompliantMBeanException
+                    | MalformedObjectNameException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        public synchronized void update(Application app) {
+            nbEntities = app.entities.size();
+            realFPS = app.realFps;
+            pipelineSize = app.render.gPipeline.size();
+            timeRendering = app.render.renderingTime;
+            timeUpdate = app.physicEngine.updateTime;
+            pauseStatus = app.pause;
+            debugLevel = app.config.debug;
+        }
+
+        @Override
+        public synchronized Integer getDebugLevel() {
+            return debugLevel;
+        }
+
+        @Override
+        public synchronized void setDebugLevel(Integer d) {
+            config.debug = d.intValue();
+        }
+
+        @Override
+        public synchronized Integer getNbEntities() {
+            return nbEntities;
+        }
+
+        @Override
+        public synchronized Integer getPipelineSize() {
+            return pipelineSize;
+        }
+
+        @Override
+        public synchronized Boolean getPauseStatus() {
+            return pauseStatus;
+        }
+
+        @Override
+        public void setPauseStatus(Boolean p) {
+            pause = p;
+        }
+
+        @Override
+        public synchronized Long getTimeUpdate() {
+            return timeUpdate;
+        }
+
+        @Override
+        public synchronized Long getTimeRendering() {
+            return timeRendering;
+        }
+
+        @Override
+        public synchronized Long getRealFPS() {
+            return realFPS;
+        }
+
+        @Override
+        public synchronized void requestQuit() {
+            app.exit = true;
+
+        }
+
+        @Override
+        public synchronized void requestAddEntity(Integer nbEntity) {
+            app.generateEntity("entity_", nbEntity, 0.25);
+        }
+
+        @Override
+        public synchronized void requestremoveEntity(Integer nbEntity) {
+            app.removeEntity("entity_", nbEntity);
+        }
+
+        @Override
+        public synchronized void requestReset() {
+            app.reset();
+        }
     }
 
     public static class Configuration {
@@ -113,20 +240,22 @@ public class Application extends JFrame implements KeyListener {
         Application app;
         BufferedImage buffer;
         private Font debugFont;
+        long renderingTime = 0;
 
-        private final List<Entity> gPipeline = new CopyOnWriteArrayList<>();
+        private List<Entity> gPipeline = new CopyOnWriteArrayList<>();
         Camera activeCamera;
 
         public Render(Application a, Configuration c, World w) {
             this.app = a;
             this.config = c;
             this.world = w;
-            buffer = new BufferedImage((int) config.screenWidth, (int) config.screenHeight, BufferedImage.TYPE_INT_ARGB);
+            buffer = new BufferedImage((int) config.screenWidth, (int) config.screenHeight,
+                    BufferedImage.TYPE_INT_ARGB);
             Graphics2D g = buffer.createGraphics();
             try {
                 debugFont = Font.createFont(
-                                Font.PLAIN,
-                                Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
+                        Font.PLAIN,
+                        Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
                         .deriveFont(9.0f);
             } catch (FontFormatException | IOException e) {
                 System.out.println("ERR: Unable to initialize Render: " + e.getLocalizedMessage());
@@ -134,14 +263,20 @@ public class Application extends JFrame implements KeyListener {
         }
 
         /**
-         * Drawing all object in the {@link Render#gPipeline}, according to the priority sort order.
+         * Drawing all object in the {@link Render#gPipeline}, according to the priority
+         * sort order.
          *
-         * @param realFps the real measured Frame Per Second value to be displayed in debug mode (if required).
+         * @param realFps the real measured Frame Per Second value to be displayed in
+         *                debug mode (if required).
          */
         public void draw(long realFps) {
+            long startTime = System.nanoTime();
             Graphics2D g = buffer.createGraphics();
+
+            g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
             g.setColor(Color.BLACK);
             g.fillRect(0, 0, (int) config.screenWidth, (int) config.screenHeight);
             moveCamera(g, activeCamera, -1);
@@ -164,14 +299,25 @@ public class Application extends JFrame implements KeyListener {
                                 g.drawString(te.text, (int) (te.x + offsetX), (int) te.y);
                                 e.width = size;
                                 e.height = g.getFontMetrics().getHeight();
-                                e.box.setRect(e.x + offsetX, e.y - e.height + g.getFontMetrics().getDescent(), e.width, e.height);
+                                e.box.setRect(e.x + offsetX, e.y - e.height + g.getFontMetrics().getDescent(), e.width,
+                                        e.height);
                             }
-
+                            case GaugeEntity ge -> {
+                                g.setColor(Color.BLACK);
+                                g.fillRect((int) ge.x, (int) ge.y, (int) ge.width, (int) ge.height);
+                                g.setColor(ge.border);
+                                g.fillRect((int) ge.x, (int) ge.y, (int) ge.width, (int) ge.height);
+                                int value = (int) ((ge.value / ge.maxValue) * ge.width - 2);
+                                g.setColor(ge.color);
+                                g.fillRect((int) (ge.x) + 1, (int) (ge.y) + 1, value, (int) (ge.height) - 2);
+                            }
                             // This is a basic entity
                             case Entity ee -> {
                                 switch (ee.type) {
-                                    case RECTANGLE -> g.fillRect((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height);
-                                    case ELLIPSE -> g.fillArc((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height, 0, 360);
+                                    case RECTANGLE ->
+                                        g.fillRect((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height);
+                                    case ELLIPSE ->
+                                        g.fillArc((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height, 0, 360);
                                     case IMAGE -> g.drawImage(ee.image, (int) ee.x, (int) ee.y, null);
                                 }
                             }
@@ -183,11 +329,12 @@ public class Application extends JFrame implements KeyListener {
                     });
             g.dispose();
             renderToScreen(realFps);
-
+            renderingTime = System.nanoTime() - startTime;
         }
 
         /**
-         * Display debug information on the {@link Entity } according to the current Application level of debug.
+         * Display debug information on the {@link Entity } according to the current
+         * Application level of debug.
          *
          * @param g Graphics API to use to draw things !
          * @param e the Entity to be displayed info to.
@@ -195,21 +342,24 @@ public class Application extends JFrame implements KeyListener {
         private void drawDebugInfo(Graphics2D g, Entity e) {
             if (config.debug > 0) {
                 g.setColor(Color.ORANGE);
-                if (Optional.ofNullable(e.box).isPresent()) g.draw(e.box);
+                if (Optional.ofNullable(e.box).isPresent())
+                    g.draw(e.box);
                 if (config.debug > 0) {
                     g.setFont(debugFont);
                     int lineHeight = g.getFontMetrics().getHeight();// + g.getFontMetrics().getDescent();
                     g.setColor(Color.ORANGE);
                     int offsetX = (int) (e.x + e.width + 4);
                     int offsetY = (int) (e.y - 8);
-                    g.drawString(String.format("#%d", e.id), e.x, offsetY);
+                    g.drawString(String.format("#%d", e.id), (int) e.x, offsetY);
                     if (config.debug > 1) {
                         g.drawString(String.format("name:%s", e.name), offsetX, offsetY + lineHeight);
                         g.drawString(String.format("pos:%03.0f,%03.0f", e.x, e.y), offsetX, offsetY + (lineHeight * 2));
                         g.drawString(String.format("life:%d", e.life), offsetX, offsetY + (lineHeight * 3));
                         if (config.debug > 2) {
-                            g.drawString(String.format("spd:%03.2f,%03.2f", e.dx, e.dy), offsetX, offsetY + (lineHeight * 4));
-                            g.drawString(String.format("acc:%03.2f,%03.2f", e.ax, e.ay), offsetX, offsetY + (lineHeight * 5));
+                            g.drawString(String.format("spd:%03.2f,%03.2f", e.dx, e.dy), offsetX,
+                                    offsetY + (lineHeight * 4));
+                            g.drawString(String.format("acc:%03.2f,%03.2f", e.ax, e.ay), offsetX,
+                                    offsetY + (lineHeight * 5));
                         }
                     }
                 }
@@ -220,7 +370,8 @@ public class Application extends JFrame implements KeyListener {
          * Draw a global grid corresponding to the World object defining the play area.
          *
          * @param g     Graphics API to use to draw things !
-         * @param world the World object to be used as reference to build grid and debug info.
+         * @param world the World object to be used as reference to build grid and debug
+         *              info.
          * @param tw    width of a grid cell.
          * @param th    height of a grid cell.
          */
@@ -236,7 +387,8 @@ public class Application extends JFrame implements KeyListener {
         }
 
         /**
-         * After the Buffer rendering operation performed in {@link Render#draw(long)}, the buffer is coped to the JFrame content.
+         * After the Buffer rendering operation performed in {@link Render#draw(long)},
+         * the buffer is coped to the JFrame content.
          *
          * @param realFps the measured frame rate per seconds
          */
@@ -250,7 +402,12 @@ public class Application extends JFrame implements KeyListener {
             if (config.debug > 0) {
                 g2.setFont(debugFont.deriveFont(16.0f));
                 g2.setColor(Color.WHITE);
-                g2.drawString(String.format("fps:%d", realFps), 20, app.getHeight() - 30);
+                g2.drawString(String.format("[ dbg: %d| fps:%d | obj:%d | g:%f ]",
+                        config.debug,
+                        realFps,
+                        gPipeline.size(),
+                        world.gravity),
+                        20, app.getHeight() - 30);
             }
             g2.dispose();
         }
@@ -261,11 +418,17 @@ public class Application extends JFrame implements KeyListener {
             }
         }
 
-        public void addToPipeline(Entity entity) {
+        public Render addToPipeline(Entity entity) {
             if (!gPipeline.contains(entity)) {
                 gPipeline.add(entity);
                 gPipeline.sort((o1, o2) -> o1.priority < o2.priority ? -1 : 1);
             }
+            return this;
+        }
+
+        public Render addCamera(Camera cam) {
+            this.activeCamera = cam;
+            return this;
         }
 
         public void clear() {
@@ -276,11 +439,16 @@ public class Application extends JFrame implements KeyListener {
             clear();
             buffer = null;
         }
+
+        public void remove(Entity e) {
+            gPipeline.remove(e);
+        }
     }
 
     public static class PhysicEngine {
         private final Application app;
         private final World world;
+        public long updateTime;
 
         public PhysicEngine(Application a, World w) {
             this.app = a;
@@ -288,6 +456,7 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public void update(double elapsed) {
+            long start = System.nanoTime();
             // update entities
             app.entities.values().forEach((e) -> {
                 if (e.physicType.equals(PhysicType.DYNAMIC)) {
@@ -306,6 +475,7 @@ public class Application extends JFrame implements KeyListener {
             if (Optional.ofNullable(app.render.activeCamera).isPresent()) {
                 app.render.activeCamera.update(elapsed);
             }
+            updateTime = System.nanoTime() - start;
         }
 
         private void updateEntity(Entity e, double elapsed) {
@@ -363,6 +533,32 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public void dispose() {
+
+        }
+    }
+
+    public static class ActionHandler implements KeyListener {
+        private final boolean[] prevKeys = new boolean[65536];
+        private final boolean[] keys = new boolean[65536];
+        private boolean anyKeyPressed;
+
+        private Map<Integer, Function> actionMapping = new HashMap<>();
+
+        @Override
+        public void keyTyped(KeyEvent e) {
+
+        }
+
+        @Override
+        public void keyPressed(KeyEvent e) {
+            if (actionMapping.containsKey(e.getKeyCode())) {
+                Function f = actionMapping.get(e.getKeyCode());
+                f.apply(e);
+            }
+        }
+
+        @Override
+        public void keyReleased(KeyEvent e) {
 
         }
     }
@@ -584,6 +780,35 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    public static class GaugeEntity extends Entity {
+        double value = 0;
+        private double maxValue;
+        private double minValue;
+        private Color border = Color.GRAY;
+        private Color shadow = Color.DARK_GRAY;
+
+        public GaugeEntity(String name) {
+            super(name);
+            physicType = PhysicType.STATIC;
+            stickToCamera = true;
+        }
+
+        public GaugeEntity setValue(double v) {
+            this.value = v;
+            return this;
+        }
+
+        public GaugeEntity setMax(double mxV) {
+            this.maxValue = mxV;
+            return this;
+        }
+
+        public GaugeEntity setMin(double mnV) {
+            this.minValue = mnV;
+            return this;
+        }
+    }
+
     public static class Camera extends Entity {
 
         private Entity target;
@@ -616,28 +841,31 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    public boolean exit = false;
 
-    private boolean exit;
-
+    public boolean pause = false;
 
     private final boolean[] prevKeys = new boolean[65536];
     private final boolean[] keys = new boolean[65536];
     private boolean anyKeyPressed;
 
-    Configuration config;
+    private Configuration config;
     private Render render;
     private PhysicEngine physicEngine;
+    private ActionHandler actionHandler;
+
+    private AppStatus appStats;
 
     private long realFps = 0;
 
-    private final Map<String, Entity> entities = new HashMap<>();
+    private Map<String, Entity> entities = new HashMap<>();
 
     private World world;
 
-    public Application(){
+    public Application() {
     }
 
-    protected void run(String[] args){
+    protected void run(String[] args) {
         initialize(args);
         loop();
         dispose();
@@ -650,12 +878,21 @@ public class Application extends JFrame implements KeyListener {
                 .setGravity(config.worldGravity);
         render = new Render(this, config, world);
         physicEngine = new PhysicEngine(this, world);
+        actionHandler = new ActionHandler();
         createWindow();
         try {
             createScene();
         } catch (IOException | FontFormatException e) {
             System.out.println("ERR: Unable to initialize scene: " + e.getLocalizedMessage());
         }
+
+        createJMXStatus(this);
+
+    }
+
+    private void createJMXStatus(Application application) {
+        appStats = new AppStatus(application, "Application");
+        appStats.register(application);
     }
 
     private void reset() {
@@ -671,21 +908,27 @@ public class Application extends JFrame implements KeyListener {
 
     private void createWindow() {
         setTitle(I18n.get("app.title"));
+
         setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/sg-logo-image.png")));
-        Dimension dim = new Dimension((int) (config.screenWidth * config.displayScale), (int) (config.screenHeight * config.displayScale));
+        Dimension dim = new Dimension((int) (config.screenWidth * config.displayScale),
+                (int) (config.screenHeight * config.displayScale));
+
         setSize(dim);
         setPreferredSize(dim);
         setMaximumSize(dim);
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
         setFocusTraversalKeysEnabled(true);
+
         setLocationRelativeTo(null);
         addKeyListener(this);
+        addKeyListener(actionHandler);
         pack();
         setVisible(true);
     }
 
     protected void createScene() throws IOException, FontFormatException {
-        world.setGravity(-0.008);
         world.setFriction(0.98);
 
         // A main player Entity.
@@ -705,17 +948,43 @@ public class Application extends JFrame implements KeyListener {
                 .setAttribute("accStep", 0.15);
         addEntity(player);
 
+        actionHandler.actionMapping = Map.of(
+                KeyEvent.VK_ESCAPE, o -> {
+                    reset();
+                    return this;
+                },
+                KeyEvent.VK_D, o -> {
+                    config.debug = config.debug + 1 < 5 ? config.debug + 1 : 0;
+                    return this;
+                },
+                KeyEvent.VK_Z, o -> {
+                    emitPerturbationOnEntity("ball_", 2.5);
+                    return this;
+                },
+                KeyEvent.VK_PAGE_UP, o -> {
+                    generateEntity("ball_", 5, 2.5);
+                    return this;
+                },
+                KeyEvent.VK_PAGE_DOWN, o -> {
+                    removeEntity("ball_", 5);
+                    return this;
+                },
+                KeyEvent.VK_BACK_SPACE, o -> {
+                    removeEntity("ball_", -1);
+                    return this;
+                });
+
         Camera cam = new Camera("cam01")
                 .setViewport(new Rectangle2D.Double(0, 0, config.screenWidth, config.screenHeight))
                 .setTarget(player)
                 .setTweenFactor(0.005);
-        addCamera(cam);
+        render.addCamera(cam);
 
         generateEntity("ball_", 5, 2.5);
 
         Font wlcFont = Font.createFont(
-                        Font.PLAIN,
-                        Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
+                Font.PLAIN,
+                Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
                 .deriveFont(12.0f);
 
         // Score Display
@@ -732,8 +1001,7 @@ public class Application extends JFrame implements KeyListener {
                 .setStickToCamera(true);
         addEntity(scoreTxtE);
 
-
-        Font lifeFont = new Font("Noto Mono for Powerline", Font.PLAIN, 16);
+        Font lifeFont = new Font("Arial", Font.PLAIN, 16);
         TextEntity lifeTxt = (TextEntity) new TextEntity("score")
                 .setText("5")
                 .setAlign(TextAlign.LEFT)
@@ -741,24 +1009,57 @@ public class Application extends JFrame implements KeyListener {
                 .setPosition(config.screenWidth - 40, 30)
                 .setColor(Color.RED)
                 .setLife(-1)
+                .setPriority(10)
                 .setStickToCamera(true);
         addEntity(lifeTxt);
+
+        GaugeEntity energyGauge = (GaugeEntity) new GaugeEntity("energy")
+                .setMax(100.0)
+                .setMin(0.0)
+                .setValue((int) player.getAttribute("energy", 100.0))
+                .setColor(Color.RED)
+                .setSize(32, 6)
+                .setPriority(10)
+                .setPosition(config.screenWidth - 40 - 4 - 32, 25);
+        addEntity(energyGauge);
+        GaugeEntity manaGauge = (GaugeEntity) new GaugeEntity("energy")
+                .setMax(100.0)
+                .setMin(0.0)
+                .setValue((int) player.getAttribute("mana", 100.0))
+                .setColor(Color.BLUE)
+                .setSize(32, 6)
+                .setPriority(10)
+                .setPosition(config.screenWidth - 40 - 4 - 32, 15);
+        addEntity(manaGauge);
 
         // A welcome Text
         TextEntity welcomeMsg = (TextEntity) new TextEntity("welcome")
                 .setText(I18n.get("app.message.welcome"))
                 .setAlign(TextAlign.CENTER)
                 .setFont(wlcFont)
-                .setPosition(world.area.getWidth() * 0.5, world.area.getHeight() * 0.8)
+                .setPosition(config.screenWidth * 0.5, config.screenHeight * 0.8)
                 .setColor(Color.WHITE)
                 .setLife(5000)
+                .setPriority(20)
                 .setStickToCamera(true);
         addEntity(welcomeMsg);
     }
 
+    private void removeEntity(String filterValue, int i) {
+        i = (i == -1) ? entities.size() : i;
+        List<Entity> etbr = entities.values().stream().filter(e -> e.name.contains(filterValue)).limit(i).toList();
+        for (int idx = 0; idx < i; idx++) {
+            if (idx < etbr.size()) {
+                Entity e = etbr.get(idx);
+                entities.remove(e.name);
+                render.remove(e);
+            }
+        }
+    }
+
     private void generateEntity(String namePrefix, int nbEntity, double acc) {
         for (int i = 0; i < nbEntity; i++) {
-            Entity e = new Entity(namePrefix + i)
+            Entity e = new Entity(namePrefix + entityIndex)
                     .setType(ELLIPSE)
                     .setSize(8, 8)
                     .setPosition(Math.random() * world.area.getWidth(), Math.random() * world.area.getHeight())
@@ -771,7 +1072,6 @@ public class Application extends JFrame implements KeyListener {
                     .setFriction(0.98)
                     .setMass(20.0)
                     .setPriority(2);
-
             addEntity(e);
         }
     }
@@ -790,11 +1090,6 @@ public class Application extends JFrame implements KeyListener {
         entities.put(entity.name, entity);
     }
 
-
-    private void addCamera(Camera cam) {
-        render.activeCamera = cam;
-    }
-
     private void loop() {
         long timeFrame = 0, frames = 0;
         long previous = System.currentTimeMillis();
@@ -804,7 +1099,9 @@ public class Application extends JFrame implements KeyListener {
             double elapsed = start - previous;
 
             input();
-            physicEngine.update(Math.min(elapsed, config.frameTime));
+            if (!pause) {
+                physicEngine.update(Math.min(elapsed, config.frameTime));
+            }
             render.draw(realFps);
 
             // wait at least 1ms.
@@ -823,14 +1120,17 @@ public class Application extends JFrame implements KeyListener {
                 System.out.println("Unable to wait for " + waitTime + ": " + ie.getLocalizedMessage());
             }
 
+            // Update JMX metrics
+            appStats.update(this);
+
             previous = start;
         }
     }
 
     private void input() {
-        boolean action = false;
         Entity p = entities.get("player");
         double speed = (double) p.getAttribute("accStep", 4.0);
+        boolean action = (boolean) p.getAttribute("action", false);
 
         if (getKeyPressed(KeyEvent.VK_LEFT)) {
             p.forces.add(new Vec2d(-speed, 0.0));
@@ -848,16 +1148,6 @@ public class Application extends JFrame implements KeyListener {
             p.forces.add(new Vec2d(0.0, speed));
             action = true;
         }
-        if (getKeyReleased(KeyEvent.VK_ESCAPE)) {
-            reset();
-        }
-        if (getKeyReleased(KeyEvent.VK_D)) {
-            config.debug = config.debug + 1 < 5 ? config.debug + 1 : 0;
-        }
-
-        if (getKeyPressed(KeyEvent.VK_Z)) {
-            emitPerturbationOnEntity("ball_", 2.5);
-        }
 
         if (!action) {
             p.dx *= p.friction;
@@ -865,7 +1155,6 @@ public class Application extends JFrame implements KeyListener {
         }
 
     }
-
 
     @Override
     public void paint(Graphics g) {
@@ -912,16 +1201,14 @@ public class Application extends JFrame implements KeyListener {
         return status;
     }
 
-    public boolean isAnyKeyPressed() {
-        return anyKeyPressed;
-    }
-
     public static void main(String[] args) {
         try {
             Application app = new Application();
             app.run(args);
         } catch (Exception e) {
-            System.out.printf("ERR: Unable to run application: %s", e.getLocalizedMessage());
+            System.out.printf("ERR: Unable to run application: %s",
+                    e.getLocalizedMessage()
+                            + " => " + e.getStackTrace().toString());
         }
     }
 
