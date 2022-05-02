@@ -288,8 +288,8 @@ public class Application extends JFrame implements KeyListener {
                                             g.drawImage(sprite, (int) ee.x, (int) ee.y, null);
                                         } else {
                                             g.drawImage(sprite,
-                                                    (int) (ee.x - ee.width), (int) ee.y, (int) (ee.width), (int) ee.height,
-                                                    (int) ee.x, (int) ee.y, (int) -ee.width, (int) ee.height,
+                                                    (int) (ee.x + ee.width), (int) ee.y,
+                                                    (int) (-ee.width), (int) ee.height,
                                                     null);
                                         }
                                     }
@@ -428,7 +428,7 @@ public class Application extends JFrame implements KeyListener {
             this.world = w;
         }
 
-        public void update(double elapsed) {
+        public synchronized void update(double elapsed) {
             long start = System.nanoTime();
             // update entities
             app.entities.values().forEach((e) -> {
@@ -724,8 +724,6 @@ public class Application extends JFrame implements KeyListener {
             box.setRect(x, y, width, height);
             if (Optional.ofNullable(animation).isPresent()) {
                 animation.update((long) elapsed);
-                this.width = animation.getFrame().getWidth();
-                this.height = animation.getFrame().getHeight();
             }
         }
 
@@ -752,14 +750,14 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public int getDirection() {
-            return (int) Math.signum(x);
+            return this.dx > 0 ? 1 : -1;
         }
     }
 
     public static class Animation {
         Map<String, BufferedImage[]> animationSet = new HashMap<>();
-        String currentAnimationSet;
-        int currentFrame;
+        public String currentAnimationSet;
+        public int currentFrame;
         private long internalAnimationTime;
 
         private long frameDuration = 150; // frameDuration in ms
@@ -806,8 +804,8 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public synchronized BufferedImage getFrame() {
-            if (animationSet.get(currentAnimationSet) != null) {
-                currentFrame = currentFrame > animationSet.get(currentAnimationSet).length ? 0 : currentFrame;
+            if (animationSet.get(currentAnimationSet) != null
+                    && currentFrame < animationSet.get(currentAnimationSet).length) {
                 return animationSet.get(currentAnimationSet)[currentFrame];
             }
             return null;
@@ -960,7 +958,6 @@ public class Application extends JFrame implements KeyListener {
         appStats.register(application);
     }
 
-
     private void reset() {
         try {
             render.clear();
@@ -1000,6 +997,7 @@ public class Application extends JFrame implements KeyListener {
         Entity player = new Entity("player")
                 .setType(IMAGE)
                 .setPosition(world.area.getWidth() * 0.5, world.area.getHeight() * 0.5)
+                .setSize(32.0, 32.0)
                 .setElasticity(0.89)
                 .setFriction(0.98)
                 .setColor(Color.RED)
@@ -1020,7 +1018,12 @@ public class Application extends JFrame implements KeyListener {
                         32, 32,
                         8,
                         "/images/sprites01.png")
-                .setFrameDuration(200)
+                .addAnimation("jump",
+                        0, 5 * 32,
+                        32, 32,
+                        6,
+                        "/images/sprites01.png")
+                .setFrameDuration(120)
                 .activateAnimation("idle");
 
         addEntity(player);
@@ -1078,7 +1081,6 @@ public class Application extends JFrame implements KeyListener {
                 .setLife(-1)
                 .setStickToCamera(true);
         addEntity(scoreTxtE);
-
 
         Font lifeFont = new Font("Arial", Font.PLAIN, 16);
         TextEntity lifeTxt = (TextEntity) new TextEntity("score")
@@ -1209,7 +1211,8 @@ public class Application extends JFrame implements KeyListener {
     private void input() {
         Entity p = entities.get("player");
         if (Optional.ofNullable(p).isPresent()) {
-            double speed = (double) p.getAttribute("accStep", 2.0);
+            double speed = (double) p.getAttribute("accStep", 0.05);
+            double jumpFactor = (double) p.getAttribute("jumpFactor", 12.0);
             boolean action = (boolean) p.getAttribute("action", false);
             p.activateAnimation("idle");
             if (getKeyPressed(KeyEvent.VK_LEFT)) {
@@ -1223,7 +1226,8 @@ public class Application extends JFrame implements KeyListener {
                 action = true;
             }
             if (getKeyPressed(KeyEvent.VK_UP)) {
-                p.forces.add(new Vec2d(0.0, -4 * speed));
+                p.activateAnimation("jump");
+                p.forces.add(new Vec2d(0.0, -jumpFactor * speed));
                 action = true;
             }
             if (getKeyPressed(KeyEvent.VK_DOWN)) {
