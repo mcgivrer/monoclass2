@@ -744,8 +744,8 @@ public class Application extends JFrame implements KeyListener {
             return this;
         }
 
-        public Entity setFrameDuration(int frameDuration) {
-            animation.setFrameDuration(frameDuration);
+        public Entity setFrameDuration(String key, int frameDuration) {
+            animation.setFrameDuration(key, frameDuration);
             return this;
         }
 
@@ -756,19 +756,19 @@ public class Application extends JFrame implements KeyListener {
 
     public static class Animation {
         Map<String, BufferedImage[]> animationSet = new HashMap<>();
+        Map<String, Integer> frameDuration = new HashMap<>();
         public String currentAnimationSet;
         public int currentFrame;
         private long internalAnimationTime;
-
-        private long frameDuration = 150; // frameDuration in ms
 
         public Animation() {
             currentAnimationSet = null;
             currentFrame = 0;
         }
 
-        public Animation setFrameDuration(long time) {
-            this.frameDuration = time;
+        public Animation setFrameDuration(String key, int time) {
+
+            this.frameDuration.put(key, time);
             return this;
         }
 
@@ -797,7 +797,7 @@ public class Application extends JFrame implements KeyListener {
 
         public synchronized void update(long elapsedTime) {
             internalAnimationTime += elapsedTime;
-            if (internalAnimationTime > frameDuration) {
+            if (internalAnimationTime > frameDuration.get(currentAnimationSet)) {
                 internalAnimationTime = 0;
                 currentFrame = currentFrame + 1 < animationSet.get(currentAnimationSet).length ? currentFrame + 1 : 0;
             }
@@ -1023,7 +1023,9 @@ public class Application extends JFrame implements KeyListener {
                         32, 32,
                         6,
                         "/images/sprites01.png")
-                .setFrameDuration(60)
+                .setFrameDuration("idle", 200)
+                .setFrameDuration("walk", 60)
+                .setFrameDuration("jump", 60)
                 .activateAnimation("idle");
 
         addEntity(player);
@@ -1180,9 +1182,7 @@ public class Application extends JFrame implements KeyListener {
             double elapsed = start - previous;
 
             input();
-            if (!pause) {
-                physicEngine.update(Math.min(elapsed, config.frameTime));
-            }
+            update(elapsed);
             render.draw(realFps);
 
             // wait at least 1ms.
@@ -1205,6 +1205,22 @@ public class Application extends JFrame implements KeyListener {
             appStats.update(this);
 
             previous = start;
+        }
+    }
+
+    private synchronized void update(double elapsed) {
+        if (!pause) {
+            physicEngine.update(Math.min(elapsed, config.frameTime));
+            if (entities.containsKey("player") && entities.containsKey("score")) {
+                Entity p = entities.get("player");
+                int score = (int) p.getAttribute("score", 0);
+                score += 10;
+                p.setAttribute("score", score);
+
+                TextEntity scoreEntity = (TextEntity) entities.get("score");
+                scoreEntity.setText(String.format("%06d", score));
+
+            }
         }
     }
 
