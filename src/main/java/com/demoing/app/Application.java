@@ -282,7 +282,13 @@ public class Application extends JFrame implements KeyListener {
                                 switch (ee.type) {
                                     case RECTANGLE -> g.fillRect((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height);
                                     case ELLIPSE -> g.fillArc((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height, 0, 360);
-                                    case IMAGE -> g.drawImage(ee.image, (int) ee.x, (int) ee.y, null);
+                                    case IMAGE -> {
+                                        if (ee.isAnimation()) {
+                                            g.drawImage(ee.animation.getFrame(), (int) ee.x, (int) ee.y, null);
+                                        } else {
+                                            g.drawImage(ee.image, (int) ee.x, (int) ee.y, null);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -582,6 +588,7 @@ public class Application extends JFrame implements KeyListener {
         public int priority;
         protected EntityType type = RECTANGLE;
         public Image image;
+        public Animation animation;
         public Color color = Color.BLUE;
         public boolean stickToCamera;
 
@@ -704,7 +711,35 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public void update(double elapsed) {
+
             box.setRect(x, y, width, height);
+            if (Optional.ofNullable(animation).isPresent()) {
+                animation.update((long) elapsed);
+                this.width = animation.getFrame().getWidth();
+                this.height = animation.getFrame().getHeight();
+            }
+        }
+
+        public Entity addAnimation(String key, int x, int y, int tw, int th, int nbFrames, String pathToImage) {
+            if (Optional.ofNullable(this.animation).isEmpty()) {
+                this.animation = new Animation();
+            }
+            this.animation.addAnimationSet(key, pathToImage, x, y, tw, th, nbFrames);
+            return this;
+        }
+
+        public boolean isAnimation() {
+            return Optional.ofNullable(this.animation).isPresent();
+        }
+
+        public Entity activateAnimation(String key) {
+            animation.activate(key);
+            return this;
+        }
+
+        public Entity setFrameDuration(int frameDuration) {
+            animation.setFrameDuration(frameDuration);
+            return this;
         }
     }
 
@@ -733,17 +768,17 @@ public class Application extends JFrame implements KeyListener {
             return this;
         }
 
-        public void addAnimationSet(String key, String imgSrc, int tw, int th, int x, int y, int nbFrames) {
+        public void addAnimationSet(String key, String imgSrc, int x, int y, int tw, int th, int nbFrames) {
             try {
                 BufferedImage image = ImageIO.read(this.getClass().getResourceAsStream(imgSrc));
                 BufferedImage[] buffer = new BufferedImage[nbFrames];
                 for (int i = 0; i < nbFrames; i++) {
-                    BufferedImage frame = image.getSubimage(x, y + (i * th), tw, th);
+                    BufferedImage frame = image.getSubimage(x + (i * tw), y, tw, th);
                     buffer[i] = frame;
                 }
                 animationSet.put(key, buffer);
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("ERR: unable to read image from '" + imgSrc + "'");
             }
         }
 
@@ -751,8 +786,8 @@ public class Application extends JFrame implements KeyListener {
             internalAnimationTime += elapsedTime;
             if (internalAnimationTime > frameDuration) {
                 internalAnimationTime = 0;
+                currentFrame = currentFrame + 1 < animationSet.get(currentAnimationSet).length ? currentFrame + 1 : 0;
             }
-            currentFrame = currentFrame < animationSet.get(currentAnimationSet).length ? currentFrame + 1 : 0;
         }
 
         public BufferedImage getFrame() {
@@ -761,6 +796,7 @@ public class Application extends JFrame implements KeyListener {
             }
             return null;
         }
+
     }
 
     public static class TextEntity extends Entity {
@@ -946,11 +982,10 @@ public class Application extends JFrame implements KeyListener {
 
         // A main player Entity.
         Entity player = new Entity("player")
-                .setType(RECTANGLE)
+                .setType(IMAGE)
                 .setPosition(world.area.getWidth() * 0.5, world.area.getHeight() * 0.5)
                 .setElasticity(0.89)
                 .setFriction(0.98)
-                .setSize(16, 16)
                 .setColor(Color.RED)
                 .setPriority(1)
                 .setMass(40.0)
@@ -958,7 +993,15 @@ public class Application extends JFrame implements KeyListener {
                 .setAttribute("score", 0)
                 .setAttribute("energy", 100)
                 .setAttribute("mana", 100)
-                .setAttribute("accStep", 0.15);
+                .setAttribute("accStep", 0.15)
+                .addAnimation("idle",
+                        0, 0,
+                        32, 32,
+                        13,
+                        "/images/sprites01.png")
+                .setFrameDuration(300)
+                .activateAnimation("idle");
+
         addEntity(player);
 
         actionHandler.actionMapping = Map.of(
@@ -1144,31 +1187,32 @@ public class Application extends JFrame implements KeyListener {
 
     private void input() {
         Entity p = entities.get("player");
-        double speed = (double) p.getAttribute("accStep", 4.0);
-        boolean action = (boolean) p.getAttribute("action", false);
+        if (Optional.ofNullable(p).isPresent()) {
+            double speed = (double) p.getAttribute("accStep", 4.0);
+            boolean action = (boolean) p.getAttribute("action", false);
 
-        if (getKeyPressed(KeyEvent.VK_LEFT)) {
-            p.forces.add(new Vec2d(-speed, 0.0));
-            action = true;
-        }
-        if (getKeyPressed(KeyEvent.VK_RIGHT)) {
-            p.forces.add(new Vec2d(speed, 0.0));
-            action = true;
-        }
-        if (getKeyPressed(KeyEvent.VK_UP)) {
-            p.forces.add(new Vec2d(0.0, -4 * speed));
-            action = true;
-        }
-        if (getKeyPressed(KeyEvent.VK_DOWN)) {
-            p.forces.add(new Vec2d(0.0, speed));
-            action = true;
-        }
+            if (getKeyPressed(KeyEvent.VK_LEFT)) {
+                p.forces.add(new Vec2d(-speed, 0.0));
+                action = true;
+            }
+            if (getKeyPressed(KeyEvent.VK_RIGHT)) {
+                p.forces.add(new Vec2d(speed, 0.0));
+                action = true;
+            }
+            if (getKeyPressed(KeyEvent.VK_UP)) {
+                p.forces.add(new Vec2d(0.0, -4 * speed));
+                action = true;
+            }
+            if (getKeyPressed(KeyEvent.VK_DOWN)) {
+                p.forces.add(new Vec2d(0.0, speed));
+                action = true;
+            }
 
-        if (!action) {
-            p.dx *= p.friction;
-            p.dx *= p.friction;
+            if (!action) {
+                p.dx *= p.friction;
+                p.dx *= p.friction;
+            }
         }
-
     }
 
     @Override
@@ -1223,7 +1267,8 @@ public class Application extends JFrame implements KeyListener {
         } catch (Exception e) {
             System.out.printf("ERR: Unable to run application: %s",
                     e.getLocalizedMessage()
-                            + " => " + e.getStackTrace().toString());
+                            + " => ");
+            e.printStackTrace();
         }
     }
 
