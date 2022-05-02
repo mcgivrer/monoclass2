@@ -1023,7 +1023,7 @@ public class Application extends JFrame implements KeyListener {
                         32, 32,
                         6,
                         "/images/sprites01.png")
-                .setFrameDuration(120)
+                .setFrameDuration(60)
                 .activateAnimation("idle");
 
         addEntity(player);
