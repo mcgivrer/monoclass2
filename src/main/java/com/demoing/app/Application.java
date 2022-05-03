@@ -1085,7 +1085,7 @@ public class Application extends JFrame implements KeyListener {
         addEntity(scoreTxtE);
 
         Font lifeFont = new Font("Arial", Font.PLAIN, 16);
-        TextEntity lifeTxt = (TextEntity) new TextEntity("score")
+        TextEntity lifeTxt = (TextEntity) new TextEntity("life")
                 .setText("5")
                 .setAlign(TextAlign.LEFT)
                 .setFont(lifeFont)

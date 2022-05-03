@@ -17,7 +17,7 @@ export BUILD=$TARGET/build
 export CLASSES=$TARGET/classes
 export RESOURCES=$SRC/main/resources
 export COMPILATION_OPTS=--enable-preview  -Xlint:deprecation -Xlint:preview
-export JAR_OPTS=
+export JAR_OPTS=--enable-preview
 
 function manifest(){
 	mkdir $TARGET
@@ -71,6 +71,16 @@ function wrapJar(){
 	echo "   |_ done."
 }
 
+function executeJar(){
+  if [ -f "$TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar" ]; then
+    manifest
+    compile
+    createJar
+  fi
+  echo "|_ 5.Execute just created JAR $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar"
+  java $JAR_OPTS -jar $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar
+}
+
 function sign(){
         # must see here: https://docs.oracle.com/javase/tutorial/security/toolsign/signer.html
 	echo "not already implemented... sorry"
@@ -86,8 +96,9 @@ function help(){
 	echo " - j|J|jar     : build JAR with all resources"
 	echo " - w|W|wrap    : Build and wrap jar as a shell script"
 	echo " - s|S|sign    : Build and wrap signed jar as a shell script"
+  echo " - r|R|run     : execute (and build if needed) the created JAR"
 	echo ""
-	echo " (c)2020 MIT License Frederic Delorme (@McGivrer) fredericDOTdelormeATgmailDOTcom"
+	echo " (c)2022 MIT License Frederic Delorme (@McGivrer) fredericDOTdelormeATgmailDOTcom"
 	echo " --"
 }
 
@@ -114,7 +125,10 @@ function run(){
 	  s|S|sign)
 	    sign $2
 	    ;;
-	  h|H|?|*)
+    r|R|run)
+      executeJar
+      ;;
+    h|H|?|*)
 		help
 		;;
 	esac
