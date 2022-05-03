@@ -22,6 +22,7 @@ public class Application extends JFrame implements KeyListener {
     private static final int FPS_DEFAULT = 60;
 
     private static long entityIndex = 0;
+    private Map<String, Scene> scenes = new HashMap<>();
 
     public enum EntityType {
         RECTANGLE,
@@ -161,12 +162,10 @@ public class Application extends JFrame implements KeyListener {
 
         @Override
         public synchronized void requestAddEntity(Integer nbEntity) {
-            app.generateEntity("entity_", nbEntity, 0.25);
         }
 
         @Override
         public synchronized void requestremoveEntity(Integer nbEntity) {
-            app.removeEntity("entity_", nbEntity);
         }
 
         @Override
@@ -947,6 +946,271 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    public interface Scene {
+        void create(Application app) throws IOException, FontFormatException;
+
+        void update(Application app, double elapsed);
+
+        void input(Application app);
+    }
+
+    public static class DemoScene implements Scene {
+        private final String name;
+
+        public DemoScene(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public void create(Application app) throws IOException, FontFormatException {
+            app.world.setFriction(0.98);
+
+            // A main player Entity.
+            Entity player = new Entity("player")
+                    .setType(IMAGE)
+                    .setPosition(app.world.area.getWidth() * 0.5, app.world.area.getHeight() * 0.5)
+                    .setSize(32.0, 32.0)
+                    .setElasticity(0.89)
+                    .setFriction(0.98)
+                    .setColor(Color.RED)
+                    .setPriority(1)
+                    .setMass(40.0)
+                    .setAttribute("life", 5)
+                    .setAttribute("score", 0)
+                    .setAttribute("energy", 100)
+                    .setAttribute("mana", 100)
+                    .setAttribute("accStep", 0.05)
+                    .addAnimation("idle",
+                            0, 0,
+                            32, 32,
+                            13,
+                            "/images/sprites01.png")
+                    .addAnimation("walk",
+                            0, 32,
+                            32, 32,
+                            8,
+                            "/images/sprites01.png")
+                    .addAnimation("jump",
+                            0, 5 * 32,
+                            32, 32,
+                            6,
+                            "/images/sprites01.png")
+                    .setFrameDuration("idle", 200)
+                    .setFrameDuration("walk", 60)
+                    .setFrameDuration("jump", 60)
+                    .activateAnimation("idle");
+
+            app.addEntity(player);
+
+            Camera cam = new Camera("cam01")
+                    .setViewport(new Rectangle2D.Double(0, 0, app.config.screenWidth, app.config.screenHeight))
+                    .setTarget(player)
+                    .setTweenFactor(0.005);
+            app.render.addCamera(cam);
+
+            generateEntity(app, "ball_", 5, 2.5);
+
+            Font wlcFont = Font.createFont(
+                            Font.PLAIN,
+                            Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
+                    .deriveFont(12.0f);
+
+            // Score Display
+            int score = (int) player.getAttribute("score", 0);
+            Font scoreFont = wlcFont.deriveFont(16.0f);
+            String scoreTxt = String.format("%06d", score);
+            TextEntity scoreTxtE = (TextEntity) new TextEntity("score")
+                    .setText(scoreTxt)
+                    .setAlign(TextAlign.LEFT)
+                    .setFont(scoreFont)
+                    .setPosition(20, 30)
+                    .setColor(Color.WHITE)
+                    .setLife(-1)
+                    .setStickToCamera(true);
+            app.addEntity(scoreTxtE);
+
+            Font lifeFont = new Font("Arial", Font.PLAIN, 16);
+            TextEntity lifeTxt = (TextEntity) new TextEntity("life")
+                    .setText("5")
+                    .setAlign(TextAlign.LEFT)
+                    .setFont(lifeFont)
+                    .setPosition(app.config.screenWidth - 40, 30)
+                    .setColor(Color.RED)
+                    .setLife(-1)
+                    .setPriority(10)
+                    .setStickToCamera(true);
+            app.addEntity(lifeTxt);
+
+            GaugeEntity energyGauge = (GaugeEntity) new GaugeEntity("energy")
+                    .setMax(100.0)
+                    .setMin(0.0)
+                    .setValue((int) player.getAttribute("energy", 100.0))
+                    .setColor(Color.RED)
+                    .setSize(32, 6)
+                    .setPriority(10)
+                    .setPosition(app.config.screenWidth - 40 - 4 - 32, 25);
+            app.addEntity(energyGauge);
+            GaugeEntity manaGauge = (GaugeEntity) new GaugeEntity("energy")
+                    .setMax(100.0)
+                    .setMin(0.0)
+                    .setValue((int) player.getAttribute("mana", 100.0))
+                    .setColor(Color.BLUE)
+                    .setSize(32, 6)
+                    .setPriority(10)
+                    .setPosition(app.config.screenWidth - 40 - 4 - 32, 15);
+            app.addEntity(manaGauge);
+
+            // A welcome Text
+            TextEntity welcomeMsg = (TextEntity) new TextEntity("welcome")
+                    .setText(I18n.get("app.message.welcome"))
+                    .setAlign(TextAlign.CENTER)
+                    .setFont(wlcFont)
+                    .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
+                    .setColor(Color.WHITE)
+                    .setLife(5000)
+                    .setPriority(20)
+                    .setStickToCamera(true);
+            app.addEntity(welcomeMsg);
+
+
+            // mapping of keys actions:
+
+            app.actionHandler.actionMapping = Map.of(
+                    // reset the scene
+                    KeyEvent.VK_Z, o -> {
+                        app.reset();
+                        return this;
+                    },
+                    // manage debug level
+                    KeyEvent.VK_D, o -> {
+                        app.config.debug = app.config.debug + 1 < 5 ? app.config.debug + 1 : 0;
+                        return this;
+                    },
+                    // create perturbation on "ball" objects
+                    KeyEvent.VK_P, o -> {
+                        emitPerturbationOnEntity(app, "ball_", 2.5);
+                        return this;
+                    },
+                    // add new balls
+                    KeyEvent.VK_PAGE_UP, o -> {
+                        generateEntity(app, "ball_", 5, 2.5);
+                        return this;
+                    },
+                    // remove balls
+                    KeyEvent.VK_PAGE_DOWN, o -> {
+                        removeEntity(app, "ball_", 5);
+                        return this;
+                    },
+                    // remove all balls
+                    KeyEvent.VK_BACK_SPACE, o -> {
+                        removeEntity(app, "ball_", -1);
+                        return this;
+                    },
+                    // I quit !
+                    KeyEvent.VK_ESCAPE, o -> {
+                        app.requestExit();
+                        return this;
+                    }
+            );
+        }
+
+        @Override
+        public void update(Application app, double elapsed) {
+            if (app.entities.containsKey("player") && app.entities.containsKey("score")) {
+                Entity p = app.entities.get("player");
+                int score = (int) p.getAttribute("score", 0);
+                score += 10;
+                p.setAttribute("score", score);
+
+                TextEntity scoreEntity = (TextEntity) app.entities.get("score");
+                scoreEntity.setText(String.format("%06d", score));
+
+            }
+        }
+
+        @Override
+        public void input(Application app) {
+            Entity p = app.entities.get("player");
+            if (Optional.ofNullable(p).isPresent()) {
+                double speed = (double) p.getAttribute("accStep", 0.05);
+                double jumpFactor = (double) p.getAttribute("jumpFactor", 12.0);
+                boolean action = (boolean) p.getAttribute("action", false);
+                if (app.isCtrlPressed()) {
+                    speed *= 2;
+                }
+                if (app.isShiftPressed()) {
+                    speed *= 4;
+                }
+                p.activateAnimation("idle");
+                if (app.getKeyPressed(KeyEvent.VK_LEFT)) {
+                    p.activateAnimation("walk");
+                    p.forces.add(new Vec2d(-speed, 0.0));
+                    action = true;
+                }
+                if (app.getKeyPressed(KeyEvent.VK_RIGHT)) {
+                    p.activateAnimation("walk");
+                    p.forces.add(new Vec2d(speed, 0.0));
+                    action = true;
+                }
+                if (app.getKeyPressed(KeyEvent.VK_UP)) {
+                    p.activateAnimation("jump");
+                    p.forces.add(new Vec2d(0.0, -jumpFactor * speed));
+                    action = true;
+                }
+                if (app.getKeyPressed(KeyEvent.VK_DOWN)) {
+                    p.forces.add(new Vec2d(0.0, speed));
+                    action = true;
+                }
+
+                if (!action) {
+                    p.dx *= p.friction;
+                    p.dx *= p.friction;
+                }
+            }
+        }
+
+        public void removeEntity(Application app, String filterValue, int i) {
+            i = (i == -1) ? app.entities.size() : i;
+            List<Entity> etbr = app.entities.values().stream().filter(e -> e.name.contains(filterValue)).limit(i).toList();
+            for (int idx = 0; idx < i; idx++) {
+                if (idx < etbr.size()) {
+                    Entity e = etbr.get(idx);
+                    app.entities.remove(e.name);
+                    app.render.remove(e);
+                }
+            }
+        }
+
+        private void generateEntity(Application app, String namePrefix, int nbEntity, double acc) {
+            for (int i = 0; i < nbEntity; i++) {
+                Entity e = new Entity(namePrefix + entityIndex)
+                        .setType(ELLIPSE)
+                        .setSize(8, 8)
+                        .setPosition(Math.random() * app.world.area.getWidth(), Math.random() * app.world.area.getHeight())
+                        .setAcceleration(
+                                (Math.random() * 2 * acc) - acc,
+                                (Math.random() * 2 * acc) - acc)
+                        .setColor(new Color((float) Math.random(), (float) Math.random(), (float) Math.random()))
+                        .setLife((int) ((Math.random() * 5) + 5) * 5000)
+                        .setElasticity(0.65)
+                        .setFriction(0.98)
+                        .setMass(20.0)
+                        .setPriority(2);
+                app.addEntity(e);
+            }
+        }
+
+        private void emitPerturbationOnEntity(Application app, String filterPrefix, double waveSize) {
+            app.entities.values()
+                    .stream()
+                    .filter(e -> e.name.startsWith(filterPrefix)).toList()
+                    .forEach(e -> e.forces.add(new Vec2d(
+                            (Math.random() * 2 * waveSize) - waveSize,
+                            (Math.random() * 2 * waveSize) - waveSize)));
+        }
+
+    }
+
     public boolean exit = false;
 
     public boolean pause = false;
@@ -961,6 +1225,7 @@ public class Application extends JFrame implements KeyListener {
     private Render render;
     private PhysicEngine physicEngine;
     private ActionHandler actionHandler;
+    private Scene activeScene;
 
     private AppStatus appStats;
 
@@ -988,6 +1253,10 @@ public class Application extends JFrame implements KeyListener {
         physicEngine = new PhysicEngine(this, world);
         actionHandler = new ActionHandler();
         createWindow();
+
+        // add a new scene
+        scenes.put("demo", new DemoScene("demo"));
+        activeScene = scenes.get("demo");
         try {
             createScene();
         } catch (IOException | FontFormatException e) {
@@ -995,7 +1264,6 @@ public class Application extends JFrame implements KeyListener {
         }
 
         createJMXStatus(this);
-
     }
 
     private void createJMXStatus(Application application) {
@@ -1038,225 +1306,11 @@ public class Application extends JFrame implements KeyListener {
     }
 
     protected void createScene() throws IOException, FontFormatException {
-        world.setFriction(0.98);
-
-        // A main player Entity.
-        Entity player = new Entity("player")
-                .setType(IMAGE)
-                .setPosition(world.area.getWidth() * 0.5, world.area.getHeight() * 0.5)
-                .setSize(32.0, 32.0)
-                .setElasticity(0.89)
-                .setFriction(0.98)
-                .setColor(Color.RED)
-                .setPriority(1)
-                .setMass(40.0)
-                .setAttribute("life", 5)
-                .setAttribute("score", 0)
-                .setAttribute("energy", 100)
-                .setAttribute("mana", 100)
-                .setAttribute("accStep", 0.05)
-                .addAnimation("idle",
-                        0, 0,
-                        32, 32,
-                        13,
-                        "/images/sprites01.png")
-                .addAnimation("walk",
-                        0, 32,
-                        32, 32,
-                        8,
-                        "/images/sprites01.png")
-                .addAnimation("jump",
-                        0, 5 * 32,
-                        32, 32,
-                        6,
-                        "/images/sprites01.png")
-                .setFrameDuration("idle", 200)
-                .setFrameDuration("walk", 60)
-                .setFrameDuration("jump", 60)
-                .activateAnimation("idle");
-
-        addEntity(player);
-
-        actionHandler.actionMapping = Map.of(
-                KeyEvent.VK_ESCAPE, o -> {
-                    reset();
-                    return this;
-                },
-                KeyEvent.VK_D, o -> {
-                    config.debug = config.debug + 1 < 5 ? config.debug + 1 : 0;
-                    return this;
-                },
-                KeyEvent.VK_Z, o -> {
-                    emitPerturbationOnEntity("ball_", 2.5);
-                    return this;
-                },
-                KeyEvent.VK_PAGE_UP, o -> {
-                    generateEntity("ball_", 5, 2.5);
-                    return this;
-                },
-                KeyEvent.VK_PAGE_DOWN, o -> {
-                    removeEntity("ball_", 5);
-                    return this;
-                },
-                KeyEvent.VK_BACK_SPACE, o -> {
-                    removeEntity("ball_", -1);
-                    return this;
-                });
-
-        Camera cam = new Camera("cam01")
-                .setViewport(new Rectangle2D.Double(0, 0, config.screenWidth, config.screenHeight))
-                .setTarget(player)
-                .setTweenFactor(0.005);
-        render.addCamera(cam);
-
-        generateEntity("ball_", 5, 2.5);
-
-        Font wlcFont = Font.createFont(
-                        Font.PLAIN,
-                        Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
-                .deriveFont(12.0f);
-
-        // Score Display
-        int score = (int) player.getAttribute("score", 0);
-        Font scoreFont = wlcFont.deriveFont(16.0f);
-        String scoreTxt = String.format("%06d", score);
-        TextEntity scoreTxtE = (TextEntity) new TextEntity("score")
-                .setText(scoreTxt)
-                .setAlign(TextAlign.LEFT)
-                .setFont(scoreFont)
-                .setPosition(20, 30)
-                .setColor(Color.WHITE)
-                .setLife(-1)
-                .setStickToCamera(true);
-        addEntity(scoreTxtE);
-
-        Font lifeFont = new Font("Arial", Font.PLAIN, 16);
-        TextEntity lifeTxt = (TextEntity) new TextEntity("life")
-                .setText("5")
-                .setAlign(TextAlign.LEFT)
-                .setFont(lifeFont)
-                .setPosition(config.screenWidth - 40, 30)
-                .setColor(Color.RED)
-                .setLife(-1)
-                .setPriority(10)
-                .setStickToCamera(true);
-        addEntity(lifeTxt);
-
-        GaugeEntity energyGauge = (GaugeEntity) new GaugeEntity("energy")
-                .setMax(100.0)
-                .setMin(0.0)
-                .setValue((int) player.getAttribute("energy", 100.0))
-                .setColor(Color.RED)
-                .setSize(32, 6)
-                .setPriority(10)
-                .setPosition(config.screenWidth - 40 - 4 - 32, 25);
-        addEntity(energyGauge);
-        GaugeEntity manaGauge = (GaugeEntity) new GaugeEntity("energy")
-                .setMax(100.0)
-                .setMin(0.0)
-                .setValue((int) player.getAttribute("mana", 100.0))
-                .setColor(Color.BLUE)
-                .setSize(32, 6)
-                .setPriority(10)
-                .setPosition(config.screenWidth - 40 - 4 - 32, 15);
-        addEntity(manaGauge);
-
-        // A welcome Text
-        TextEntity welcomeMsg = (TextEntity) new TextEntity("welcome")
-                .setText(I18n.get("app.message.welcome"))
-                .setAlign(TextAlign.CENTER)
-                .setFont(wlcFont)
-                .setPosition(config.screenWidth * 0.5, config.screenHeight * 0.8)
-                .setColor(Color.WHITE)
-                .setLife(5000)
-                .setPriority(20)
-                .setStickToCamera(true);
-        addEntity(welcomeMsg);
-
-
-        // mapping of keys actions:
-
-        actionHandler.actionMapping = Map.of(
-                // reset the scene
-                KeyEvent.VK_Z, o -> {
-                    reset();
-                    return this;
-                },
-                // manage debug level
-                KeyEvent.VK_D, o -> {
-                    config.debug = config.debug + 1 < 5 ? config.debug + 1 : 0;
-                    return this;
-                },
-                // create perturbation on "ball" objects
-                KeyEvent.VK_P, o -> {
-                    emitPerturbationOnEntity("ball_", 2.5);
-                    return this;
-                },
-                // add new balls
-                KeyEvent.VK_PAGE_UP, o -> {
-                    generateEntity("ball_", 5, 2.5);
-                    return this;
-                },
-                // remove balls
-                KeyEvent.VK_PAGE_DOWN, o -> {
-                    removeEntity("ball_", 5);
-                    return this;
-                },
-                // remove all balls
-                KeyEvent.VK_BACK_SPACE, o -> {
-                    removeEntity("ball_", -1);
-                    return this;
-                },
-                // I quit !
-                KeyEvent.VK_ESCAPE, o -> {
-                    requestExit();
-                    return this;
-                }
-        );
+        activeScene.create(this);
     }
 
     private void requestExit() {
         exit = true;
-    }
-
-    public void removeEntity(String filterValue, int i) {
-        i = (i == -1) ? entities.size() : i;
-        List<Entity> etbr = entities.values().stream().filter(e -> e.name.contains(filterValue)).limit(i).toList();
-        for (int idx = 0; idx < i; idx++) {
-            if (idx < etbr.size()) {
-                Entity e = etbr.get(idx);
-                entities.remove(e.name);
-                render.remove(e);
-            }
-        }
-    }
-
-    private void generateEntity(String namePrefix, int nbEntity, double acc) {
-        for (int i = 0; i < nbEntity; i++) {
-            Entity e = new Entity(namePrefix + entityIndex)
-                    .setType(ELLIPSE)
-                    .setSize(8, 8)
-                    .setPosition(Math.random() * world.area.getWidth(), Math.random() * world.area.getHeight())
-                    .setAcceleration(
-                            (Math.random() * 2 * acc) - acc,
-                            (Math.random() * 2 * acc) - acc)
-                    .setColor(new Color((float) Math.random(), (float) Math.random(), (float) Math.random()))
-                    .setLife((int) ((Math.random() * 5) + 5) * 5000)
-                    .setElasticity(0.65)
-                    .setFriction(0.98)
-                    .setMass(20.0)
-                    .setPriority(2);
-            addEntity(e);
-        }
-    }
-
-    private void emitPerturbationOnEntity(String filterPrefix, double waveSize) {
-        entities.values()
-                .stream()
-                .filter(e -> e.name.startsWith(filterPrefix)).toList()
-                .forEach(e -> e.forces.add(new Vec2d(
-                        (Math.random() * 2 * waveSize) - waveSize,
-                        (Math.random() * 2 * waveSize) - waveSize)));
     }
 
     private void addEntity(Entity entity) {
@@ -1299,64 +1353,14 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    private void input() {
+        activeScene.input(this);
+    }
+
     private synchronized void update(double elapsed) {
         if (!pause) {
             physicEngine.update(Math.min(elapsed, config.frameTime));
-            updateScene(elapsed);
-
-        }
-    }
-
-    private synchronized void updateScene(double elapsed){
-        if (entities.containsKey("player") && entities.containsKey("score")) {
-            Entity p = entities.get("player");
-            int score = (int) p.getAttribute("score", 0);
-            score += 10;
-            p.setAttribute("score", score);
-
-            TextEntity scoreEntity = (TextEntity) entities.get("score");
-            scoreEntity.setText(String.format("%06d", score));
-
-        }
-    }
-
-    private void input() {
-        Entity p = entities.get("player");
-        if (Optional.ofNullable(p).isPresent()) {
-            double speed = (double) p.getAttribute("accStep", 0.05);
-            double jumpFactor = (double) p.getAttribute("jumpFactor", 12.0);
-            boolean action = (boolean) p.getAttribute("action", false);
-            if (isCtrlPressed()) {
-                speed *= 2;
-            }
-            if (isShiftPressed()) {
-                speed *= 4;
-            }
-            p.activateAnimation("idle");
-            if (getKeyPressed(KeyEvent.VK_LEFT)) {
-                p.activateAnimation("walk");
-                p.forces.add(new Vec2d(-speed, 0.0));
-                action = true;
-            }
-            if (getKeyPressed(KeyEvent.VK_RIGHT)) {
-                p.activateAnimation("walk");
-                p.forces.add(new Vec2d(speed, 0.0));
-                action = true;
-            }
-            if (getKeyPressed(KeyEvent.VK_UP)) {
-                p.activateAnimation("jump");
-                p.forces.add(new Vec2d(0.0, -jumpFactor * speed));
-                action = true;
-            }
-            if (getKeyPressed(KeyEvent.VK_DOWN)) {
-                p.forces.add(new Vec2d(0.0, speed));
-                action = true;
-            }
-
-            if (!action) {
-                p.dx *= p.friction;
-                p.dx *= p.friction;
-            }
+            activeScene.update(this, elapsed);
         }
     }
 
@@ -1424,7 +1428,7 @@ public class Application extends JFrame implements KeyListener {
         } catch (Exception e) {
             System.out.printf("ERR: Unable to run application: %s",
                     e.getLocalizedMessage()
-                    + " => ");
+                            + " => ");
             e.printStackTrace();
         }
     }
