@@ -199,9 +199,12 @@ the Render and entity update to process animations set and display a moving Spri
 Animation is map of set of frames, each set of frame must ave a an easy way to define/identify it, 
 a simple String  key will do the job.
 
+>**NOTE**
+> _As a sample grpahics, we will use a sprites image board from [Elthen 'adventurer sprites]https://elthen.itch.io/pixel-art-adventurer-sprites thanks to his [fair licensing](https://www.patreon.com/posts/27430241)._
 
+![Sprites sheet from Elthen](../src/main/resources/images/sprites01.png)
 
-
+_figure 3 - The sprites resources used as animation sample._
 
 ## JMX metrics
 
