@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 
+import javax.imageio.ImageIO;
 import javax.management.*;
 import javax.swing.JFrame;
 
@@ -281,7 +282,17 @@ public class Application extends JFrame implements KeyListener {
                                 switch (ee.type) {
                                     case RECTANGLE -> g.fillRect((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height);
                                     case ELLIPSE -> g.fillArc((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height, 0, 360);
-                                    case IMAGE -> g.drawImage(ee.image, (int) ee.x, (int) ee.y, null);
+                                    case IMAGE -> {
+                                        BufferedImage sprite = (BufferedImage) (ee.isAnimation() ? ee.animation.getFrame() : ee.image);
+                                        if (ee.getDirection() > 0) {
+                                            g.drawImage(sprite, (int) ee.x, (int) ee.y, null);
+                                        } else {
+                                            g.drawImage(sprite,
+                                                    (int) (ee.x + ee.width), (int) ee.y,
+                                                    (int) (-ee.width), (int) ee.height,
+                                                    null);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -319,7 +330,12 @@ public class Application extends JFrame implements KeyListener {
                         if (config.debug > 2) {
                             g.drawString(String.format("spd:%03.2f,%03.2f", e.dx, e.dy), offsetX, offsetY + (lineHeight * 4));
                             g.drawString(String.format("acc:%03.2f,%03.2f", e.ax, e.ay), offsetX, offsetY + (lineHeight * 5));
+                            if (config.debug > 3 && e.isAnimation()) {
+                                g.drawString(String.format("anKey:%s", e.animation.currentAnimationSet), offsetX, offsetY + (lineHeight * 6));
+                                g.drawString(String.format("anFrm:%d", e.animation.currentFrame), offsetX, offsetY + (lineHeight * 7));
+                            }
                         }
+
                     }
                 }
             }
@@ -337,7 +353,11 @@ public class Application extends JFrame implements KeyListener {
             g.setColor(Color.BLUE);
             for (double tx = 0; tx < world.area.getWidth(); tx += tw) {
                 for (double ty = 0; ty < world.area.getHeight(); ty += th) {
-                    g.drawRect((int) tx, (int) ty, (int) tw, (int) th);
+                    double rh=th;
+                    if (ty + th > world.area.getHeight()) {
+                        rh = world.area.getHeight() % th;
+                    }
+                    g.drawRect((int) tx, (int) ty, (int) tw, (int) rh);
                 }
             }
             g.setColor(Color.DARK_GRAY);
@@ -412,7 +432,7 @@ public class Application extends JFrame implements KeyListener {
             this.world = w;
         }
 
-        public void update(double elapsed) {
+        public synchronized void update(double elapsed) {
             long start = System.nanoTime();
             // update entities
             app.entities.values().forEach((e) -> {
@@ -581,6 +601,7 @@ public class Application extends JFrame implements KeyListener {
         public int priority;
         protected EntityType type = RECTANGLE;
         public Image image;
+        public Animation animation;
         public Color color = Color.BLUE;
         public boolean stickToCamera;
 
@@ -703,8 +724,97 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public void update(double elapsed) {
+
             box.setRect(x, y, width, height);
+            if (Optional.ofNullable(animation).isPresent()) {
+                animation.update((long) elapsed);
+            }
         }
+
+        public Entity addAnimation(String key, int x, int y, int tw, int th, int nbFrames, String pathToImage) {
+            if (Optional.ofNullable(this.animation).isEmpty()) {
+                this.animation = new Animation();
+            }
+            this.animation.addAnimationSet(key, pathToImage, x, y, tw, th, nbFrames);
+            return this;
+        }
+
+        public boolean isAnimation() {
+            return Optional.ofNullable(this.animation).isPresent();
+        }
+
+        public Entity activateAnimation(String key) {
+            animation.activate(key);
+            return this;
+        }
+
+        public Entity setFrameDuration(String key, int frameDuration) {
+            animation.setFrameDuration(key, frameDuration);
+            return this;
+        }
+
+        public int getDirection() {
+            return this.dx > 0 ? 1 : -1;
+        }
+    }
+
+    public static class Animation {
+        Map<String, BufferedImage[]> animationSet = new HashMap<>();
+        Map<String, Integer> frameDuration = new HashMap<>();
+        public String currentAnimationSet;
+        public int currentFrame;
+        private long internalAnimationTime;
+
+        public Animation() {
+            currentAnimationSet = null;
+            currentFrame = 0;
+        }
+
+        public Animation setFrameDuration(String key, int time) {
+
+            this.frameDuration.put(key, time);
+            return this;
+        }
+
+        public Animation activate(String key) {
+            this.currentAnimationSet = key;
+            if (currentFrame > this.animationSet.get(key).length) {
+                this.currentFrame = 0;
+                this.internalAnimationTime = 0;
+            }
+            return this;
+        }
+
+        public void addAnimationSet(String key, String imgSrc, int x, int y, int tw, int th, int nbFrames) {
+            try {
+                BufferedImage image = ImageIO.read(this.getClass().getResourceAsStream(imgSrc));
+                BufferedImage[] buffer = new BufferedImage[nbFrames];
+                for (int i = 0; i < nbFrames; i++) {
+                    BufferedImage frame = image.getSubimage(x + (i * tw), y, tw, th);
+                    buffer[i] = frame;
+                }
+                animationSet.put(key, buffer);
+            } catch (IOException e) {
+                System.out.println("ERR: unable to read image from '" + imgSrc + "'");
+            }
+        }
+
+        public synchronized void update(long elapsedTime) {
+            internalAnimationTime += elapsedTime;
+            if (internalAnimationTime > frameDuration.get(currentAnimationSet)) {
+                internalAnimationTime = 0;
+                currentFrame = currentFrame + 1 < animationSet.get(currentAnimationSet).length ? currentFrame + 1 : 0;
+            }
+        }
+
+        public synchronized BufferedImage getFrame() {
+            if (animationSet.get(currentAnimationSet) != null
+                    && currentFrame < animationSet.get(currentAnimationSet).length) {
+                return animationSet.get(currentAnimationSet)[currentFrame];
+            }
+            return null;
+        }
+
     }
 
     public static class TextEntity extends Entity {
@@ -805,6 +915,9 @@ public class Application extends JFrame implements KeyListener {
     private final boolean[] prevKeys = new boolean[65536];
     private final boolean[] keys = new boolean[65536];
     private boolean anyKeyPressed;
+    private boolean keyCtrlPressed;
+    private boolean keyShiftPressed;
+
 
     private Configuration config;
     private Render render;
@@ -852,7 +965,6 @@ public class Application extends JFrame implements KeyListener {
         appStats.register(application);
     }
 
-
     private void reset() {
         try {
             render.clear();
@@ -890,11 +1002,11 @@ public class Application extends JFrame implements KeyListener {
 
         // A main player Entity.
         Entity player = new Entity("player")
-                .setType(RECTANGLE)
+                .setType(IMAGE)
                 .setPosition(world.area.getWidth() * 0.5, world.area.getHeight() * 0.5)
+                .setSize(32.0, 32.0)
                 .setElasticity(0.89)
                 .setFriction(0.98)
-                .setSize(16, 16)
                 .setColor(Color.RED)
                 .setPriority(1)
                 .setMass(40.0)
@@ -902,35 +1014,28 @@ public class Application extends JFrame implements KeyListener {
                 .setAttribute("score", 0)
                 .setAttribute("energy", 100)
                 .setAttribute("mana", 100)
-                .setAttribute("accStep", 0.15);
-        addEntity(player);
+                .setAttribute("accStep", 0.05)
+                .addAnimation("idle",
+                        0, 0,
+                        32, 32,
+                        13,
+                        "/images/sprites01.png")
+                .addAnimation("walk",
+                        0, 32,
+                        32, 32,
+                        8,
+                        "/images/sprites01.png")
+                .addAnimation("jump",
+                        0, 5 * 32,
+                        32, 32,
+                        6,
+                        "/images/sprites01.png")
+                .setFrameDuration("idle", 200)
+                .setFrameDuration("walk", 60)
+                .setFrameDuration("jump", 60)
+                .activateAnimation("idle");
 
-        actionHandler.actionMapping = Map.of(
-                KeyEvent.VK_ESCAPE, o -> {
-                    reset();
-                    return this;
-                },
-                KeyEvent.VK_D, o -> {
-                    config.debug = config.debug + 1 < 5 ? config.debug + 1 : 0;
-                    return this;
-                },
-                KeyEvent.VK_Z, o -> {
-                    emitPerturbationOnEntity("ball_", 2.5);
-                    return this;
-                },
-                KeyEvent.VK_PAGE_UP, o -> {
-                    generateEntity("ball_", 5, 2.5);
-                    return this;
-                },
-                KeyEvent.VK_PAGE_DOWN, o -> {
-                    removeEntity("ball_", 5);
-                    return this;
-                },
-                KeyEvent.VK_BACK_SPACE, o -> {
-                    removeEntity("ball_", -1);
-                    return this;
-                }
-        );
+        addEntity(player);
 
         Camera cam = new Camera("cam01")
                 .setViewport(new Rectangle2D.Double(0, 0, config.screenWidth, config.screenHeight))
@@ -959,9 +1064,8 @@ public class Application extends JFrame implements KeyListener {
                 .setStickToCamera(true);
         addEntity(scoreTxtE);
 
-
         Font lifeFont = new Font("Arial", Font.PLAIN, 16);
-        TextEntity lifeTxt = (TextEntity) new TextEntity("score")
+        TextEntity lifeTxt = (TextEntity) new TextEntity("life")
                 .setText("5")
                 .setAlign(TextAlign.LEFT)
                 .setFont(lifeFont)
@@ -1002,6 +1106,51 @@ public class Application extends JFrame implements KeyListener {
                 .setPriority(20)
                 .setStickToCamera(true);
         addEntity(welcomeMsg);
+
+
+        // mapping of keys actions:
+
+        actionHandler.actionMapping = Map.of(
+                // reset the scene
+                KeyEvent.VK_Z, o -> {
+                    reset();
+                    return this;
+                },
+                // manage debug level
+                KeyEvent.VK_D, o -> {
+                    config.debug = config.debug + 1 < 5 ? config.debug + 1 : 0;
+                    return this;
+                },
+                // create perturbation on "ball" objects
+                KeyEvent.VK_P, o -> {
+                    emitPerturbationOnEntity("ball_", 2.5);
+                    return this;
+                },
+                // add new balls
+                KeyEvent.VK_PAGE_UP, o -> {
+                    generateEntity("ball_", 5, 2.5);
+                    return this;
+                },
+                // remove balls
+                KeyEvent.VK_PAGE_DOWN, o -> {
+                    removeEntity("ball_", 5);
+                    return this;
+                },
+                // remove all balls
+                KeyEvent.VK_BACK_SPACE, o -> {
+                    removeEntity("ball_", -1);
+                    return this;
+                },
+                // I quit !
+                KeyEvent.VK_ESCAPE, o -> {
+                    requestExit();
+                    return this;
+                }
+        );
+    }
+
+    private void requestExit() {
+        exit = true;
     }
 
     private void removeEntity(String filterValue, int i) {
@@ -1058,9 +1207,7 @@ public class Application extends JFrame implements KeyListener {
             double elapsed = start - previous;
 
             input();
-            if (!pause) {
-                physicEngine.update(Math.min(elapsed, config.frameTime));
-            }
+            update(elapsed);
             render.draw(realFps);
 
             // wait at least 1ms.
@@ -1086,33 +1233,68 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    private synchronized void update(double elapsed) {
+        if (!pause) {
+            physicEngine.update(Math.min(elapsed, config.frameTime));
+            if (entities.containsKey("player") && entities.containsKey("score")) {
+                Entity p = entities.get("player");
+                int score = (int) p.getAttribute("score", 0);
+                score += 10;
+                p.setAttribute("score", score);
+
+                TextEntity scoreEntity = (TextEntity) entities.get("score");
+                scoreEntity.setText(String.format("%06d", score));
+
+            }
+        }
+    }
+
     private void input() {
         Entity p = entities.get("player");
-        double speed = (double) p.getAttribute("accStep", 4.0);
-        boolean action = (boolean) p.getAttribute("action", false);
+        if (Optional.ofNullable(p).isPresent()) {
+            double speed = (double) p.getAttribute("accStep", 0.05);
+            double jumpFactor = (double) p.getAttribute("jumpFactor", 12.0);
+            boolean action = (boolean) p.getAttribute("action", false);
+            if (isCtrlPressed()) {
+                speed *= 2;
+            }
+            if (isShiftPressed()) {
+                speed *= 4;
+            }
+            p.activateAnimation("idle");
+            if (getKeyPressed(KeyEvent.VK_LEFT)) {
+                p.activateAnimation("walk");
+                p.forces.add(new Vec2d(-speed, 0.0));
+                action = true;
+            }
+            if (getKeyPressed(KeyEvent.VK_RIGHT)) {
+                p.activateAnimation("walk");
+                p.forces.add(new Vec2d(speed, 0.0));
+                action = true;
+            }
+            if (getKeyPressed(KeyEvent.VK_UP)) {
+                p.activateAnimation("jump");
+                p.forces.add(new Vec2d(0.0, -jumpFactor * speed));
+                action = true;
+            }
+            if (getKeyPressed(KeyEvent.VK_DOWN)) {
+                p.forces.add(new Vec2d(0.0, speed));
+                action = true;
+            }
 
-        if (getKeyPressed(KeyEvent.VK_LEFT)) {
-            p.forces.add(new Vec2d(-speed, 0.0));
-            action = true;
+            if (!action) {
+                p.dx *= p.friction;
+                p.dx *= p.friction;
+            }
         }
-        if (getKeyPressed(KeyEvent.VK_RIGHT)) {
-            p.forces.add(new Vec2d(speed, 0.0));
-            action = true;
-        }
-        if (getKeyPressed(KeyEvent.VK_UP)) {
-            p.forces.add(new Vec2d(0.0, -4 * speed));
-            action = true;
-        }
-        if (getKeyPressed(KeyEvent.VK_DOWN)) {
-            p.forces.add(new Vec2d(0.0, speed));
-            action = true;
-        }
+    }
 
-        if (!action) {
-            p.dx *= p.friction;
-            p.dx *= p.friction;
-        }
+    private boolean isCtrlPressed() {
+        return keyCtrlPressed;
+    }
 
+    private boolean isShiftPressed() {
+        return keyShiftPressed;
     }
 
     @Override
@@ -1138,6 +1320,8 @@ public class Application extends JFrame implements KeyListener {
         prevKeys[e.getKeyCode()] = keys[e.getKeyCode()];
         keys[e.getKeyCode()] = true;
         anyKeyPressed = true;
+        this.keyCtrlPressed = e.isControlDown();
+        this.keyShiftPressed = e.isShiftDown();
     }
 
     @Override
@@ -1145,7 +1329,8 @@ public class Application extends JFrame implements KeyListener {
         prevKeys[e.getKeyCode()] = keys[e.getKeyCode()];
         keys[e.getKeyCode()] = false;
         anyKeyPressed = false;
-
+        this.keyCtrlPressed = e.isControlDown();
+        this.keyShiftPressed = e.isShiftDown();
     }
 
     public boolean getKeyPressed(int keyCode) {
@@ -1167,7 +1352,8 @@ public class Application extends JFrame implements KeyListener {
         } catch (Exception e) {
             System.out.printf("ERR: Unable to run application: %s",
                     e.getLocalizedMessage()
-                            + " => " + e.getStackTrace().toString());
+                            + " => ");
+            e.printStackTrace();
         }
     }
 

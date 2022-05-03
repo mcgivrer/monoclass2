@@ -17,10 +17,12 @@ export BUILD=$TARGET/build
 export CLASSES=$TARGET/classes
 export RESOURCES=$SRC/main/resources
 export COMPILATION_OPTS=--enable-preview  -Xlint:deprecation -Xlint:preview
-export JAR_OPTS=
+export JAR_OPTS=--enable-preview
 
 function manifest(){
 	mkdir $TARGET
+	echo "|_ 0. clear build directory"
+	rm -Rf $TARGET/*
 	touch $TARGET/manifest.mf
 	# build manifest
 	echo "|_ 1. Create Manifest file '$TARGET/manifest.mf'"
@@ -49,14 +51,14 @@ function compile(){
 }
 
 function createJar(){
-	echo "|_ 3. package jar file '$PROGRAM_NAME-$PROGRAM_VERSION.jar'..."
+	echo "|_ 3. package jar file '$TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar'..."
 
 	if ([ $(ls $CLASSES | wc -l  | grep -w "0") ])
 	then
 		echo 'No compiled class files'
 	else
 		# Build JAR
-		jar -cfmv $JAR_OPTS $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar $TARGET/manifest.mf -C $CLASSES . -C $RESOURCES .
+		jar -cfmv $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar $TARGET/manifest.mf -C $CLASSES . -C $RESOURCES .
 	fi
 
 	echo "   |_ done."
@@ -64,11 +66,21 @@ function createJar(){
 
 function wrapJar(){
 	# create runnable program
-	echo "|_ 4. create run file '$PROGRAM_NAME-$PROGRAM_VERSION.run'..."
+	echo "|_ 4. create run file '$BUILD/$PROGRAM_NAME-$PROGRAM_VERSION.run'..."
 	mkdir -p $BUILD
 	cat $LIBS/stub.sh $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar > $BUILD/$PROGRAM_NAME-$PROGRAM_VERSION.run
 	chmod +x $BUILD/$PROGRAM_NAME-$PROGRAM_VERSION.run
 	echo "   |_ done."
+}
+
+function executeJar(){
+  if [ ! -f "$TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar" ]; then
+    manifest
+    compile
+    createJar
+  fi
+  echo "|_ 5.Execute just created JAR $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar"
+  java $JAR_OPTS -jar $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar
 }
 
 function sign(){
@@ -86,8 +98,9 @@ function help(){
 	echo " - j|J|jar     : build JAR with all resources"
 	echo " - w|W|wrap    : Build and wrap jar as a shell script"
 	echo " - s|S|sign    : Build and wrap signed jar as a shell script"
+  echo " - r|R|run     : execute (and build if needed) the created JAR"
 	echo ""
-	echo " (c)2020 MIT License Frederic Delorme (@McGivrer) fredericDOTdelormeATgmailDOTcom"
+	echo " (c)2022 MIT License Frederic Delorme (@McGivrer) fredericDOTdelormeATgmailDOTcom"
 	echo " --"
 }
 
@@ -114,7 +127,10 @@ function run(){
 	  s|S|sign)
 	    sign $2
 	    ;;
-	  h|H|?|*)
+    r|R|run)
+      executeJar
+      ;;
+    h|H|?|*)
 		help
 		;;
 	esac
