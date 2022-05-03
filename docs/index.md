@@ -191,6 +191,18 @@ class Render {
 }
 ```
 
+## Bring Animation
+
+To product beautiful sprite, we need a Animation engine, let's have an Animation class, attribute for Entity, and adapt 
+the Render and entity update to process animations set and display a moving Sprite !
+
+Animation is map of set of frames, each set of frame must ave a an easy way to define/identify it, 
+a simple String  key will do the job.
+
+
+
+
+
 ## JMX metrics
 
 It's easy to add remote readable metrics with the builtin Java feature JMX.
@@ -293,7 +305,7 @@ public class AppStatus implements AppStatusMBean {
 
     @Override
     public synchronized void setDebugLevel(Integer d) {
-        config.debug = d.intValue();
+        config.debug = d;
     }
 
     //...
@@ -304,26 +316,27 @@ public class AppStatus implements AppStatusMBean {
     //...
 }
 ```
+
 And in the Application class:
 
 ```java
 public class Application {
-  //...
-  private AppStatus appStats;
-  //...
-  private void initialize(String[] args) {
     //...
-    createJMXStatus(this);
-  }
-  
-  private void createJMXStatus(Application application) {
-    appStats = new AppStatus(application, "Application");
-    appStats.register(application);
-  }
-  
+    private AppStatus appStats;
+
+    //...
+    private void initialize(String[] args) {
+        //...
+        createJMXStatus(this);
+    }
+
+    private void createJMXStatus(Application application) {
+        appStats = new AppStatus(application, "Application");
+        appStats.register(application);
+    }
+
 }
 ```
-
 
 And now, starting the Application, you can directly connect the JCOnsole to the newly showed java process:
 
@@ -345,4 +358,34 @@ And the debug attribute value can be dynamically changed :
 
 ![The Debug Level parameter can be changed during execution](images/jconsole-mbean-dyn-value.png)
 
+## Dockerize the Desktop java app
+
+_TODO_
+
+https://learnwell.medium.com/how-to-dockerize-a-java-gui-application-bce560abf62a
+
+Prepare a Docker image (see [Dockerfile](../Dockerfile) "open the corresponding docker file")
+
+and build tyhe image:
+
+```shell
+docker build --pull --rm -f "Dockerfile" -t monoclass2:latest "."
+```
+
+As soon as the docker image is built, you can execute it :
+
+```shell
+docker run --rm -it monoclass2:latest
+```
+
+## Using ELK to monitor throughJMX
+
+_TODO_
+
+https://medium.com/analytics-vidhya/installing-elk-stack-in-docker-828df335e421
+
+see the [Docker-compose.yaml](./elk/Docker-compose.yaml "Open the docker compose file") file to install ELK through
+Docker.
+
+After installing the ELK through a docker-compose recipe, Kibana is reachable at http://localhost:5601
 
