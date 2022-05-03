@@ -317,7 +317,7 @@ public class Application extends JFrame implements KeyListener {
                                     case RECTANGLE -> g.fillRect((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height);
                                     case ELLIPSE -> g.fillArc((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height, 0, 360);
                                     case IMAGE -> {
-                                        BufferedImage sprite = (BufferedImage) (ee.isAnimation() ? ee.animation.getFrame() : ee.image);
+                                        BufferedImage sprite = (BufferedImage) (ee.getAnimations() ? ee.animations.getFrame() : ee.image);
                                         if (ee.getDirection() > 0) {
                                             g.drawImage(sprite, (int) ee.x, (int) ee.y, null);
                                         } else {
@@ -366,9 +366,9 @@ public class Application extends JFrame implements KeyListener {
                         if (config.debug > 2) {
                             g.drawString(String.format("spd:%03.2f,%03.2f", e.dx, e.dy), offsetX, offsetY + (lineHeight * 4));
                             g.drawString(String.format("acc:%03.2f,%03.2f", e.ax, e.ay), offsetX, offsetY + (lineHeight * 5));
-                            if (config.debug > 3 && e.isAnimation()) {
-                                g.drawString(String.format("anKey:%s", e.animation.currentAnimationSet), offsetX, offsetY + (lineHeight * 6));
-                                g.drawString(String.format("anFrm:%d", e.animation.currentFrame), offsetX, offsetY + (lineHeight * 7));
+                            if (config.debug > 3 && e.getAnimations()) {
+                                g.drawString(String.format("anKey:%s", e.animations.currentAnimationSet), offsetX, offsetY + (lineHeight * 6));
+                                g.drawString(String.format("anFrm:%d", e.animations.currentFrame), offsetX, offsetY + (lineHeight * 7));
                             }
                         }
 
@@ -640,7 +640,7 @@ public class Application extends JFrame implements KeyListener {
         public int priority;
         protected EntityType type = RECTANGLE;
         public Image image;
-        public Animation animation;
+        public Animation animations;
         public Color color = Color.BLUE;
         public boolean stickToCamera;
 
@@ -765,30 +765,30 @@ public class Application extends JFrame implements KeyListener {
         public void update(double elapsed) {
 
             box.setRect(x, y, width, height);
-            if (Optional.ofNullable(animation).isPresent()) {
-                animation.update((long) elapsed);
+            if (Optional.ofNullable(animations).isPresent()) {
+                animations.update((long) elapsed);
             }
         }
 
         public Entity addAnimation(String key, int x, int y, int tw, int th, int nbFrames, String pathToImage) {
-            if (Optional.ofNullable(this.animation).isEmpty()) {
-                this.animation = new Animation();
+            if (Optional.ofNullable(this.animations).isEmpty()) {
+                this.animations = new Animation();
             }
-            this.animation.addAnimationSet(key, pathToImage, x, y, tw, th, nbFrames);
+            this.animations.addAnimationSet(key, pathToImage, x, y, tw, th, nbFrames);
             return this;
         }
 
-        public boolean isAnimation() {
-            return Optional.ofNullable(this.animation).isPresent();
+        public boolean getAnimations() {
+            return Optional.ofNullable(this.animations).isPresent();
         }
 
         public Entity activateAnimation(String key) {
-            animation.activate(key);
+            animations.activate(key);
             return this;
         }
 
         public Entity setFrameDuration(String key, int frameDuration) {
-            animation.setFrameDuration(key, frameDuration);
+            animations.setFrameDuration(key, frameDuration);
             return this;
         }
 
@@ -1302,16 +1302,21 @@ public class Application extends JFrame implements KeyListener {
     private synchronized void update(double elapsed) {
         if (!pause) {
             physicEngine.update(Math.min(elapsed, config.frameTime));
-            if (entities.containsKey("player") && entities.containsKey("score")) {
-                Entity p = entities.get("player");
-                int score = (int) p.getAttribute("score", 0);
-                score += 10;
-                p.setAttribute("score", score);
+            updateScene(elapsed);
 
-                TextEntity scoreEntity = (TextEntity) entities.get("score");
-                scoreEntity.setText(String.format("%06d", score));
+        }
+    }
 
-            }
+    private synchronized void updateScene(double elapsed){
+        if (entities.containsKey("player") && entities.containsKey("score")) {
+            Entity p = entities.get("player");
+            int score = (int) p.getAttribute("score", 0);
+            score += 10;
+            p.setAttribute("score", score);
+
+            TextEntity scoreEntity = (TextEntity) entities.get("score");
+            scoreEntity.setText(String.format("%06d", score));
+
         }
     }
 
