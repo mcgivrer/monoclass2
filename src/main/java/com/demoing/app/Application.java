@@ -1,5 +1,8 @@
 package com.demoing.app;
 
+import javax.imageio.ImageIO;
+import javax.management.*;
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -11,9 +14,6 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
-import javax.imageio.ImageIO;
-import javax.management.*;
-import javax.swing.JFrame;
 
 import static com.demoing.app.Application.EntityType.*;
 
@@ -92,9 +92,9 @@ public class Application extends JFrame implements KeyListener {
                 ObjectName objectName = new ObjectName("com.demoing.app:name=" + programName);
                 platformMBeanServer.registerMBean(this, objectName);
             } catch (InstanceAlreadyExistsException
-                    | MBeanRegistrationException
-                    | NotCompliantMBeanException
-                    | MalformedObjectNameException e) {
+                     | MBeanRegistrationException
+                     | NotCompliantMBeanException
+                     | MalformedObjectNameException e) {
                 e.printStackTrace();
             }
 
@@ -313,8 +313,10 @@ public class Application extends JFrame implements KeyListener {
                             // This is a basic entity
                             case Entity ee -> {
                                 switch (ee.type) {
-                                    case RECTANGLE -> g.fillRect((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height);
-                                    case ELLIPSE -> g.fillArc((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height, 0, 360);
+                                    case RECTANGLE ->
+                                            g.fillRect((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height);
+                                    case ELLIPSE ->
+                                            g.fillArc((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height, 0, 360);
                                     case IMAGE -> {
                                         BufferedImage sprite = (BufferedImage) (ee.getAnimations() ? ee.animations.getFrame() : ee.image);
                                         if (ee.getDirection() > 0) {
@@ -366,8 +368,7 @@ public class Application extends JFrame implements KeyListener {
                             g.drawString(String.format("spd:%03.2f,%03.2f", e.dx, e.dy), offsetX, offsetY + (lineHeight * 4));
                             g.drawString(String.format("acc:%03.2f,%03.2f", e.ax, e.ay), offsetX, offsetY + (lineHeight * 5));
                             if (config.debug > 3 && e.getAnimations()) {
-                                g.drawString(String.format("anKey:%s", e.animations.currentAnimationSet), offsetX, offsetY + (lineHeight * 6));
-                                g.drawString(String.format("anFrm:%d", e.animations.currentFrame), offsetX, offsetY + (lineHeight * 7));
+                                g.drawString(String.format("anim:%s/%d", e.animations.currentAnimationSet,e.animations.currentFrame), offsetX, offsetY + (lineHeight * 6));
                             }
                         }
 
@@ -514,8 +515,8 @@ public class Application extends JFrame implements KeyListener {
             e.dx *= e.friction * world.friction;
             e.dy *= e.friction * world.friction;
 
-            e.x = Math.round(e.x + e.dx);
-            e.y = Math.round(e.y + e.dy);
+            e.x = Math.ceil(e.x + e.dx);
+            e.y = Math.ceil(e.y + e.dy);
 
             e.forces.clear();
         }
@@ -1293,6 +1294,8 @@ public class Application extends JFrame implements KeyListener {
         setSize(dim);
         setPreferredSize(dim);
         setMaximumSize(dim);
+        //setExtendedState(JFrame.MAXIMIZED_BOTH);
+        setUndecorated(true);
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
