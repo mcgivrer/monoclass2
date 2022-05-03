@@ -353,7 +353,11 @@ public class Application extends JFrame implements KeyListener {
             g.setColor(Color.BLUE);
             for (double tx = 0; tx < world.area.getWidth(); tx += tw) {
                 for (double ty = 0; ty < world.area.getHeight(); ty += th) {
-                    g.drawRect((int) tx, (int) ty, (int) tw, (int) th);
+                    double rh=th;
+                    if (ty + th > world.area.getHeight()) {
+                        rh = world.area.getHeight() % th;
+                    }
+                    g.drawRect((int) tx, (int) ty, (int) tw, (int) rh);
                 }
             }
             g.setColor(Color.DARK_GRAY);
@@ -911,6 +915,9 @@ public class Application extends JFrame implements KeyListener {
     private final boolean[] prevKeys = new boolean[65536];
     private final boolean[] keys = new boolean[65536];
     private boolean anyKeyPressed;
+    private boolean keyCtrlPressed;
+    private boolean keyShiftPressed;
+
 
     private Configuration config;
     private Render render;
@@ -1030,33 +1037,6 @@ public class Application extends JFrame implements KeyListener {
 
         addEntity(player);
 
-        actionHandler.actionMapping = Map.of(
-                KeyEvent.VK_ESCAPE, o -> {
-                    reset();
-                    return this;
-                },
-                KeyEvent.VK_D, o -> {
-                    config.debug = config.debug + 1 < 5 ? config.debug + 1 : 0;
-                    return this;
-                },
-                KeyEvent.VK_Z, o -> {
-                    emitPerturbationOnEntity("ball_", 2.5);
-                    return this;
-                },
-                KeyEvent.VK_PAGE_UP, o -> {
-                    generateEntity("ball_", 5, 2.5);
-                    return this;
-                },
-                KeyEvent.VK_PAGE_DOWN, o -> {
-                    removeEntity("ball_", 5);
-                    return this;
-                },
-                KeyEvent.VK_BACK_SPACE, o -> {
-                    removeEntity("ball_", -1);
-                    return this;
-                }
-        );
-
         Camera cam = new Camera("cam01")
                 .setViewport(new Rectangle2D.Double(0, 0, config.screenWidth, config.screenHeight))
                 .setTarget(player)
@@ -1126,6 +1106,51 @@ public class Application extends JFrame implements KeyListener {
                 .setPriority(20)
                 .setStickToCamera(true);
         addEntity(welcomeMsg);
+
+
+        // mapping of keys actions:
+
+        actionHandler.actionMapping = Map.of(
+                // reset the scene
+                KeyEvent.VK_Z, o -> {
+                    reset();
+                    return this;
+                },
+                // manage debug level
+                KeyEvent.VK_D, o -> {
+                    config.debug = config.debug + 1 < 5 ? config.debug + 1 : 0;
+                    return this;
+                },
+                // create perturbation on "ball" objects
+                KeyEvent.VK_P, o -> {
+                    emitPerturbationOnEntity("ball_", 2.5);
+                    return this;
+                },
+                // add new balls
+                KeyEvent.VK_PAGE_UP, o -> {
+                    generateEntity("ball_", 5, 2.5);
+                    return this;
+                },
+                // remove balls
+                KeyEvent.VK_PAGE_DOWN, o -> {
+                    removeEntity("ball_", 5);
+                    return this;
+                },
+                // remove all balls
+                KeyEvent.VK_BACK_SPACE, o -> {
+                    removeEntity("ball_", -1);
+                    return this;
+                },
+                // I quit !
+                KeyEvent.VK_ESCAPE, o -> {
+                    requestExit();
+                    return this;
+                }
+        );
+    }
+
+    private void requestExit() {
+        exit = true;
     }
 
     private void removeEntity(String filterValue, int i) {
@@ -1230,6 +1255,12 @@ public class Application extends JFrame implements KeyListener {
             double speed = (double) p.getAttribute("accStep", 0.05);
             double jumpFactor = (double) p.getAttribute("jumpFactor", 12.0);
             boolean action = (boolean) p.getAttribute("action", false);
+            if (isCtrlPressed()) {
+                speed *= 2;
+            }
+            if (isShiftPressed()) {
+                speed *= 4;
+            }
             p.activateAnimation("idle");
             if (getKeyPressed(KeyEvent.VK_LEFT)) {
                 p.activateAnimation("walk");
@@ -1258,6 +1289,14 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    private boolean isCtrlPressed() {
+        return keyCtrlPressed;
+    }
+
+    private boolean isShiftPressed() {
+        return keyShiftPressed;
+    }
+
     @Override
     public void paint(Graphics g) {
         super.paint(g);
@@ -1281,6 +1320,8 @@ public class Application extends JFrame implements KeyListener {
         prevKeys[e.getKeyCode()] = keys[e.getKeyCode()];
         keys[e.getKeyCode()] = true;
         anyKeyPressed = true;
+        this.keyCtrlPressed = e.isControlDown();
+        this.keyShiftPressed = e.isShiftDown();
     }
 
     @Override
@@ -1288,7 +1329,8 @@ public class Application extends JFrame implements KeyListener {
         prevKeys[e.getKeyCode()] = keys[e.getKeyCode()];
         keys[e.getKeyCode()] = false;
         anyKeyPressed = false;
-
+        this.keyCtrlPressed = e.isControlDown();
+        this.keyShiftPressed = e.isShiftDown();
     }
 
     public boolean getKeyPressed(int keyCode) {

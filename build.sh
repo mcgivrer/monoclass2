@@ -21,6 +21,8 @@ export JAR_OPTS=--enable-preview
 
 function manifest(){
 	mkdir $TARGET
+	echo "|_ 0. clear build directory"
+	rm -Rf $TARGET/*
 	touch $TARGET/manifest.mf
 	# build manifest
 	echo "|_ 1. Create Manifest file '$TARGET/manifest.mf'"
@@ -49,14 +51,14 @@ function compile(){
 }
 
 function createJar(){
-	echo "|_ 3. package jar file '$PROGRAM_NAME-$PROGRAM_VERSION.jar'..."
+	echo "|_ 3. package jar file '$TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar'..."
 
 	if ([ $(ls $CLASSES | wc -l  | grep -w "0") ])
 	then
 		echo 'No compiled class files'
 	else
 		# Build JAR
-		jar -cfmv $JAR_OPTS $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar $TARGET/manifest.mf -C $CLASSES . -C $RESOURCES .
+		jar -cfmv $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar $TARGET/manifest.mf -C $CLASSES . -C $RESOURCES .
 	fi
 
 	echo "   |_ done."
@@ -64,7 +66,7 @@ function createJar(){
 
 function wrapJar(){
 	# create runnable program
-	echo "|_ 4. create run file '$PROGRAM_NAME-$PROGRAM_VERSION.run'..."
+	echo "|_ 4. create run file '$BUILD/$PROGRAM_NAME-$PROGRAM_VERSION.run'..."
 	mkdir -p $BUILD
 	cat $LIBS/stub.sh $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar > $BUILD/$PROGRAM_NAME-$PROGRAM_VERSION.run
 	chmod +x $BUILD/$PROGRAM_NAME-$PROGRAM_VERSION.run
@@ -72,7 +74,7 @@ function wrapJar(){
 }
 
 function executeJar(){
-  if [ -f "$TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar" ]; then
+  if [ ! -f "$TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar" ]; then
     manifest
     compile
     createJar
