@@ -947,7 +947,7 @@ public class Application extends JFrame implements KeyListener {
     }
 
     public interface Scene {
-        void create(Application app) throws IOException, FontFormatException;
+        void create(Application app) throws Exception;
 
         void update(Application app, double elapsed);
 
@@ -1259,7 +1259,7 @@ public class Application extends JFrame implements KeyListener {
         activeScene = scenes.get("demo");
         try {
             createScene();
-        } catch (IOException | FontFormatException e) {
+        } catch (Exception e) {
             System.out.println("ERR: Unable to initialize scene: " + e.getLocalizedMessage());
         }
 
@@ -1277,7 +1277,7 @@ public class Application extends JFrame implements KeyListener {
             entities.clear();
             entityIndex = 0;
             createScene();
-        } catch (IOException | FontFormatException e) {
+        } catch (Exception e) {
             System.out.println("ERR : Reset scene issue: " + e.getLocalizedMessage());
         }
     }
@@ -1305,7 +1305,7 @@ public class Application extends JFrame implements KeyListener {
         setVisible(true);
     }
 
-    protected void createScene() throws IOException, FontFormatException {
+    protected void createScene() throws Exception {
         activeScene.create(this);
     }
 
