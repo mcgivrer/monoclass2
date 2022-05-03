@@ -2,9 +2,11 @@
 
 A **MonoClass 2** project test.
 
-This _small_ Java project with only one (master) class is a proof-of-concept of an over simplified java program to deliver maximum feature in a minimum number lines of code, and WITHOUT dependecies out of the JDK itself.
+This _small_ Java project with only one (master) class is a proof-of-concept of an over simplified java program to deliver maximum feature in a minimum number lines of code, and WITHOUT dependencies out of the JDK itself.
 
 A second challenge is in the no use for a build tool (maven or gradle) but nothing else than the JDK compiler tool and the magic of a bash script (Back to Roots !).
+
+And a last constrain is to reduce as much as possible the number of LoC, using enhancement from latest JDK.
 
 Have fun discover this beast of code, to learn and take benefits of some latest JDK features (like the [pattern matching for switch](https://openjdk.java.net/jeps/406 "ssee the official specification")), and moreover, overuse of lambda and stream each time this was possible.
 

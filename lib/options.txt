@@ -1,5 +1,3 @@
---enable-preview
--Xlint:deprecation
 -d target/classes
 -g:source,lines,vars
 -sourcepath src/main/java/;src/main/resources

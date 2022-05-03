@@ -11,7 +11,6 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
-
 import javax.imageio.ImageIO;
 import javax.management.*;
 import javax.swing.JFrame;
@@ -59,9 +58,19 @@ public class Application extends JFrame implements KeyListener {
         Long getTimeRendering();
 
         Long getRealFPS();
+
+        void requestQuit();
+
+        void requestAddEntity(Integer add);
+
+        void requestremoveEntity(Integer add);
+
+        void requestReset();
+
     }
 
     public class AppStatus implements AppStatusMBean {
+        private Application app;
         private int debugLevel;
         private int nbEntities, pipelineSize;
         boolean pauseStatus;
@@ -74,6 +83,8 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public void register(Application app) {
+
+            this.app = app;
             try {
                 // Register the object in the MBeanServer
                 MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
@@ -98,8 +109,6 @@ public class Application extends JFrame implements KeyListener {
             debugLevel = app.config.debug;
         }
 
-
-        @Override
         public synchronized Integer getDebugLevel() {
             return debugLevel;
         }
@@ -142,6 +151,27 @@ public class Application extends JFrame implements KeyListener {
         @Override
         public synchronized Long getRealFPS() {
             return realFPS;
+        }
+
+        @Override
+        public synchronized void requestQuit() {
+            app.exit = true;
+
+        }
+
+        @Override
+        public synchronized void requestAddEntity(Integer nbEntity) {
+            app.generateEntity("entity_", nbEntity, 0.25);
+        }
+
+        @Override
+        public synchronized void requestremoveEntity(Integer nbEntity) {
+            app.removeEntity("entity_", nbEntity);
+        }
+
+        @Override
+        public synchronized void requestReset() {
+            app.reset();
         }
     }
 
@@ -219,7 +249,8 @@ public class Application extends JFrame implements KeyListener {
             this.app = a;
             this.config = c;
             this.world = w;
-            buffer = new BufferedImage((int) config.screenWidth, (int) config.screenHeight, BufferedImage.TYPE_INT_ARGB);
+            buffer = new BufferedImage((int) config.screenWidth, (int) config.screenHeight,
+                    BufferedImage.TYPE_INT_ARGB);
             Graphics2D g = buffer.createGraphics();
             try {
                 debugFont = Font.createFont(
@@ -232,9 +263,11 @@ public class Application extends JFrame implements KeyListener {
         }
 
         /**
-         * Drawing all object in the {@link Render#gPipeline}, according to the priority sort order.
+         * Drawing all object in the {@link Render#gPipeline}, according to the priority
+         * sort order.
          *
-         * @param realFps the real measured Frame Per Second value to be displayed in debug mode (if required).
+         * @param realFps the real measured Frame Per Second value to be displayed in
+         *                debug mode (if required).
          */
         public void draw(long realFps) {
             long startTime = System.nanoTime();
@@ -266,7 +299,8 @@ public class Application extends JFrame implements KeyListener {
                                 g.drawString(te.text, (int) (te.x + offsetX), (int) te.y);
                                 e.width = size;
                                 e.height = g.getFontMetrics().getHeight();
-                                e.box.setRect(e.x + offsetX, e.y - e.height + g.getFontMetrics().getDescent(), e.width, e.height);
+                                e.box.setRect(e.x + offsetX, e.y - e.height + g.getFontMetrics().getDescent(), e.width,
+                                        e.height);
                             }
                             case GaugeEntity ge -> {
                                 g.setColor(Color.BLACK);
@@ -283,7 +317,7 @@ public class Application extends JFrame implements KeyListener {
                                     case RECTANGLE -> g.fillRect((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height);
                                     case ELLIPSE -> g.fillArc((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height, 0, 360);
                                     case IMAGE -> {
-                                        BufferedImage sprite = (BufferedImage) (ee.isAnimation() ? ee.animation.getFrame() : ee.image);
+                                        BufferedImage sprite = (BufferedImage) (ee.getAnimations() ? ee.animations.getFrame() : ee.image);
                                         if (ee.getDirection() > 0) {
                                             g.drawImage(sprite, (int) ee.x, (int) ee.y, null);
                                         } else {
@@ -307,7 +341,8 @@ public class Application extends JFrame implements KeyListener {
         }
 
         /**
-         * Display debug information on the {@link Entity } according to the current Application level of debug.
+         * Display debug information on the {@link Entity } according to the current
+         * Application level of debug.
          *
          * @param g Graphics API to use to draw things !
          * @param e the Entity to be displayed info to.
@@ -315,7 +350,8 @@ public class Application extends JFrame implements KeyListener {
         private void drawDebugInfo(Graphics2D g, Entity e) {
             if (config.debug > 0) {
                 g.setColor(Color.ORANGE);
-                if (Optional.ofNullable(e.box).isPresent()) g.draw(e.box);
+                if (Optional.ofNullable(e.box).isPresent())
+                    g.draw(e.box);
                 if (config.debug > 0) {
                     g.setFont(debugFont);
                     int lineHeight = g.getFontMetrics().getHeight();// + g.getFontMetrics().getDescent();
@@ -330,9 +366,9 @@ public class Application extends JFrame implements KeyListener {
                         if (config.debug > 2) {
                             g.drawString(String.format("spd:%03.2f,%03.2f", e.dx, e.dy), offsetX, offsetY + (lineHeight * 4));
                             g.drawString(String.format("acc:%03.2f,%03.2f", e.ax, e.ay), offsetX, offsetY + (lineHeight * 5));
-                            if (config.debug > 3 && e.isAnimation()) {
-                                g.drawString(String.format("anKey:%s", e.animation.currentAnimationSet), offsetX, offsetY + (lineHeight * 6));
-                                g.drawString(String.format("anFrm:%d", e.animation.currentFrame), offsetX, offsetY + (lineHeight * 7));
+                            if (config.debug > 3 && e.getAnimations()) {
+                                g.drawString(String.format("anKey:%s", e.animations.currentAnimationSet), offsetX, offsetY + (lineHeight * 6));
+                                g.drawString(String.format("anFrm:%d", e.animations.currentFrame), offsetX, offsetY + (lineHeight * 7));
                             }
                         }
 
@@ -345,7 +381,8 @@ public class Application extends JFrame implements KeyListener {
          * Draw a global grid corresponding to the World object defining the play area.
          *
          * @param g     Graphics API to use to draw things !
-         * @param world the World object to be used as reference to build grid and debug info.
+         * @param world the World object to be used as reference to build grid and debug
+         *              info.
          * @param tw    width of a grid cell.
          * @param th    height of a grid cell.
          */
@@ -353,7 +390,7 @@ public class Application extends JFrame implements KeyListener {
             g.setColor(Color.BLUE);
             for (double tx = 0; tx < world.area.getWidth(); tx += tw) {
                 for (double ty = 0; ty < world.area.getHeight(); ty += th) {
-                    double rh=th;
+                    double rh = th;
                     if (ty + th > world.area.getHeight()) {
                         rh = world.area.getHeight() % th;
                     }
@@ -365,7 +402,8 @@ public class Application extends JFrame implements KeyListener {
         }
 
         /**
-         * After the Buffer rendering operation performed in {@link Render#draw(long)}, the buffer is coped to the JFrame content.
+         * After the Buffer rendering operation performed in {@link Render#draw(long)},
+         * the buffer is coped to the JFrame content.
          *
          * @param realFps the measured frame rate per seconds
          */
@@ -384,6 +422,7 @@ public class Application extends JFrame implements KeyListener {
                                 realFps,
                                 gPipeline.size(),
                                 world.gravity),
+
                         20, app.getHeight() - 30);
             }
             g2.dispose();
@@ -601,7 +640,7 @@ public class Application extends JFrame implements KeyListener {
         public int priority;
         protected EntityType type = RECTANGLE;
         public Image image;
-        public Animation animation;
+        public Animation animations;
         public Color color = Color.BLUE;
         public boolean stickToCamera;
 
@@ -726,30 +765,30 @@ public class Application extends JFrame implements KeyListener {
         public void update(double elapsed) {
 
             box.setRect(x, y, width, height);
-            if (Optional.ofNullable(animation).isPresent()) {
-                animation.update((long) elapsed);
+            if (Optional.ofNullable(animations).isPresent()) {
+                animations.update((long) elapsed);
             }
         }
 
         public Entity addAnimation(String key, int x, int y, int tw, int th, int nbFrames, String pathToImage) {
-            if (Optional.ofNullable(this.animation).isEmpty()) {
-                this.animation = new Animation();
+            if (Optional.ofNullable(this.animations).isEmpty()) {
+                this.animations = new Animation();
             }
-            this.animation.addAnimationSet(key, pathToImage, x, y, tw, th, nbFrames);
+            this.animations.addAnimationSet(key, pathToImage, x, y, tw, th, nbFrames);
             return this;
         }
 
-        public boolean isAnimation() {
-            return Optional.ofNullable(this.animation).isPresent();
+        public boolean getAnimations() {
+            return Optional.ofNullable(this.animations).isPresent();
         }
 
         public Entity activateAnimation(String key) {
-            animation.activate(key);
+            animations.activate(key);
             return this;
         }
 
         public Entity setFrameDuration(String key, int frameDuration) {
-            animation.setFrameDuration(key, frameDuration);
+            animations.setFrameDuration(key, frameDuration);
             return this;
         }
 
@@ -918,7 +957,6 @@ public class Application extends JFrame implements KeyListener {
     private boolean keyCtrlPressed;
     private boolean keyShiftPressed;
 
-
     private Configuration config;
     private Render render;
     private PhysicEngine physicEngine;
@@ -980,7 +1018,9 @@ public class Application extends JFrame implements KeyListener {
         setTitle(I18n.get("app.title"));
 
         setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/sg-logo-image.png")));
-        Dimension dim = new Dimension((int) (config.screenWidth * config.displayScale), (int) (config.screenHeight * config.displayScale));
+
+        Dimension dim = new Dimension((int) (config.screenWidth * config.displayScale),
+                (int) (config.screenHeight * config.displayScale));
 
         setSize(dim);
         setPreferredSize(dim);
@@ -1036,6 +1076,32 @@ public class Application extends JFrame implements KeyListener {
                 .activateAnimation("idle");
 
         addEntity(player);
+
+        actionHandler.actionMapping = Map.of(
+                KeyEvent.VK_ESCAPE, o -> {
+                    reset();
+                    return this;
+                },
+                KeyEvent.VK_D, o -> {
+                    config.debug = config.debug + 1 < 5 ? config.debug + 1 : 0;
+                    return this;
+                },
+                KeyEvent.VK_Z, o -> {
+                    emitPerturbationOnEntity("ball_", 2.5);
+                    return this;
+                },
+                KeyEvent.VK_PAGE_UP, o -> {
+                    generateEntity("ball_", 5, 2.5);
+                    return this;
+                },
+                KeyEvent.VK_PAGE_DOWN, o -> {
+                    removeEntity("ball_", 5);
+                    return this;
+                },
+                KeyEvent.VK_BACK_SPACE, o -> {
+                    removeEntity("ball_", -1);
+                    return this;
+                });
 
         Camera cam = new Camera("cam01")
                 .setViewport(new Rectangle2D.Double(0, 0, config.screenWidth, config.screenHeight))
@@ -1153,7 +1219,7 @@ public class Application extends JFrame implements KeyListener {
         exit = true;
     }
 
-    private void removeEntity(String filterValue, int i) {
+    public void removeEntity(String filterValue, int i) {
         i = (i == -1) ? entities.size() : i;
         List<Entity> etbr = entities.values().stream().filter(e -> e.name.contains(filterValue)).limit(i).toList();
         for (int idx = 0; idx < i; idx++) {
@@ -1236,16 +1302,21 @@ public class Application extends JFrame implements KeyListener {
     private synchronized void update(double elapsed) {
         if (!pause) {
             physicEngine.update(Math.min(elapsed, config.frameTime));
-            if (entities.containsKey("player") && entities.containsKey("score")) {
-                Entity p = entities.get("player");
-                int score = (int) p.getAttribute("score", 0);
-                score += 10;
-                p.setAttribute("score", score);
+            updateScene(elapsed);
 
-                TextEntity scoreEntity = (TextEntity) entities.get("score");
-                scoreEntity.setText(String.format("%06d", score));
+        }
+    }
 
-            }
+    private synchronized void updateScene(double elapsed){
+        if (entities.containsKey("player") && entities.containsKey("score")) {
+            Entity p = entities.get("player");
+            int score = (int) p.getAttribute("score", 0);
+            score += 10;
+            p.setAttribute("score", score);
+
+            TextEntity scoreEntity = (TextEntity) entities.get("score");
+            scoreEntity.setText(String.format("%06d", score));
+
         }
     }
 
@@ -1298,6 +1369,7 @@ public class Application extends JFrame implements KeyListener {
     }
 
     @Override
+
     public void paint(Graphics g) {
         super.paint(g);
         render.draw(realFps);
@@ -1352,7 +1424,7 @@ public class Application extends JFrame implements KeyListener {
         } catch (Exception e) {
             System.out.printf("ERR: Unable to run application: %s",
                     e.getLocalizedMessage()
-                            + " => ");
+                    + " => ");
             e.printStackTrace();
         }
     }
