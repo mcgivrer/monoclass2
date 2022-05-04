@@ -11,11 +11,13 @@ import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.demoing.app.Application.EntityType.*;
 
@@ -77,7 +79,7 @@ public class Application extends JFrame implements KeyListener {
         private int debugLevel;
         private int nbEntities, pipelineSize;
         boolean pauseStatus;
-        private long realFPS, timeRendering, timeUpdate;
+        private long realFPS, timeRendering, timeUpdate, computationTime;
         private String programName;
 
         public AppStatus(Application app, String name) {
@@ -110,6 +112,7 @@ public class Application extends JFrame implements KeyListener {
             timeUpdate = app.physicEngine.updateTime;
             pauseStatus = app.pause;
             debugLevel = app.config.debug;
+            computationTime = app.computationTime;
         }
 
         public synchronized Integer getDebugLevel() {
@@ -187,6 +190,13 @@ public class Application extends JFrame implements KeyListener {
         private double worldGravity = 1.0;
         private boolean fullScreen = false;
 
+        private double speedMinValue = 0.1;
+        private double speedMaxValue = 4.0;
+
+        private double accMinValue = 0.1;
+
+        private double accMaxValue = 0.35;
+
         public Configuration(String fileName) {
             try {
                 appProps.load(this.getClass().getResourceAsStream(fileName));
@@ -203,6 +213,12 @@ public class Application extends JFrame implements KeyListener {
             worldWidth = parseDouble(appProps.getProperty("app.world.width", "640.0"));
             worldHeight = parseDouble(appProps.getProperty("app.world.height", "400.0"));
             worldGravity = parseDouble(appProps.getProperty("app.world.gravity", "400.0"));
+
+            speedMinValue = parseDouble(appProps.getProperty("app.physic.speed.min", "0.1"));
+            speedMaxValue = parseDouble(appProps.getProperty("app.physic.speed.max", "8.0"));
+            speedMinValue = parseDouble(appProps.getProperty("app.physic.acceleration.min", "0.01"));
+            speedMaxValue = parseDouble(appProps.getProperty("app.physic.acceleration.max", "3.0"));
+
             fps = parseInt(appProps.getProperty("app.screen.fps", "" + FPS_DEFAULT));
             frameTime = (long) (1000 / fps);
             debug = parseInt(appProps.getProperty("app.debug.level", "0"));
@@ -228,6 +244,10 @@ public class Application extends JFrame implements KeyListener {
                     case "ww", "worldwidth" -> worldWidth = parseDouble(values[1]);
                     case "wh", "worldheight" -> worldHeight = parseDouble(values[1]);
                     case "wg", "worldgravity" -> worldGravity = parseDouble(values[1]);
+                    case "spmin" -> speedMinValue = parseDouble(values[1]);
+                    case "spmax" -> speedMaxValue = parseDouble(values[1]);
+                    case "accmin" -> accMinValue = parseDouble(values[1]);
+                    case "accmax" -> accMaxValue = parseDouble(values[1]);
                     case "fps" -> fps = parseDouble(values[1]);
                     case "f", "fullscreen" -> fullScreen = "on|ON|true|True|TRUE".contains(values[1]);
                     default -> System.out.printf("\nERR : Unknown argument %s\n", arg);
@@ -360,8 +380,12 @@ public class Application extends JFrame implements KeyListener {
             if (config.debug > 0) {
                 // display bounding box
                 if (Optional.ofNullable(e.box).isPresent()) {
+                    // collision box
                     g.setColor(new Color(1.0f, 0.5f, 0.1f, 0.8f));
                     g.draw(e.box);
+                    //initial coordinate
+                    g.setColor(Color.WHITE);
+                    g.drawRect((int) e.x, (int) e.y, 1, 1);
                 }
                 // display id
                 g.setFont(debugFont);
@@ -382,14 +406,14 @@ public class Application extends JFrame implements KeyListener {
                     if (config.debug > 2) {
                         // display 2D parameters
                         g.setColor(Color.ORANGE);
-                        g.drawString(String.format("name:%s", e.name), offsetX, offsetY + lineHeight);
-                        g.drawString(String.format("pos:%03.0f,%03.0f", e.x, e.y), offsetX, offsetY + (lineHeight * 2));
+                        g.drawString(String.format(Locale.ROOT, "name:%s", e.name), offsetX, offsetY + lineHeight);
+                        g.drawString(String.format(Locale.ROOT, "pos:%03.0f,%03.0f", e.x, e.y), offsetX, offsetY + (lineHeight * 2));
                         g.drawString(String.format("life:%d", e.life), offsetX, offsetY + (lineHeight * 3));
                         if (config.debug > 3) {
                             // display Physic parameters
-                            g.drawString(String.format("spd:%03.2f,%03.2f", e.dx, e.dy), offsetX,
+                            g.drawString(String.format(Locale.ROOT, "spd:%03.2f,%03.2f", e.dx, e.dy), offsetX,
                                     offsetY + (lineHeight * 4));
-                            g.drawString(String.format("acc:%03.2f,%03.2f", e.ax, e.ay), offsetX,
+                            g.drawString(String.format(Locale.ROOT, "acc:%03.2f,%03.2f", e.ax, e.ay), offsetX,
                                     offsetY + (lineHeight * 5));
                             if (e.getAnimations()) {
                                 g.drawString(String.format("anim:%s/%d",
@@ -516,10 +540,12 @@ public class Application extends JFrame implements KeyListener {
     public static class PhysicEngine {
         private final Application app;
         private final World world;
+        private final Configuration config;
         public long updateTime;
 
-        public PhysicEngine(Application a, World w) {
+        public PhysicEngine(Application a, Configuration c, World w) {
             this.app = a;
+            this.config = c;
             this.world = w;
         }
 
@@ -529,8 +555,8 @@ public class Application extends JFrame implements KeyListener {
             app.entities.values().forEach((e) -> {
                 if (e.physicType.equals(PhysicType.DYNAMIC)) {
                     updateEntity(e, elapsed);
-                    e.update(elapsed);
                 }
+                e.update(elapsed);
                 if (e.isAlive()) {
                     if (e.life >= 0 & e.life != -1) {
                         e.life -= Math.max(elapsed, 1.0);
@@ -564,15 +590,14 @@ public class Application extends JFrame implements KeyListener {
                 e.ax += v.x;
                 e.ay += v.y;
             }
-            e.dx += 0.5 * (Utils.ceilMinMaxValue(e.ax * elapsed, 0.01, 0.15));
-            e.dy += 0.5 * (Utils.ceilMinMaxValue(e.ay * elapsed, 0.01, 0.15));
+            e.dx += 0.5 * (Utils.ceilMinMaxValue(e.ax * elapsed, config.accMinValue, config.accMaxValue));
+            e.dy += 0.5 * (Utils.ceilMinMaxValue(e.ay * elapsed, config.accMinValue, config.accMaxValue));
 
             e.dx *= e.friction * world.friction;
             e.dy *= e.friction * world.friction;
 
-            e.x += Utils.ceilMinMaxValue(e.dx, 0.5, 6.0);
-            e.y += Utils.ceilMinMaxValue(e.dy, 0.5, 6.0);
-
+            e.x += Utils.ceilMinMaxValue(e.dx, config.speedMinValue, config.speedMaxValue);
+            e.y += Utils.ceilMinMaxValue(e.dy, config.speedMinValue, config.speedMaxValue);
 
             e.forces.clear();
         }
@@ -598,9 +623,7 @@ public class Application extends JFrame implements KeyListener {
                 e.ax = 0.0;
             }
             if (e.cbox.getBounds().getY() + e.cbox.getBounds().getHeight() > world.area.getHeight()) {
-                e.y = world.area.getHeight() - e.height;
-                e.dy *= -1 * e.elasticity;
-                e.ay = 0.0;
+                e.life = 0;
             }
         }
 
@@ -610,11 +633,13 @@ public class Application extends JFrame implements KeyListener {
     }
 
     public static class CollisionDetector {
+        private final Configuration config;
+
         // ToDo! maintain a binTree to 'sub-space' world.
         public Map<String, Entity> colliders = new ConcurrentHashMap<>();
 
-        public CollisionDetector() {
-
+        public CollisionDetector(Application a, Configuration c, World w) {
+            this.config = c;
         }
 
         public void add(Entity e) {
@@ -626,7 +651,7 @@ public class Application extends JFrame implements KeyListener {
         }
 
         private void detect() {
-            List<Entity> targets = colliders.values().stream().filter(Entity::isAlive).toList();
+            List<Entity> targets = colliders.values().stream().filter(e -> e.isAlive() || e.life == -1).toList();
             for (Entity e1 : colliders.values()) {
                 e1.collide = false;
                 for (Entity e2 : targets) {
@@ -648,35 +673,37 @@ public class Application extends JFrame implements KeyListener {
         private void resolve(Entity e1, Entity e2) {
             e1.collide = true;
             e2.collide = true;
-
-            double reductionFactor = 0.05;
-            double reductionAccFactor = 0.05;
-            double resMass = e1.mass;
-            double friction = 1.0 / (e1.friction * e2.friction);
-
-            Vec2d vp = new Vec2d(
-                    (e2.x - e1.x),
-                    (e2.y - e1.y));
-
+            Vec2d vp = new Vec2d((e2.x - e1.x), (e2.y - e1.y));
             double distance = Math.sqrt((e2.x - e1.x) * (e2.x - e1.x) + (e2.y - e1.y) * (e2.y - e1.y));
-
             Vec2d colNorm = new Vec2d(vp.x / distance, vp.y / distance);
-
-            Vec2d vRelSpeed = new Vec2d(e1.dx - e2.dx, e1.dy - e2.dy);
-
-            double colSpeed = vRelSpeed.x * colNorm.x + vRelSpeed.y * colNorm.y;
-
-
-            var impulse = 2 * colSpeed / (e1.mass + e2.mass);
-
-            e1.dx -= impulse * e2.mass * colSpeed * colNorm.x;
-            e1.dy -= impulse * e2.mass * colSpeed * colNorm.y;
-
-            e2.dx += impulse * e1.mass * colSpeed * colNorm.x;
-            e2.dy += impulse * e1.mass * colSpeed * colNorm.y;
-
-            if (e1.name.equals("player")) {
-                System.out.printf("e1.%s collides e2.%s Vp=%s / dist=%f / norm=%s\n", e1.name, e2.name, vp, distance, colNorm);
+            if (e1.physicType == PhysicType.DYNAMIC && e2.physicType == PhysicType.DYNAMIC) {
+                Vec2d vRelSpeed = new Vec2d(e1.dx - e2.dx, e1.dy - e2.dy);
+                double colSpeed = vRelSpeed.x * colNorm.x + vRelSpeed.y * colNorm.y;
+                var impulse = 2 * colSpeed / (e1.mass + e2.mass);
+                e1.dx -= Utils.ceilMinMaxValue(impulse * e2.mass * colSpeed * colNorm.x,
+                        config.speedMinValue, config.speedMaxValue);
+                e1.dy -= Utils.ceilMinMaxValue(impulse * e2.mass * colSpeed * colNorm.y,
+                        config.speedMinValue, config.speedMaxValue);
+                e2.dx += Utils.ceilMinMaxValue(impulse * e1.mass * colSpeed * colNorm.x,
+                        config.speedMinValue, config.speedMaxValue);
+                e2.dy += Utils.ceilMinMaxValue(impulse * e1.mass * colSpeed * colNorm.y,
+                        config.speedMinValue, config.speedMaxValue);
+                if (e1.name.equals("player") && config.debug > 4) {
+                    System.out.printf("e1.%s collides e2.%s Vp=%s / dist=%f / norm=%s\n", e1.name, e2.name, vp, distance, colNorm);
+                }
+            } else {
+                if (e1.physicType == PhysicType.DYNAMIC && e2.physicType == PhysicType.STATIC) {
+                    if (e1.y + e1.height > e2.y && vp.y > 0) {
+                        e1.y = e2.y - e1.height;
+                        e1.dy = -e1.dy * e1.elasticity;
+                    } else {
+                        e1.dy = -e1.dy * e1.elasticity;
+                        e1.y = e2.y + e2.height;
+                    }
+                    if (e1.name.equals("player") && config.debug > 4) {
+                        System.out.printf("e1.%s collides static e2.%s\n", e1.name, e2.name);
+                    }
+                }
             }
         }
     }
@@ -862,12 +889,21 @@ public class Application extends JFrame implements KeyListener {
          * @return the updated Entity.
          */
         public Entity setCollisionBox(double left, double top, double right, double bottom) {
-            this.bbox = new Rectangle2D.Double(left, top, right, bottom);
+            switch (type) {
+                case IMAGE, RECTANGLE, default -> this.bbox = new Rectangle2D.Double(left, top, right, bottom);
+                case ELLIPSE -> this.bbox = new Ellipse2D.Double(left, top, right, bottom);
+            }
+            update(0.0);
             return this;
         }
 
         public Entity setType(EntityType et) {
             this.type = et;
+            return this;
+        }
+
+        public Entity setPhysicType(PhysicType t) {
+            this.physicType = t;
             return this;
         }
 
@@ -954,11 +990,19 @@ public class Application extends JFrame implements KeyListener {
         public void update(double elapsed) {
 
             box.setRect(x, y, width, height);
-            cbox = new Ellipse2D.Double(
-                    box.getX() + bbox.getBounds().getX(),
-                    box.getY() + bbox.getBounds().getY(),
-                    box.getWidth() - (bbox.getBounds().getWidth() + bbox.getBounds().getX()),
-                    box.getHeight() - (bbox.getBounds().getHeight() + bbox.getBounds().getY()));
+            switch (type) {
+                case RECTANGLE, IMAGE, default -> cbox = new Rectangle2D.Double(
+                        box.getX() + bbox.getBounds().getX(),
+                        box.getY() + bbox.getBounds().getY(),
+                        box.getWidth() - (bbox.getBounds().getWidth() + bbox.getBounds().getX()),
+                        box.getHeight() - (bbox.getBounds().getHeight() + bbox.getBounds().getY()));
+                case ELLIPSE -> cbox = new Ellipse2D.Double(
+                        box.getX() + bbox.getBounds().getX(),
+                        box.getY() + bbox.getBounds().getY(),
+                        box.getWidth() - (bbox.getBounds().getWidth() + bbox.getBounds().getX()),
+                        box.getHeight() - (bbox.getBounds().getHeight() + bbox.getBounds().getY()));
+
+            }
 
             if (Optional.ofNullable(animations).isPresent()) {
                 animations.update((long) elapsed);
@@ -1163,6 +1207,21 @@ public class Application extends JFrame implements KeyListener {
         public void create(Application app) throws IOException, FontFormatException {
             app.world.setFriction(0.98);
 
+            Entity floor = new Entity("floor")
+                    .setType(RECTANGLE)
+                    .setPhysicType(PhysicType.STATIC)
+                    .setColor(Color.LIGHT_GRAY)
+                    .setPosition(16, app.world.area.getHeight() - 16)
+                    .setSize(app.world.area.getWidth() - 32, 16)
+                    .setCollisionBox(0, 0, 0, 0)
+                    .setElasticity(0.1)
+                    .setFriction(0.70)
+                    .setMass(10000)
+                    .setLife(-1);
+            app.addEntity(floor);
+
+            generatePlatforms(app, 15);
+
             // A main player Entity.
             Entity player = new Entity("player")
                     .setType(IMAGE)
@@ -1174,14 +1233,6 @@ public class Application extends JFrame implements KeyListener {
                     .setPriority(1)
                     .setMass(40.0)
                     .setCollisionBox(+4, -8, -4, -2)
-                    /*
-                     * cbox = new Rectangle2D.Double(
-                     * x + bbox.getBounds().getX(),
-                     * y + bbox.getBounds().getY(),
-                     * width - (bbox.getBounds().getWidth()+bbox.getBounds().getX()),
-                     * height - (bbox.getBounds().getHeight()+bbox.getBounds().getY()));
-                     */
-
                     .setAttribute("life", 5)
                     .setAttribute("score", 0)
                     .setAttribute("energy", 100)
@@ -1192,18 +1243,18 @@ public class Application extends JFrame implements KeyListener {
                             32, 32,
                             13,
                             "/images/sprites01.png")
+                    .setFrameDuration("idle", 200)
                     .addAnimation("walk",
                             0, 32,
                             32, 32,
                             8,
                             "/images/sprites01.png")
+                    .setFrameDuration("walk", 60)
                     .addAnimation("jump",
                             0, 5 * 32,
                             32, 32,
                             6,
                             "/images/sprites01.png")
-                    .setFrameDuration("idle", 200)
-                    .setFrameDuration("walk", 60)
                     .setFrameDuration("jump", 60)
                     .activateAnimation("idle");
 
@@ -1319,6 +1370,51 @@ public class Application extends JFrame implements KeyListener {
                     });
         }
 
+        private void generatePlatforms(Application app, int nbPf) {
+            List<Entity> platforms = new ArrayList<>();
+            Entity pf;
+            boolean found = false;
+            for (int i = 0; i < nbPf; i++) {
+                while (true) {
+                    pf = createPlatform(app, i);
+                    found = false;
+                    for (Entity p : platforms) {
+                        if (p.bbox.intersects(pf.bbox.getBounds())) {
+                            found = true;
+                        }
+                    }
+                    if (!found) {
+                        break;
+                    }
+                }
+                platforms.add(pf);
+                app.addEntity(pf);
+            }
+
+        }
+
+        private Entity createPlatform(Application app, int i) {
+            double pfWidth = ((int) (Math.random() * 5) + 4);
+            double maxCols = app.world.area.getHeight() / 16;
+            double maxRows = app.world.area.getHeight() / 48;// height of 1 pf + 1 player
+            double pfCol = (int) (Math.random() * maxRows);
+            pfCol = pfCol < maxCols ? pfCol : maxRows - pfWidth;
+            Entity pf = new Entity("pf_" + i)
+                    .setType(RECTANGLE)
+                    .setPhysicType(PhysicType.STATIC)
+                    .setColor(Color.LIGHT_GRAY)
+                    .setPosition(
+                            pfCol * 16,
+                            (((int) (Math.random() * maxRows) * 48)))
+                    .setSize(pfWidth * 16, 16)
+                    .setCollisionBox(0, 0, 0, 0)
+                    .setElasticity(0.1)
+                    .setFriction(0.70)
+                    .setMass(10000)
+                    .setLife(-1);
+            return pf;
+        }
+
         @Override
         public void update(Application app, double elapsed) {
             if (app.entities.containsKey("player") && app.entities.containsKey("score")) {
@@ -1406,7 +1502,7 @@ public class Application extends JFrame implements KeyListener {
                         .setLife((int) ((Math.random() * 5) + 5) * 5000)
                         .setElasticity(0.65)
                         .setFriction(0.98)
-                        .setMass(20.0)
+                        .setMass(5.0)
                         .setPriority(2);
                 app.addEntity(e);
             }
@@ -1444,12 +1540,14 @@ public class Application extends JFrame implements KeyListener {
 
     private long realFps = 0;
 
+    private long computationTime = 0;
+
     private Map<String, Entity> entities = new HashMap<>();
 
     private World world;
 
     public Application(String[] args) {
-
+        NumberFormat.getInstance(Locale.ROOT);
         initialize(args);
     }
 
@@ -1464,8 +1562,8 @@ public class Application extends JFrame implements KeyListener {
                 .setArea(config.worldWidth, config.worldHeight)
                 .setGravity(config.worldGravity);
         render = new Render(this, config, world);
-        physicEngine = new PhysicEngine(this, world);
-        collisionDetect = new CollisionDetector();
+        physicEngine = new PhysicEngine(this, config, world);
+        collisionDetect = new CollisionDetector(this, config, world);
         actionHandler = new ActionHandler();
         createWindow();
 
@@ -1553,7 +1651,8 @@ public class Application extends JFrame implements KeyListener {
             render.draw(realFps);
 
             // wait at least 1ms.
-            long waitTime = (config.frameTime > elapsed) ? config.frameTime - (long) elapsed : 1;
+            computationTime = System.currentTimeMillis() - start;
+            long waitTime = (config.frameTime > computationTime) ? config.frameTime - (long) computationTime : 1;
 
             timeFrame += elapsed;
             frames += 1;
