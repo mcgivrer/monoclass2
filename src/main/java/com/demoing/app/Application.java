@@ -183,6 +183,7 @@ public class Application extends JFrame implements KeyListener {
         private double worldWidth = 0;
         private double worldHeight = 0;
         private double worldGravity = 1.0;
+        private boolean fullScreen = false;
 
         public Configuration(String fileName) {
             try {
@@ -200,9 +201,10 @@ public class Application extends JFrame implements KeyListener {
             worldWidth = parseDouble(appProps.getProperty("app.world.width", "640.0"));
             worldHeight = parseDouble(appProps.getProperty("app.world.height", "400.0"));
             worldGravity = parseDouble(appProps.getProperty("app.world.gravity", "400.0"));
-            fps = parseInt(appProps.getProperty("app.render.fps", "" + FPS_DEFAULT));
+            fps = parseInt(appProps.getProperty("app.screen.fps", "" + FPS_DEFAULT));
             frameTime = (long) (1000 / fps);
             debug = parseInt(appProps.getProperty("app.debug.level", "0"));
+            fullScreen = "on|ON|true|True|TRUE".contains(appProps.getProperty("app.screen.full", "false"));
         }
 
         private double parseDouble(String stringValue) {
@@ -224,7 +226,9 @@ public class Application extends JFrame implements KeyListener {
                     case "ww", "worldWidth" -> worldWidth = parseDouble(values[1]);
                     case "wh", "worldHeight" -> worldHeight = parseDouble(values[1]);
                     case "wg", "worldGravity" -> worldGravity = parseDouble(values[1]);
-                    case "f", "fps" -> fps = parseDouble(values[1]);
+                    case "fps" -> fps = parseDouble(values[1]);
+                    case "f", "fullScreen" ->
+                            fullScreen = "on|ON|true|True|TRUE".contains(values[1]);
                     default -> System.out.printf("\nERR : Unknown argument %s\n", arg);
                 }
             });
@@ -368,7 +372,7 @@ public class Application extends JFrame implements KeyListener {
                             g.drawString(String.format("spd:%03.2f,%03.2f", e.dx, e.dy), offsetX, offsetY + (lineHeight * 4));
                             g.drawString(String.format("acc:%03.2f,%03.2f", e.ax, e.ay), offsetX, offsetY + (lineHeight * 5));
                             if (config.debug > 3 && e.getAnimations()) {
-                                g.drawString(String.format("anim:%s/%d", e.animations.currentAnimationSet,e.animations.currentFrame), offsetX, offsetY + (lineHeight * 6));
+                                g.drawString(String.format("anim:%s/%d", e.animations.currentAnimationSet, e.animations.currentFrame), offsetX, offsetY + (lineHeight * 6));
                             }
                         }
 
@@ -1294,8 +1298,10 @@ public class Application extends JFrame implements KeyListener {
         setSize(dim);
         setPreferredSize(dim);
         setMaximumSize(dim);
-        //setExtendedState(JFrame.MAXIMIZED_BOTH);
-        setUndecorated(true);
+        if (config.fullScreen) {
+            setExtendedState(JFrame.MAXIMIZED_BOTH);
+            setUndecorated(true);
+        }
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
