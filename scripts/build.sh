@@ -1,5 +1,5 @@
-#!/bin/sh
-#!/bin/bash
+#!/usr/bin/bash
+#
 # more info at https://gist.github.com/mcgivrer/a31510019029eba73edf5721a93c3dec
 # Copyright 2020 Frederic Delorme (McGivrer) fredericDOTdelormeATgmailDOTcom
 #

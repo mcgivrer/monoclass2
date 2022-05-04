@@ -1235,11 +1235,12 @@ public class Application extends JFrame implements KeyListener {
 
     private World world;
 
-    public Application() {
+    public Application(String[] args) {
+
+        initialize(args);
     }
 
-    protected void run(String[] args) {
-        initialize(args);
+    protected void run() {
         loop();
         dispose();
     }
@@ -1309,11 +1310,11 @@ public class Application extends JFrame implements KeyListener {
         activeScene.create(this);
     }
 
-    private void requestExit() {
+    public void requestExit() {
         exit = true;
     }
 
-    private void addEntity(Entity entity) {
+    public void addEntity(Entity entity) {
         render.addToPipeline(entity);
         entities.put(entity.name, entity);
     }
@@ -1364,16 +1365,15 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
-    private boolean isCtrlPressed() {
+    public boolean isCtrlPressed() {
         return keyCtrlPressed;
     }
 
-    private boolean isShiftPressed() {
+    public boolean isShiftPressed() {
         return keyShiftPressed;
     }
 
     @Override
-
     public void paint(Graphics g) {
         super.paint(g);
         render.draw(realFps);
@@ -1423,8 +1423,8 @@ public class Application extends JFrame implements KeyListener {
 
     public static void main(String[] args) {
         try {
-            Application app = new Application();
-            app.run(args);
+            Application app = new Application(args);
+            app.run();
         } catch (Exception e) {
             System.out.printf("ERR: Unable to run application: %s",
                     e.getLocalizedMessage()
