@@ -16,7 +16,7 @@ JEP420 Pattern Matching `switch`, `@FunctionalInterface` and some enhancement on
 ## The project
 
 The [`Application`](https://github.com/mcgivrer/monoclass2/blob/feature/add-camera-entity/src/main/java/com/demoing/app/Application.java#L17)
-class (we can not talk about a project for a 500 LoCs class) is composed of some attribtues and methods (sic) and a
+class (we can not talk about a project for a 1500 LoCs class) is composed of some attribtues and methods (sic) and a
 limited number of subclasses.
 
 ```plantuml
