@@ -7,6 +7,7 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.geom.Rectangle2D;
+import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -228,8 +229,7 @@ public class Application extends JFrame implements KeyListener {
                     case "wh", "worldHeight" -> worldHeight = parseDouble(values[1]);
                     case "wg", "worldGravity" -> worldGravity = parseDouble(values[1]);
                     case "fps" -> fps = parseDouble(values[1]);
-                    case "f", "fullScreen" ->
-                        fullScreen = "on|ON|true|True|TRUE".contains(values[1]);
+                    case "f", "fullScreen" -> fullScreen = "on|ON|true|True|TRUE".contains(values[1]);
                     default -> System.out.printf("\nERR : Unknown argument %s\n", arg);
                 }
             });
@@ -258,8 +258,8 @@ public class Application extends JFrame implements KeyListener {
             Graphics2D g = buffer.createGraphics();
             try {
                 debugFont = Font.createFont(
-                        Font.PLAIN,
-                        Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
+                                Font.PLAIN,
+                                Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
                         .deriveFont(9.0f);
             } catch (FontFormatException | IOException e) {
                 System.out.println("ERR: Unable to initialize Render: " + e.getLocalizedMessage());
@@ -318,10 +318,8 @@ public class Application extends JFrame implements KeyListener {
                             // This is a basic entity
                             case Entity ee -> {
                                 switch (ee.type) {
-                                    case RECTANGLE ->
-                                        g.fillRect((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height);
-                                    case ELLIPSE ->
-                                        g.fillArc((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height, 0, 360);
+                                    case RECTANGLE -> g.fillRect((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height);
+                                    case ELLIPSE -> g.fillArc((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height, 0, 360);
                                     case IMAGE -> {
                                         BufferedImage sprite = (BufferedImage) (ee.getAnimations()
                                                 ? ee.animations.getFrame()
@@ -357,9 +355,11 @@ public class Application extends JFrame implements KeyListener {
          */
         private void drawDebugInfo(Graphics2D g, Entity e) {
             if (config.debug > 0) {
-                g.setColor(Color.ORANGE);
-                if (Optional.ofNullable(e.box).isPresent())
+                if (Optional.ofNullable(e.box).isPresent()) {
+                    g.setColor(e.collide ? Color.RED : Color.ORANGE);
                     g.draw(e.box);
+                }
+
                 g.setFont(debugFont);
                 int lineHeight = g.getFontMetrics().getHeight();// + g.getFontMetrics().getDescent();
                 g.setColor(Color.ORANGE);
@@ -385,6 +385,8 @@ public class Application extends JFrame implements KeyListener {
                                     e.animations.currentFrame), offsetX, offsetY + (lineHeight * 6));
                         }
                     }
+                    g.setColor(Color.BLUE);
+                    g.draw(e.cbox);
 
                 }
             }
@@ -431,10 +433,10 @@ public class Application extends JFrame implements KeyListener {
                 g2.setFont(debugFont.deriveFont(16.0f));
                 g2.setColor(Color.WHITE);
                 g2.drawString(String.format("[ dbg: %d| fps:%d | obj:%d | g:%f ]",
-                        config.debug,
-                        realFps,
-                        gPipeline.size(),
-                        world.gravity),
+                                config.debug,
+                                realFps,
+                                gPipeline.size(),
+                                world.gravity),
 
                         20, app.getHeight() - 30);
             }
@@ -542,22 +544,22 @@ public class Application extends JFrame implements KeyListener {
         }
 
         private void constrainToWorld(Entity e, World world) {
-            if (e.x < 0.0) {
+            if (e.cbox.getBounds().getX() < 0.0) {
                 e.x = 0.0;
                 e.dx *= -1 * e.elasticity;
                 e.ax = 0.0;
             }
-            if (e.y < 0.0) {
+            if (e.cbox.getBounds().getY() < 0.0) {
                 e.y = 0.0;
                 e.dy *= -1 * e.elasticity;
                 e.ay = 0.0;
             }
-            if (e.x + e.width > world.area.getWidth()) {
+            if (e.cbox.getBounds().getX() + e.cbox.getBounds().getWidth() > world.area.getWidth()) {
                 e.x = world.area.getWidth() - e.width;
                 e.dx *= -1 * e.elasticity;
                 e.ax = 0.0;
             }
-            if (e.y + e.height > world.area.getHeight()) {
+            if (e.cbox.getBounds().getY() + e.cbox.getBounds().getHeight() > world.area.getHeight()) {
                 e.y = world.area.getHeight() - e.height;
                 e.dy *= -1 * e.elasticity;
                 e.ay = 0.0;
@@ -570,6 +572,7 @@ public class Application extends JFrame implements KeyListener {
     }
 
     public static class CollisionDetect {
+        // ToDo! maintain a binTree to 'sub-space' world.
         public Map<String, Entity> colliders = new ConcurrentHashMap<>();
 
         public CollisionDetect() {
@@ -586,10 +589,12 @@ public class Application extends JFrame implements KeyListener {
         }
 
         private void detect() {
-            List<Entity> targets = colliders.values().stream().toList();
+            List<Entity> targets = colliders.values().stream().filter(e -> e.isAlive()).toList();
             for (Entity e1 : colliders.values()) {
+                e1.collide = false;
                 for (Entity e2 : targets) {
-                    if (e1.id != e2.id && e1.box.intersects(e2.box)) {
+                    e2.collide = false;
+                    if (e1.id != e2.id && e1.cbox.getBounds().intersects(e2.cbox.getBounds())) {
                         resolve(e1, e2);
                     }
                 }
@@ -597,12 +602,14 @@ public class Application extends JFrame implements KeyListener {
         }
 
         private void resolve(Entity e1, Entity e2) {
-            double resMass = Math.min(e1.mass, e2.mass);
+            double resMass = e1.mass;
             double friction = 1.0 / (e1.friction * e2.friction);
             Vec2d c1 = new Vec2d(
                     (e1.ax - e2.ax),
                     (e1.ay - e2.ay)).normalize().multiply(resMass * friction * 0.1);
             e2.forces.add(c1.maximize(0.6));
+            e1.collide = true;
+            e2.collide = true;
 
             double cX1 = e1.x + (e1.width * 0.5);
             double cY1 = e1.y + (e1.height * 0.5);
@@ -718,6 +725,7 @@ public class Application extends JFrame implements KeyListener {
 
     public static class Entity {
 
+        public boolean collide;
         // id & naming attributes
         protected long id = entityIndex++;
         protected String name = "entity_" + id;
@@ -732,6 +740,8 @@ public class Application extends JFrame implements KeyListener {
 
         // Position attributes
         public Rectangle2D.Double box = new Rectangle2D.Double(0, 0, 0, 0);
+        public Shape bbox = new Rectangle2D.Double(0, 0, 0, 0);
+        public Shape cbox = new Rectangle2D.Double(0, 0, 0, 0);
         public double x = 0.0, y = 0.0;
         public Vec2d oldPos = new Vec2d(0, 0);
         public double width = 0.0, height = 0.0;
@@ -763,6 +773,23 @@ public class Application extends JFrame implements KeyListener {
         public Entity setSize(double w, double h) {
             this.width = w;
             this.height = h;
+            box.setRect(x, y, w, h);
+            setCollisionBox(0, 0, 0, 0);
+            return this;
+        }
+
+        /**
+         * The collision shape position is relative the entity position.
+         * eg. Entity is 32x32, the shapebox is Ellipse2D at 16,16 and r1=r2=8.
+         *
+         * @param left   left offset into box
+         * @param top    top offset into box
+         * @param right  right offset into box
+         * @param bottom bottom offset into box
+         * @return the updated Entity.
+         */
+        public Entity setCollisionBox(double left, double top, double right, double bottom) {
+            this.bbox = new Rectangle2D.Double(left, top, right, bottom);
             return this;
         }
 
@@ -854,6 +881,12 @@ public class Application extends JFrame implements KeyListener {
         public void update(double elapsed) {
 
             box.setRect(x, y, width, height);
+            cbox = new Ellipse2D.Double(
+                    box.getX() + bbox.getBounds().getX(),
+                    box.getY() + bbox.getBounds().getY(),
+                    box.getWidth() - (bbox.getBounds().getWidth() + bbox.getBounds().getX()),
+                    box.getHeight() - (bbox.getBounds().getHeight() + bbox.getBounds().getY()));
+
             if (Optional.ofNullable(animations).isPresent()) {
                 animations.update((long) elapsed);
             }
@@ -1065,6 +1098,15 @@ public class Application extends JFrame implements KeyListener {
                     .setColor(Color.RED)
                     .setPriority(1)
                     .setMass(40.0)
+                    .setCollisionBox(+4, -8, -4, -2)
+                    /*
+                     * cbox = new Rectangle2D.Double(
+                     * x + bbox.getBounds().getX(),
+                     * y + bbox.getBounds().getY(),
+                     * width - (bbox.getBounds().getWidth()+bbox.getBounds().getX()),
+                     * height - (bbox.getBounds().getHeight()+bbox.getBounds().getY()));
+                     */
+
                     .setAttribute("life", 5)
                     .setAttribute("score", 0)
                     .setAttribute("energy", 100)
@@ -1101,8 +1143,8 @@ public class Application extends JFrame implements KeyListener {
             generateEntity(app, "ball_", 5, 2.5);
 
             Font wlcFont = Font.createFont(
-                    Font.PLAIN,
-                    Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
+                            Font.PLAIN,
+                            Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
                     .deriveFont(12.0f);
 
             // Score Display
@@ -1525,8 +1567,8 @@ public class Application extends JFrame implements KeyListener {
             Application app = new Application(args);
             app.run();
         } catch (Exception e) {
-            System.out.printf("ERR: Unable to run application: %s", 
-                e.getLocalizedMessage());
+            System.out.printf("ERR: Unable to run application: %s",
+                    e.getLocalizedMessage());
             e.printStackTrace();
         }
     }
