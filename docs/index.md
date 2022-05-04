@@ -16,7 +16,7 @@ JEP420 Pattern Matching `switch`, `@FunctionalInterface` and some enhancement on
 ## The project
 
 The [`Application`](https://github.com/mcgivrer/monoclass2/blob/feature/add-camera-entity/src/main/java/com/demoing/app/Application.java#L17)
-class (we can not talk about a project for a 500 LoCs class) is composed of some attribtues and methods (sic) and a
+class (we can not talk about a project for a 1500 LoCs class) is composed of some attribtues and methods (sic) and a
 limited number of subclasses.
 
 ```plantuml
@@ -36,7 +36,7 @@ Application --> Application::I18n
 @enduml
 ```
 
-_figure 1 - Class Diagram for Application and its
+_figure $fig+ - Class Diagram for Application and its
 subclasses_ _[edit](https://github.com/mcgivrer/monoclass2/blob/feature/add-camera-entity/docs/class-diagram.txt)_
 
 So, [`I18n`](https://github.com/mcgivrer/monoclass2/blob/feature/add-camera-entity/src/main/java/com/demoing/app/Application.java#L69)
@@ -118,6 +118,7 @@ Application -> I18n
 @enduml
 ```
 
+_figure $fig+ - the full Application class diagram_
 ### Configuration
 
 The `Configuration` class will provide attributes and their default values from a configuration properties file. It is
@@ -136,8 +137,9 @@ speed and position according to some applied forces to the `Application` entitie
 A small math class is added and is more a helper than a real Vector, the `Vec2d` class, to support needs for forces
 computation.
 
-![img.png](images/physic-engine-with-gravity.png)
+![a Gravity effect](images/physic-engine-with-gravity.png "a Gravity effect")
 
+_figure $fig+ - a Gravity effect !_ 
 ## JDK 17-18 advantages
 
 Mosty in all services and processing class, I'll be using the latest Lambdas possibilities and the JEP-420 preview from
@@ -207,7 +209,7 @@ Animation is map of set of frames, each set of frame must ave a an easy way to d
 
 ![Sprites sheet from Elthen](../src/main/resources/images/sprites01.png)
 
-_figure 3 - The sprites resources used as animation sample._
+_figure $fig+ - The sprites resources used as animation sample._
 
 The `Entity` class will now have an animations attribute.
 
@@ -228,6 +230,7 @@ Entity --> Animation:animations
 @enduml
 ```
 
+_figure $fig+ - Class diagram for Animation as animations Entity attribute_
 ### Animation
 
 The sub-class Animation will support all animation definition and operations:
@@ -241,10 +244,6 @@ public static class Animation{
     private long internalAnimationTime;
 }
 ```
-
-
-
-
 
 The attributes are :
 
@@ -361,6 +360,10 @@ You can add any number of frames set with differente name to the Entity.
 
 > **IMPORTANT**
 > _Don't forget to set the Entity Size corresponding to the size of your animation set frame size._
+
+![Animation of sprites and red life bar are some of useful things](images/animation-lifebar.png "Animation of sprites and red life bar are some of useful things")
+
+_figure $fig+ - Animation of sprites and red life bar are some of useful things_
 
 ## JMX metrics
 
