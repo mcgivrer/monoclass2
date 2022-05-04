@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?><state>
+    <page factory="org.openjdk.jmc.flightrecorder.ui.resultoverview" id="org.openjdk.jmc.flightrecorder.ui.resultoverview">
+        <state>
+            <table sortColumn="score">
+                <column id="score" sortAscending="false" width="70"/>
+                <column id="name" width="200"/>
+                <column id="shortDesc" width="400"/>
+                <column id="longDesc" width="165"/>
+                <column id="id"/>
+                <column id="page"/>
+            </table>
+            <report>
+                <showOk value="false"/>
+            </report>
+        </state>
+    </page>
+    <page factory="org.openjdk.jmc.flightrecorder.ui.jvminformation" id="org.openjdk.jmc.flightrecorder.ui.jvminternals">
+        <state>
+            <jvmFlags sortColumn="name:text">
+                <column id="name:text" width="200"/>
+                <column id="value" width="110"/>
+                <column id="origin:text" width="110"/>
+            </jvmFlags>
+            <jvmFlagsFilter showFilter="false" showSearch="true"/>
+            <jvmFlagsLog sortAscending="true" sortColumn="startTime:timestamp">
+                <column hidden="false" id="startTime:timestamp" width="180"/>
+                <column hidden="false" id="name:text" width="200"/>
+                <column hidden="false" id="oldValue" width="90"/>
+                <column hidden="false" id="newValue" width="90"/>
+                <column hidden="false" id="origin:text" width="110"/>
+            </jvmFlagsLog>
+        </state>
+    </page>
+    <page factory="org.openjdk.jmc.flightrecorder.ui.system" id="org.openjdk.jmc.flightrecorder.ui.environment">
+        <state/>
+    </page>
+    <page factory="org.openjdk.jmc.flightrecorder.ui.javaapplication" id="org.openjdk.jmc.flightrecorder.ui.javaapplication">
+        <state>
+            <sash weights="2,3"/>
+            <table sortColumn="profilingCount">
+                <column id="itemhistogram.key" width="500"/>
+                <column id="profilingCount" sortAscending="false" width="120"/>
+                <column id="ioTime" sortAscending="false" width="120"/>
+                <column hidden="true" id="ioCount" sortAscending="false" width="120"/>
+                <column id="blockedTime" sortAscending="false" width="120"/>
+                <column hidden="true" id="blockedCount" sortAscending="false" width="120"/>
+                <column id="classloadingTime" sortAscending="false" width="120"/>
+                <column hidden="true" id="classloadingCount" sortAscending="false" width="120"/>
+                <column id="allocation" sortAscending="false" width="120"/>
+                <column id="exceptions" sortAscending="false" width="120"/>
+                <column hidden="true" id="(thread).groupName" width="100"/>
+                <column hidden="true" id="(thread).javaThreadId" width="70"/>
+                <column hidden="true" id="threadStart" width="120"/>
+                <column hidden="true" id="threadEnd" width="120"/>
+                <column hidden="true" id="threadDuration" width="100"/>
+            </table>
+            <chart selected="profilingCount">
+                <checkedAction id="applicationPause"/>
+                <checkedAction id="machineTotal"/>
+                <checkedAction id="jvmTotal"/>
+                <checkedAction id="heapUsed"/>
+                <checkedAction id="profilingCount"/>
+                <checkedAction id="allocation"/>
+                <checkedAction id="exceptions"/>
+                <checkedAction id="threadActivityLanes"/>
+            </chart>
+            <threadLane name="EJB">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/high/wls/EJB/EJB_Database_Access"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/EJB/EJB_Home_Remove"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/high/wls/EJB/EJB_Timer_Manager"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/EJB/EJB_Home_Create"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/high/wls/EJB/EJB_Pool_Manager_Remove"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/high/wls/EJB/EJB_Business_Method_Post_Invoke_Cleanup"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/EJB/EJB_Pool_Manager_Create"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/high/wls/EJB/EJB_Replicated_Session_Manager"/>
+                </filter>
+            </threadLane>
+            <threadLane enabled="true" name="EJB Business Method Invoke">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/low/wls/EJB/EJB_Business_Method_Invoke"/>
+                </filter>
+            </threadLane>
+            <threadLane enabled="true" name="JDBC">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/low/wls/JDBC/JDBC_Statement_Execute"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/JDBC/JDBC_Data_Source_Get_Connection"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/JDBC/JDBC_Driver_Connect"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/JDBC/JDBC_Statement_Creation"/>
+                </filter>
+            </threadLane>
+            <threadLane name="JDBC Connection">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/JDBC/JDBC_Connection_Reserve"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/JDBC/JDBC_Connection_Create_Statement"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/JDBC/JDBC_Connection_Commit"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/JDBC/JDBC_Connection_Prepare"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/JDBC/JDBC_Connection_Release"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/low/wls/JDBC/JDBC_Connection_Rollback"/>
+                </filter>
+            </threadLane>
+            <threadLane name="JDBC Connection Close">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/JDBC/JDBC_Connection_Close"/>
+                </filter>
+            </threadLane>
+            <threadLane enabled="true" name="Servlet Request Run">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/low/wls/Servlet/Servlet_Request_Run"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/low/wls/Servlet/Servlet_Request_Run_Begin"/>
+                </filter>
+            </threadLane>
+            <threadLane name="Web Application Load">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/low/wls/Servlet/Web_Application_Load"/>
+                </filter>
+            </threadLane>
+            <threadLane name="Servlet Execute">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/Servlet/Servlet_Execute"/>
+                </filter>
+            </threadLane>
+            <threadLane name="Servlet Context Execute">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/Servlet/Servlet_Context_Execute"/>
+                </filter>
+            </threadLane>
+            <threadLane name="Servlet Invocation">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/low/wls/Servlet/Servlet_Invocation"/>
+                </filter>
+            </threadLane>
+            <threadLane name="Servlet Filter">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/Servlet/Servlet_Check_Access"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/Servlet/Servlet_Filter"/>
+                </filter>
+            </threadLane>
+            <threadLane name="Servlet Request">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/Servlet/Servlet_Request"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/Servlet/Servlet_Request_Dispatch"/>
+                </filter>
+            </threadLane>
+            <threadLane name="Servlet Response Write Headers/Stale Resource">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/Servlet/Servlet_Response_Write_Headers"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/Servlet/Servlet_Stale_Resource"/>
+                </filter>
+            </threadLane>
+            <threadLane name="Servlet Response Send">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/medium/wls/Servlet/Servlet_Response_Send"/>
+                </filter>
+            </threadLane>
+            <threadLane name="JAX-RPC">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/low/wls/Webservices/JAXRPC/Webservices_JAXRPC_Client_Response"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/low/wls/Webservices/JAXRPC/Webservices_JAXRPC_Client_Request"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/low/wls/Webservices/JAXRPC/Webservices_JAXRPC_Request"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/low/wls/Webservices/JAXRPC/Webservices_JAXRPC_Response"/>
+                </filter>
+            </threadLane>
+            <threadLane enabled="true" name="WebServices">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/low/wls/Webservices/JAXRPC/Webservices_JAXRPC_Dispatch"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/low/wls/Webservices/JAXWS/Webservices_JAXWS_Request"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/wls/flightrecorder/low/wls/Webservices/JAXWS/Webservices_JAXWS_Endpoint"/>
+                </filter>
+            </threadLane>
+            <threadLane name="DMS">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/dms-context/dms/ExecutionContext/span"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/dms-anonymous-phase/dms/AnonymousPhase/span"/>
+                </filter>
+            </threadLane>
+            <threadLane name="DMS execution context start">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/dms-context/dms/ExecutionContext/start"/>
+                </filter>
+            </threadLane>
+            <threadLane name="DMS HTTP">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/dms-http/dms/HttpRequest/span"/>
+                    <filter kind="TYPE" type="http://www.oracle.com/dms-http/dms/HttpRequest/start"/>
+                </filter>
+            </threadLane>
+            <threadLane enabled="true" name="JavaFX Pulse">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/technetwork/java/javafx/index.html/javafx/pulse"/>
+                </filter>
+            </threadLane>
+            <threadLane enabled="true" name="JavaFX Input">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="http://www.oracle.com/technetwork/java/javafx/index.html/javafx/input"/>
+                </filter>
+            </threadLane>
+            <threadLane enabled="true" name="Java Latencies">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="jdk.JavaMonitorEnter"/>
+                    <filter kind="TYPE" type="jdk.SocketRead"/>
+                    <filter kind="TYPE" type="jdk.Compilation"/>
+                    <filter kind="TYPE" type="jdk.ExecutionSampling"/>
+                    <filter kind="TYPE" type="jdk.SocketWrite"/>
+                    <filter kind="TYPE" type="jdk.ClassLoad"/>
+                    <filter kind="TYPE" type="jdk.ThreadPark"/>
+                    <filter kind="TYPE" type="jdk.FileWrite"/>
+                    <filter kind="TYPE" type="jdk.ThreadSleep"/>
+                    <filter kind="TYPE" type="jdk.JavaMonitorWait"/>
+                    <filter kind="TYPE" type="jdk.FileRead"/>
+                </filter>
+            </threadLane>
+            <threadLane name="JVM Compiler">
+                <filter kind="OR">
+                    <filter kind="TYPE" type="jdk.SweepCodeCache"/>
+                    <filter kind="TYPE" type="jdk.CompilerPhase"/>
+                </filter>
+            </threadLane>
+            <threadLane editable="false" enabled="false" isRestLane="true" name="Other Types"/>
+        </state>
+    </page>
+    <page factory="org.openjdk.jmc.flightrecorder.ui.eventbrowser" id="org.openjdk.jmc.flightrecorder.ui.eventbrowser">
+        <state>
+            <treeSash horizontal="true" weights="3,7"/>
+        </state>
+    </page>
+</state>

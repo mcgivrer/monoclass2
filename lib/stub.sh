@@ -1,6 +1,7 @@
 #!/bin/sh
 # see https://github.com/maynooth/CS210/wiki/Convert-Java-Executable-to-Linux-Executable
 MYSELF=`which "$0" 2>/dev/null`
+export java_args='--enable-preview'
 [ $? -gt 0 -a -f "$0" ] && MYSELF="./$0"
 java=java
 if test -n "$JAVA_HOME"; then
