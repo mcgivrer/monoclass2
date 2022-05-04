@@ -227,8 +227,7 @@ public class Application extends JFrame implements KeyListener {
                     case "wh", "worldHeight" -> worldHeight = parseDouble(values[1]);
                     case "wg", "worldGravity" -> worldGravity = parseDouble(values[1]);
                     case "fps" -> fps = parseDouble(values[1]);
-                    case "f", "fullScreen" ->
-                            fullScreen = "on|ON|true|True|TRUE".contains(values[1]);
+                    case "f", "fullScreen" -> fullScreen = "on|ON|true|True|TRUE".contains(values[1]);
                     default -> System.out.printf("\nERR : Unknown argument %s\n", arg);
                 }
             });
@@ -523,6 +522,10 @@ public class Application extends JFrame implements KeyListener {
             e.y = Math.ceil(e.y + e.dy);
 
             e.forces.clear();
+        }
+
+        private double threshold(double value, double valueThreshold) {
+            return (value < valueThreshold) ? 0.0 : value;
         }
 
         private void constrainsEntity(Entity e) {
