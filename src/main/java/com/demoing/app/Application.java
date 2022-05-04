@@ -92,9 +92,9 @@ public class Application extends JFrame implements KeyListener {
                 ObjectName objectName = new ObjectName("com.demoing.app:name=" + programName);
                 platformMBeanServer.registerMBean(this, objectName);
             } catch (InstanceAlreadyExistsException
-                     | MBeanRegistrationException
-                     | NotCompliantMBeanException
-                     | MalformedObjectNameException e) {
+                    | MBeanRegistrationException
+                    | NotCompliantMBeanException
+                    | MalformedObjectNameException e) {
                 e.printStackTrace();
             }
 
@@ -228,7 +228,7 @@ public class Application extends JFrame implements KeyListener {
                     case "wg", "worldGravity" -> worldGravity = parseDouble(values[1]);
                     case "fps" -> fps = parseDouble(values[1]);
                     case "f", "fullScreen" ->
-                            fullScreen = "on|ON|true|True|TRUE".contains(values[1]);
+                        fullScreen = "on|ON|true|True|TRUE".contains(values[1]);
                     default -> System.out.printf("\nERR : Unknown argument %s\n", arg);
                 }
             });
@@ -257,8 +257,8 @@ public class Application extends JFrame implements KeyListener {
             Graphics2D g = buffer.createGraphics();
             try {
                 debugFont = Font.createFont(
-                                Font.PLAIN,
-                                Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
+                        Font.PLAIN,
+                        Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
                         .deriveFont(9.0f);
             } catch (FontFormatException | IOException e) {
                 System.out.println("ERR: Unable to initialize Render: " + e.getLocalizedMessage());
@@ -318,11 +318,13 @@ public class Application extends JFrame implements KeyListener {
                             case Entity ee -> {
                                 switch (ee.type) {
                                     case RECTANGLE ->
-                                            g.fillRect((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height);
+                                        g.fillRect((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height);
                                     case ELLIPSE ->
-                                            g.fillArc((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height, 0, 360);
+                                        g.fillArc((int) ee.x, (int) ee.y, (int) ee.width, (int) ee.height, 0, 360);
                                     case IMAGE -> {
-                                        BufferedImage sprite = (BufferedImage) (ee.getAnimations() ? ee.animations.getFrame() : ee.image);
+                                        BufferedImage sprite = (BufferedImage) (ee.getAnimations()
+                                                ? ee.animations.getFrame()
+                                                : ee.image);
                                         if (ee.getDirection() > 0) {
                                             g.drawImage(sprite, (int) ee.x, (int) ee.y, null);
                                         } else {
@@ -357,26 +359,32 @@ public class Application extends JFrame implements KeyListener {
                 g.setColor(Color.ORANGE);
                 if (Optional.ofNullable(e.box).isPresent())
                     g.draw(e.box);
-                if (config.debug > 0) {
-                    g.setFont(debugFont);
-                    int lineHeight = g.getFontMetrics().getHeight();// + g.getFontMetrics().getDescent();
+                g.setFont(debugFont);
+                int lineHeight = g.getFontMetrics().getHeight();// + g.getFontMetrics().getDescent();
+                g.setColor(Color.ORANGE);
+                int offsetX = (int) (e.x + e.width + 4);
+                int offsetY = (int) (e.y - 8);
+                g.drawString(String.format("#%d", e.id), (int) e.x, offsetY);
+                g.setColor(Color.RED);
+                if (e.life != -1 && e.life != 0) {
+                    g.fillRect((int) e.x, (int) e.y - 4, (int)((32) * e.life/e.startLife), 2);
+                }
+                if (config.debug > 1) {
                     g.setColor(Color.ORANGE);
-                    int offsetX = (int) (e.x + e.width + 4);
-                    int offsetY = (int) (e.y - 8);
-                    g.drawString(String.format("#%d", e.id), (int) e.x, offsetY);
-                    if (config.debug > 1) {
-                        g.drawString(String.format("name:%s", e.name), offsetX, offsetY + lineHeight);
-                        g.drawString(String.format("pos:%03.0f,%03.0f", e.x, e.y), offsetX, offsetY + (lineHeight * 2));
-                        g.drawString(String.format("life:%d", e.life), offsetX, offsetY + (lineHeight * 3));
-                        if (config.debug > 2) {
-                            g.drawString(String.format("spd:%03.2f,%03.2f", e.dx, e.dy), offsetX, offsetY + (lineHeight * 4));
-                            g.drawString(String.format("acc:%03.2f,%03.2f", e.ax, e.ay), offsetX, offsetY + (lineHeight * 5));
-                            if (config.debug > 3 && e.getAnimations()) {
-                                g.drawString(String.format("anim:%s/%d", e.animations.currentAnimationSet, e.animations.currentFrame), offsetX, offsetY + (lineHeight * 6));
-                            }
+                    g.drawString(String.format("name:%s", e.name), offsetX, offsetY + lineHeight);
+                    g.drawString(String.format("pos:%03.0f,%03.0f", e.x, e.y), offsetX, offsetY + (lineHeight * 2));
+                    g.drawString(String.format("life:%d", e.life), offsetX, offsetY + (lineHeight * 3));
+                    if (config.debug > 2) {
+                        g.drawString(String.format("spd:%03.2f,%03.2f", e.dx, e.dy), offsetX,
+                                offsetY + (lineHeight * 4));
+                        g.drawString(String.format("acc:%03.2f,%03.2f", e.ax, e.ay), offsetX,
+                                offsetY + (lineHeight * 5));
+                        if (config.debug > 3 && e.getAnimations()) {
+                            g.drawString(String.format("anim:%s/%d", e.animations.currentAnimationSet,
+                                    e.animations.currentFrame), offsetX, offsetY + (lineHeight * 6));
                         }
-
                     }
+
                 }
             }
         }
@@ -422,10 +430,10 @@ public class Application extends JFrame implements KeyListener {
                 g2.setFont(debugFont.deriveFont(16.0f));
                 g2.setColor(Color.WHITE);
                 g2.drawString(String.format("[ dbg: %d| fps:%d | obj:%d | g:%f ]",
-                                config.debug,
-                                realFps,
-                                gPipeline.size(),
-                                world.gravity),
+                        config.debug,
+                        realFps,
+                        gPipeline.size(),
+                        world.gravity),
 
                         20, app.getHeight() - 30);
             }
@@ -662,6 +670,7 @@ public class Application extends JFrame implements KeyListener {
         public double elasticity = 1.0, friction = 1.0;
 
         // internal attributes
+        protected int startLife = -1;
         protected int life = -1;
         public Map<String, Object> attributes = new HashMap<>();
 
@@ -689,6 +698,7 @@ public class Application extends JFrame implements KeyListener {
 
         public Entity setLife(int l) {
             this.life = l;
+            this.startLife = l;
             return this;
         }
 
@@ -1016,8 +1026,8 @@ public class Application extends JFrame implements KeyListener {
             generateEntity(app, "ball_", 5, 2.5);
 
             Font wlcFont = Font.createFont(
-                            Font.PLAIN,
-                            Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
+                    Font.PLAIN,
+                    Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
                     .deriveFont(12.0f);
 
             // Score Display
@@ -1077,7 +1087,6 @@ public class Application extends JFrame implements KeyListener {
                     .setStickToCamera(true);
             app.addEntity(welcomeMsg);
 
-
             // mapping of keys actions:
 
             app.actionHandler.actionMapping = Map.of(
@@ -1115,8 +1124,7 @@ public class Application extends JFrame implements KeyListener {
                     KeyEvent.VK_ESCAPE, o -> {
                         app.requestExit();
                         return this;
-                    }
-            );
+                    });
         }
 
         @Override
@@ -1176,7 +1184,8 @@ public class Application extends JFrame implements KeyListener {
 
         public void removeEntity(Application app, String filterValue, int i) {
             i = (i == -1) ? app.entities.size() : i;
-            List<Entity> etbr = app.entities.values().stream().filter(e -> e.name.contains(filterValue)).limit(i).toList();
+            List<Entity> etbr = app.entities.values().stream().filter(e -> e.name.contains(filterValue)).limit(i)
+                    .toList();
             for (int idx = 0; idx < i; idx++) {
                 if (idx < etbr.size()) {
                     Entity e = etbr.get(idx);
@@ -1191,7 +1200,8 @@ public class Application extends JFrame implements KeyListener {
                 Entity e = new Entity(namePrefix + entityIndex)
                         .setType(ELLIPSE)
                         .setSize(8, 8)
-                        .setPosition(Math.random() * app.world.area.getWidth(), Math.random() * app.world.area.getHeight())
+                        .setPosition(Math.random() * app.world.area.getWidth(),
+                                Math.random() * app.world.area.getHeight())
                         .setAcceleration(
                                 (Math.random() * 2 * acc) - acc,
                                 (Math.random() * 2 * acc) - acc)
