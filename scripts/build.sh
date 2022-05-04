@@ -1,5 +1,4 @@
-#!/usr/bin/bash
-#
+#!/bin/bash
 # more info at https://gist.github.com/mcgivrer/a31510019029eba73edf5721a93c3dec
 # Copyright 2020 Frederic Delorme (McGivrer) fredericDOTdelormeATgmailDOTcom
 #
@@ -9,6 +8,8 @@ export PROGRAM_TITLE=MonoClass2
 export AUTHOR_NAME='Frédéric Delorme'
 export VENDOR_NAME=frederic.delorme@gmail.com
 export MAIN_CLASS=com.demoing.app.Application
+export GIT_COMMIT_ID=$(git rev-parse HEAD)
+export JAVA_BUILD=$(java --version | head -1 | cut -f2 -d' ')
 # Paths
 export SRC=src
 export LIBS=lib
@@ -16,7 +17,7 @@ export TARGET=target
 export BUILD=$TARGET/build
 export CLASSES=$TARGET/classes
 export RESOURCES=$SRC/main/resources
-export COMPILATION_OPTS=--enable-preview -Xlint:deprecation -Xlint:preview
+export COMPILATION_OPTS=--enable-preview
 export JAR_OPTS=--enable-preview
 
 function manifest() {
@@ -27,10 +28,10 @@ function manifest() {
   # build manifest
   echo "|_ 1. Create Manifest file '$TARGET/manifest.mf'"
   echo 'Manifest-Version: 1.0' >$TARGET/manifest.mf
-  echo "Created-By: $JAVA_VERSION ($VENDOR_NAME)" >>$TARGET/manifest.mf
+  echo "Created-By: $JAVA_BUILD ($VENDOR_NAME)" >>$TARGET/manifest.mf
   echo "Main-Class: $MAIN_CLASS" >>$TARGET/manifest.mf
   echo "Implementation-Title: $PROGRAM_TITLE" >>$TARGET/manifest.mf
-  echo "Implementation-Version: $PROGRAM_VERSION-build_$GIT_COMIT_ID" >>$TARGET/manifest.mf
+  echo "Implementation-Version: $PROGRAM_VERSION-build_${GIT_COMMIT_ID:0:8}" >>$TARGET/manifest.mf
   echo "Implementation-Vendor: $VENDOR_NAME" >>$TARGET/manifest.mf
   echo "Implementation-Author: $AUTHOR_NAME" >>$TARGET/manifest.mf
   echo "   |_ done"
@@ -78,7 +79,7 @@ function executeJar() {
     createJar
   fi
   echo "|_ 5.Execute just created JAR $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar"
-  java $JAR_OPTS -jar $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar
+  java $JAR_OPTS -jar $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar "$@"
 }
 #
 function sign() {
