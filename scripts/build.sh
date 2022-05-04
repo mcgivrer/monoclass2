@@ -8,8 +8,8 @@ export PROGRAM_VERSION=1.0.2
 export PROGRAM_TITLE=MonoClass2
 export AUTHOR_NAME='Frédéric Delorme'
 export VENDOR_NAME=frederic.delorme@gmail.com
-export MAINCLASS=com.demoing.app.Application
-# pathes
+export MAIN_CLASS=com.demoing.app.Application
+# Paths
 export SRC=src
 export LIBS=lib
 export TARGET=target
@@ -28,7 +28,7 @@ function manifest() {
   echo "|_ 1. Create Manifest file '$TARGET/manifest.mf'"
   echo 'Manifest-Version: 1.0' >$TARGET/manifest.mf
   echo "Created-By: $JAVA_VERSION ($VENDOR_NAME)" >>$TARGET/manifest.mf
-  echo "Main-Class: $MAINCLASS" >>$TARGET/manifest.mf
+  echo "Main-Class: $MAIN_CLASS" >>$TARGET/manifest.mf
   echo "Implementation-Title: $PROGRAM_TITLE" >>$TARGET/manifest.mf
   echo "Implementation-Version: $PROGRAM_VERSION-build_$GIT_COMIT_ID" >>$TARGET/manifest.mf
   echo "Implementation-Vendor: $VENDOR_NAME" >>$TARGET/manifest.mf
@@ -136,4 +136,4 @@ function run() {
   echo "... done".
 }
 #
-run $1
+run "$1"

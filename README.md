@@ -22,7 +22,7 @@ see the /docs for details
 Relying an a custom build script, just execute:
 
 ```shell
-$> build.sh a
+$> scripts/build.sh a
 ```
 
 > :blue_book: _**NOTE**_
@@ -31,6 +31,18 @@ $> build.sh a
 > getting help in this cli build script._
 
 This will build a jar in `target/` directory.
+
+## Run it !
+
+You can run it by executing the following command line :
+
+```shell
+$> scripts/build.sh r
+```
+
+You will get the following window 
+
+
 
 ## Contribute
 
