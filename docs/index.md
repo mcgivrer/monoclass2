@@ -1,9 +1,13 @@
 ---
-title: MonoClass2, a JDK fun sample usage author: Frédéric Delorme description: A bunch of discovery on the Java JDK
-latest release into a fun and entertaining sample of code. created: 2022-04-29 tags: java,jdk,sample,game,jep420
+title: MonoClass2, a JDK fun sample usage 
+author: Frédéric Delorme 
+description: A bunch of discovery on the Java JDK \ 
+latest release into a fun and entertaining sample of code. 
+created: 2022-04-29 
+tags: java,jdk,sample,game,jep420
 ---
 
-# MonoClass 2
+## Introduction
 
 A bunch of discovery on the Java JDK latest release into a fun and entertaining sample of code. Let's discover the
 JEP420 Pattern Matching `switch`, `@FunctionalInterface` and some enhancement on the
@@ -191,6 +195,173 @@ class Render {
 }
 ```
 
+## Bring Animation
+
+To product beautiful sprite, we need a Animation engine, let's have an Animation class, attribute for Entity, and adapt 
+the Render and entity update to process animations set and display a moving Sprite !
+
+Animation is map of set of frames, each set of frame must ave a an easy way to define/identify it, a simple String  key will do the job.
+
+>**NOTE**
+> _As a sample graphics, we will use a sprites image board from [Elthen adventurer sprites](https://elthen.itch.io/pixel-art-adventurer-sprites) thanks to his [fair licensing](https://www.patreon.com/posts/27430241)._
+
+![Sprites sheet from Elthen](../src/main/resources/images/sprites01.png)
+
+_figure 3 - The sprites resources used as animation sample._
+
+The `Entity` class will now have an animations attribute.
+
+```plantuml
+@startuml
+hide methods
+hide Entity attributes
+class Entity
+class Animation{
+    - animationSet:Map
+    - frameDuration:Map
+    - currentAnimationSet:String
+    - currentFrame:int
+    - internalAnimationTime:long
+}
+
+Entity --> Animation:animations
+@enduml
+```
+
+### Animation
+
+The sub-class Animation will support all animation definition and operations:
+
+```java
+public static class Animation{
+    Map<String, BufferedImage[]> animationSet = new HashMap<>();
+    Map<String, Integer> frameDuration = new HashMap<>();
+    public String currentAnimationSet;
+    public int currentFrame;
+    private long internalAnimationTime;
+}
+```
+
+
+
+
+
+The attributes are :
+
+- `animationSet` a map of all animation frame set, each set is an array of BufferedImage,
+- `frameDuration` is a map of the corresponding duration for each frameset,
+- `currentAnimationSet` is the currently active animation set key,
+- `currentFrame` is the active frame for the current animation set,
+- `internalAnimationTime` is an internal time counter for frame animation purpose.
+
+And based on those attribute we will animate the frame for any entity which will have a not null animation attribute. The `Render` class will support animation rendering in the `draw()` method, but also adding a 'direction' attribute in the `Entity` to define the way to draw the image (left of right):
+
+```java
+public static class Render{
+    //...
+    case Entity ee -> {
+        switch (ee.type) {
+            //...
+            case IMAGE -> {
+                BufferedImage sprite = (BufferedImage) (ee.isAnimation() ? ee.animation.getFrame() : ee.image);
+                if (ee.getDirection() > 0) {
+                    g.drawImage(sprite, (int) ee.x, (int) ee.y, null);
+                } else {
+                    g.drawImage(sprite,
+                            (int) (ee.x + ee.width), (int) ee.y,
+                            (int) (-ee.width), (int) ee.height,
+                            null);
+                }
+            }
+        }
+    }
+    //...
+}
+```
+
+The Entity will have 2 new thins, an animation `attribute` and a `getDirection()` method, and the `update()` method is slightly adapted to manage animation update:
+
+```java
+public static class Entity {
+    //...
+    public Animation animation;
+    //...
+    public int getDirection() {
+        return this.dx > 0 ? 1 : -1;
+    }
+    //...
+    public void update(double elapsed) {
+        box.setRect(x, y, width, height);
+        if (Optional.ofNullable(animation).isPresent()) {
+            animation.update((long) elapsed);
+        }
+    }
+    //...
+} 
+```
+
+And a set of helpers are added to directly manage animation from Entity fluent API :
+
+```java
+public static class Entity {
+    //...
+    public Entity addAnimation(
+            String key, 
+            int x, int y, 
+            int tw, int th, 
+            int nbFrames,      
+            String pathToImage) {
+        if (Optional.ofNullable(this.animation).isEmpty()) {
+            this.animation = new Animation();
+        }
+        this.animation.addAnimationSet(key, pathToImage, x, y, tw, th, nbFrames);
+        return this;
+    }
+
+    public boolean isAnimation() {
+        return Optional.ofNullable(this.animation).isPresent();
+    }
+
+    public Entity activateAnimation(String key) {
+        animation.activate(key);
+        return this;
+    }
+
+    public Entity setFrameDuration(String key, int frameDuration) {
+        animation.setFrameDuration(key, frameDuration);
+        return this;
+    }
+    //...
+}
+```
+
+Then to use it in the `Application#createScene()` :
+
+```java
+public class Application .. {
+    public void createScene(){
+        //...
+        Entity player = new Entity("player")
+                .setType(IMAGE)
+                .setSize(32.0, 32.0)
+                .addAnimation("idle",
+                        0, 0,
+                        32, 32,
+                        13,
+                        "/images/sprites01.png")
+                .setFrameDuration("idle", 200)
+                .activateAnimation("idle");
+    }
+}
+```
+
+Here is added an animation set named `idle` from the image `images/sprites01.png` from the point `(0,0)` with a frame size of `(32x32)` and having `13` frames in the set.
+
+You can add any number of frames set with differente name to the Entity.  
+
+> **IMPORTANT**
+> _Don't forget to set the Entity Size corresponding to the size of your animation set frame size._
+
 ## JMX metrics
 
 It's easy to add remote readable metrics with the builtin Java feature JMX.
@@ -293,7 +464,7 @@ public class AppStatus implements AppStatusMBean {
 
     @Override
     public synchronized void setDebugLevel(Integer d) {
-        config.debug = d.intValue();
+        config.debug = d;
     }
 
     //...
@@ -304,26 +475,27 @@ public class AppStatus implements AppStatusMBean {
     //...
 }
 ```
+
 And in the Application class:
 
 ```java
 public class Application {
-  //...
-  private AppStatus appStats;
-  //...
-  private void initialize(String[] args) {
     //...
-    createJMXStatus(this);
-  }
-  
-  private void createJMXStatus(Application application) {
-    appStats = new AppStatus(application, "Application");
-    appStats.register(application);
-  }
-  
+    private AppStatus appStats;
+
+    //...
+    private void initialize(String[] args) {
+        //...
+        createJMXStatus(this);
+    }
+
+    private void createJMXStatus(Application application) {
+        appStats = new AppStatus(application, "Application");
+        appStats.register(application);
+    }
+
 }
 ```
-
 
 And now, starting the Application, you can directly connect the JCOnsole to the newly showed java process:
 
@@ -345,4 +517,34 @@ And the debug attribute value can be dynamically changed :
 
 ![The Debug Level parameter can be changed during execution](images/jconsole-mbean-dyn-value.png)
 
+## Dockerize the Desktop java app
+
+_TODO_
+
+https://learnwell.medium.com/how-to-dockerize-a-java-gui-application-bce560abf62a
+
+Prepare a Docker image (see [Dockerfile](../Dockerfile) "open the corresponding docker file")
+
+and build tyhe image:
+
+```shell
+docker build --pull --rm -f "Dockerfile" -t monoclass2:latest "."
+```
+
+As soon as the docker image is built, you can execute it :
+
+```shell
+docker run --rm -it monoclass2:latest
+```
+
+## Using ELK to monitor throughJMX
+
+_TODO_
+
+https://medium.com/analytics-vidhya/installing-elk-stack-in-docker-828df335e421
+
+see the [Docker-compose.yaml](./elk/Docker-compose.yaml "Open the docker compose file") file to install ELK through
+Docker.
+
+After installing the ELK through a docker-compose recipe, Kibana is reachable at http://localhost:5601
 
