@@ -1001,7 +1001,6 @@ public class Application extends JFrame implements KeyListener {
                         box.getY() + bbox.getBounds().getY(),
                         box.getWidth() - (bbox.getBounds().getWidth() + bbox.getBounds().getX()),
                         box.getHeight() - (bbox.getBounds().getHeight() + bbox.getBounds().getY()));
-
             }
 
             if (Optional.ofNullable(animations).isPresent()) {
