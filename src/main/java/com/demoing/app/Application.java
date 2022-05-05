@@ -62,6 +62,8 @@ public class Application extends JFrame implements KeyListener {
 
         Long getTimeRendering();
 
+        Long getTimeComputation();
+
         Long getRealFPS();
 
         void requestQuit();
@@ -152,6 +154,11 @@ public class Application extends JFrame implements KeyListener {
         @Override
         public synchronized Long getTimeRendering() {
             return timeRendering;
+        }
+
+        @Override
+        public synchronized Long getTimeComputation() {
+            return computationTime;
         }
 
         @Override
