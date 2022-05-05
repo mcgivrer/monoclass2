@@ -73,11 +73,9 @@ function wrapJar() {
 }
 #
 function executeJar() {
-  if [ ! -f "$TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar" ]; then
-    manifest
-    compile
-    createJar
-  fi
+  manifest
+  compile
+  createJar
   echo "|_ 5.Execute just created JAR $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar"
   java $JAR_OPTS -jar $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar "$@"
 }
