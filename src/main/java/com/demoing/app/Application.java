@@ -568,6 +568,7 @@ public class Application extends JFrame implements KeyListener {
                     updateEntity(e, elapsed);
                 }
                 e.update(elapsed);
+                // TODO update Entity Behavior
                 if (e.isAlive()) {
                     if (e.life >= 0 && e.life != -1) {
                         e.life -= Math.max(elapsed, 1.0);
@@ -576,7 +577,9 @@ public class Application extends JFrame implements KeyListener {
                     }
                 }
             });
-            // update active camera3
+            // TODO update Scene Behaviors
+
+            //  update active camera if presents.
             if (Optional.ofNullable(app.render.activeCamera).isPresent()) {
                 app.render.activeCamera.update(elapsed);
             }
@@ -881,6 +884,8 @@ public class Application extends JFrame implements KeyListener {
         protected int startLife = -1;
         protected int life = -1;
         public Map<String, Object> attributes = new HashMap<>();
+
+        public Map<String, Behavior> behaviors = new HashMap<>();
 
         public Entity(String name) {
             this.name = name;
@@ -1216,6 +1221,12 @@ public class Application extends JFrame implements KeyListener {
         void input(Application app);
 
         String getName();
+    }
+
+    public interface Behavior {
+        public String getEntityFilteredName();
+
+        public void update(Application a, Entity e, double elapsed);
     }
 
     public static class DemoScene implements Scene {

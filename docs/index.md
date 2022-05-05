@@ -4,7 +4,7 @@ author: Frédéric Delorme
 description: A bunch of discovery on the Java JDK \
 latest release into a fun and entertaining sample of code.
 created: 2022-04-29
-tags: java,jdk,sample,game,jep420
+tags: java,jdk17,jdk18,sample,game,jep420
 ---
 
 ## Introduction
@@ -266,10 +266,7 @@ the `Entity` to define the way to draw the image (left of right):
 ```java
 public static class Render {
     //...
-    case
-    Entity ee ->
-
-    {
+    case Entity ee -> {
         switch (ee.type) {
             //...
             case IMAGE -> {
