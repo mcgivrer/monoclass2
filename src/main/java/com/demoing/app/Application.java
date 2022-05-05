@@ -495,7 +495,7 @@ public class Application extends JFrame implements KeyListener {
                     e.update(elapsed);
                 }
                 if (e.isAlive()) {
-                    if (e.life >= 0 & e.life != -1) {
+                    if (e.life >= 0 && e.life != -1) {
                         e.life -= Math.max(elapsed, 1.0);
                     } else {
                         e.life = 0;
@@ -512,6 +512,12 @@ public class Application extends JFrame implements KeyListener {
         private void updateEntity(Entity e, double elapsed) {
             applyPhysicRuleToEntity(e, elapsed);
             constrainsEntity(e);
+            //Behavior on "ball_" named Entities (TODO design Entity's Behaviors interface and impl.)
+            if (e.name.startsWith("ball_") && e.isAlive()) {
+                int score = (Integer) app.entities.get("player").getAttribute("score", 0);
+                score += (Integer) e.getAttribute("points", 5);
+                app.entities.get("player").setAttribute("score", score);
+            }
         }
 
         private void applyPhysicRuleToEntity(Entity e, double elapsed) {
@@ -541,7 +547,9 @@ public class Application extends JFrame implements KeyListener {
         }
 
         private void constrainsEntity(Entity e) {
-            constrainToWorld(e, world);
+            if (e.isAlive()) {
+                constrainToWorld(e, world);
+            }
         }
 
         private void constrainToWorld(Entity e, World world) {
@@ -1134,17 +1142,59 @@ public class Application extends JFrame implements KeyListener {
                     });
         }
 
+        private void generatePlatforms(Application app, int nbPf) {
+            List<Entity> platforms = new ArrayList<>();
+            Entity pf;
+            boolean found = false;
+            for (int i = 0; i < nbPf; i++) {
+                while (true) {
+                    pf = createPlatform(app, i);
+                    found = false;
+                    for (Entity p : platforms) {
+                        if (p.bbox.intersects(pf.bbox.getBounds())) {
+                            found = true;
+                        }
+                    }
+                    if (!found) {
+                        break;
+                    }
+                }
+                platforms.add(pf);
+                app.addEntity(pf);
+            }
+
+        }
+
+        private Entity createPlatform(Application app, int i) {
+            double pfWidth = ((int) (Math.random() * 5) + 4);
+            double maxCols = app.world.area.getWidth() / 16;
+            double maxRows = app.world.area.getHeight() / 48;// height of 1 pf + 1 player
+            double pfCol = (int) (Math.random() * maxRows);
+            pfCol = pfCol < maxCols ? pfCol : maxRows - pfWidth;
+            Entity pf = new Entity("pf_" + i)
+                    .setType(RECTANGLE)
+                    .setPhysicType(PhysicType.STATIC)
+                    .setColor(Color.LIGHT_GRAY)
+                    .setPosition(
+                            pfCol * 16,
+                            (((int) (Math.random() * maxRows) * 48)))
+                    .setSize(pfWidth * 16, 16)
+                    .setCollisionBox(0, 0, 0, 0)
+                    .setElasticity(0.1)
+                    .setFriction(0.70)
+                    .setMass(10000)
+                    .setLife(-1);
+            return pf;
+        }
+
         @Override
         public void update(Application app, double elapsed) {
             if (app.entities.containsKey("player") && app.entities.containsKey("score")) {
+                // update score
                 Entity p = app.entities.get("player");
                 int score = (int) p.getAttribute("score", 0);
-                score += 10;
-                p.setAttribute("score", score);
-
                 TextEntity scoreEntity = (TextEntity) app.entities.get("score");
                 scoreEntity.setText(String.format("%06d", score));
-
             }
         }
 
