@@ -229,7 +229,7 @@ public class Application extends JFrame implements KeyListener {
             fps = parseInt(appProps.getProperty("app.screen.fps", "" + FPS_DEFAULT));
             frameTime = (long) (1000 / fps);
             debug = parseInt(appProps.getProperty("app.debug.level", "0"));
-            fullScreen = "on|ON|true|True|TRUE".contains(appProps.getProperty("app.screen.full", "false"));
+            convertStringToBoolean(appProps.getProperty("app.screen.full", "false"));
         }
 
         private double parseDouble(String stringValue) {
@@ -256,11 +256,15 @@ public class Application extends JFrame implements KeyListener {
                     case "accmin" -> accMinValue = parseDouble(values[1]);
                     case "accmax" -> accMaxValue = parseDouble(values[1]);
                     case "fps" -> fps = parseDouble(values[1]);
-                    case "f", "fullscreen" -> fullScreen = "on|ON|true|True|TRUE".contains(values[1]);
+                    case "f", "fullScreen" -> convertStringToBoolean(values[1]);
                     default -> System.out.printf("\nERR : Unknown argument %s\n", arg);
                 }
             });
             return this;
+        }
+
+        private void convertStringToBoolean(String values) {
+            fullScreen = "on|ON|true|True|TRUE".contains(values);
         }
 
     }
@@ -607,6 +611,10 @@ public class Application extends JFrame implements KeyListener {
             e.y += Utils.ceilMinMaxValue(e.dy, config.speedMinValue, config.speedMaxValue);
 
             e.forces.clear();
+        }
+
+        private double threshold(double value, double valueThreshold) {
+            return (value < valueThreshold) ? 0.0 : value;
         }
 
         private void constrainsEntity(Entity e) {
