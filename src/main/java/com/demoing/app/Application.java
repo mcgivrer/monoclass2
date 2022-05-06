@@ -413,9 +413,9 @@ public class Application extends JFrame implements KeyListener {
                 int offsetY = (int) (e.y - 8);
                 g.drawString(String.format("#%d", e.id), (int) e.x, offsetY);
                 // display LifeBar
-                g.setColor(Color.RED);
-                if (e.duration != -1 && e.duration != 0) {
-                    g.fillRect((int) e.x, (int) e.y - 4, (int) ((32) * e.duration / e.startLife), 2);
+                if (!e.isInfiniteLife() && e.isAlive()) {
+                    g.setColor(Color.RED);
+                    g.fillRect((int) e.x, (int) e.y - 4, (int) ((32) * e.duration / e.startDuration), 2);
                 }
                 if (config.debug > 1) {
                     // display colliding box
@@ -892,7 +892,7 @@ public class Application extends JFrame implements KeyListener {
         public double elasticity = 1.0, friction = 1.0;
 
         // internal attributes
-        protected int startLife = -1;
+        protected int startDuration = -1;
         protected int duration = -1;
         public Map<String, Object> attributes = new HashMap<>();
 
@@ -948,6 +948,7 @@ public class Application extends JFrame implements KeyListener {
 
         public synchronized Entity setDuration(int l) {
             this.duration = l;
+            this.startDuration = l;
             return this;
         }
 
@@ -1265,6 +1266,7 @@ public class Application extends JFrame implements KeyListener {
             app.world.setFriction(0.98);
             app.setAttribute("life", 5);
             app.setAttribute("score", 0);
+            app.setAttribute("time", 180);
 
             Entity floor = new Entity("floor")
                     .setType(RECTANGLE)
@@ -1387,6 +1389,19 @@ public class Application extends JFrame implements KeyListener {
                     .setDuration(-1)
                     .setStickToCamera(true);
             app.addEntity(scoreTxtE);
+
+            long time = (int) app.getAttribute("time", 0);
+            Font timeFont = wlcFont.deriveFont(16.0f);
+            String timeTxt = String.format("%02d:%02d", (int) (time / 60), (int) (time % 60));
+            TextEntity timeTxtE = (TextEntity) new TextEntity("time")
+                    .setText(timeTxt)
+                    .setAlign(TextAlign.CENTER)
+                    .setFont(scoreFont)
+                    .setPosition(app.config.screenWidth / 2, 30)
+                    .setColor(Color.WHITE)
+                    .setDuration(-1)
+                    .setStickToCamera(true);
+            app.addEntity(timeTxtE);
 
             Font lifeFont = new Font("Arial", Font.PLAIN, 16);
             TextEntity lifeTxt = (TextEntity) new TextEntity("life")
@@ -1541,6 +1556,11 @@ public class Application extends JFrame implements KeyListener {
         @Override
         public void update(Application app, double elapsed) {
             if (app.entities.containsKey("score") && app.entities.containsKey("player")) {
+
+                long time = (int) app.getAttribute("time", 0);
+                TextEntity timeTxt = (TextEntity) app.entities.get("time");
+                String timeStr = String.format("%02d:%02d", (int) (time / 60), (int) (time % 60));
+                timeTxt.setText(timeStr);
                 // update score
                 int score = (int) app.getAttribute("score", 0);
                 TextEntity scoreEntity = (TextEntity) app.entities.get("score");
@@ -1564,7 +1584,6 @@ public class Application extends JFrame implements KeyListener {
                     player.setDuration(0);
                     app.addEntity(new TextEntity("YouAreDead")
                             .setText(I18n.get("app.player.dead"))
-                            .setText(I18n.get("app.message.welcome"))
                             .setAlign(TextAlign.CENTER)
                             .setFont(wlcFont)
                             .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)

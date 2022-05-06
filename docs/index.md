@@ -266,7 +266,10 @@ the `Entity` to define the way to draw the image (left of right):
 ```java
 public static class Render {
     //...
-    case Entity ee -> {
+    case
+    Entity ee ->
+
+    {
         switch (ee.type) {
             //...
             case IMAGE -> {
@@ -596,20 +599,49 @@ You may have noticed the new configuration attributes:
 - `accMaxValue` the maximum acceleration that will be used as a max threshold for any Entity (default value in
   configuration properties file : `app.physic.acceleration.max=3.5`),.
 
+And specific values for collision resolution:
+
+- `colSpeedMinValue` the minimum speed value below the value is reduced to 0.0 to remove noise effect on Entity's speed
+  computation on collision (default value in configuration properties file : `app.physic.speed.min=0.1`),
+- `colSpeedMaxValue` the maximum speed that will be used as a max threshold for any Entity on collision (default value
+  in configuration
+  properties file : `app.physic.speed.max=3.2`),.
+
 ```properties
 app.physic.speed.min=0.1
 app.physic.speed.max=3.2
 app.physic.acceleration.min=0.01
 app.physic.acceleration.max=3.5
+app.collision.speed.min=0.1
+app.collision.speed.max=1.2
 ```
 
 _figure $fig+ - `app.properties` file modified with new `PhysicEngine` threshold values._
 
-Here is a screen capture from the new CollisionDetector with  platforms implementation:
+Here is a screen capture from the new CollisionDetector with platforms implementation:
 
 ![Collision Detecion and platforms](images/collision-detection-and-platform.png "Collision detection and platforms")
 
 _figure $fig+ - Collision detection and platforms_
+
+## Behavior's
+
+One way to implement quickly some enhancement in a game is to provide the opportunity to add dynamically some new
+behaviors
+to some game component. The solution is `Behavior`.
+
+We are going to add behavior to be triggered on some new events or process.
+
+Adding the `Behavior` on `Entity` will allow us to bring some basic gameplay. Particularly in the collision
+event (`onCollision`), where sme new thing may happen:
+
+- increase the player score each time a ball is destroyed,
+- impact player energy each time a ball collide the player, and manage energy and life of the player.
+
+Adding new Platforms that contains a new attribute named "dead" and set to true. If a ball collide such platform, it
+disappear and raise the player score.
+
+
 
 ## JMX metrics
 
