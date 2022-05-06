@@ -152,7 +152,7 @@ type of Entity in the pipeline.
 class Render {
     public draw(double fps) {
         gPipeline.stream()
-                .filter(e -> e.isAlive() || e.life == -1)
+                .filter(e -> e.isAlive() || e.isNeverDying())
                 .forEach(e -> {
                     //...
                     switch (e) {
@@ -455,7 +455,7 @@ public static class CollisionDetector {
     private void detect() {
         List<Entity> targets = colliders.values()
                 .stream()
-                .filter(e -> e.isAlive() || e.life == -1)
+                .filter(e -> e.isAlive() || e.isNeverDying())
                 .toList();
         for (Entity e1 : colliders.values()) {
             e1.collide = false;

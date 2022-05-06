@@ -199,9 +199,10 @@ public class Application extends JFrame implements KeyListener {
 
         private double speedMinValue = 0.1;
         private double speedMaxValue = 4.0;
+        private double colSpeedMinValue = 0.1;
+        private double colSpeedMaxValue = 2.0;
 
         private double accMinValue = 0.1;
-
         private double accMaxValue = 0.35;
 
         public Configuration(String fileName) {
@@ -223,8 +224,12 @@ public class Application extends JFrame implements KeyListener {
 
             speedMinValue = parseDouble(appProps.getProperty("app.physic.speed.min", "0.1"));
             speedMaxValue = parseDouble(appProps.getProperty("app.physic.speed.max", "8.0"));
-            speedMinValue = parseDouble(appProps.getProperty("app.physic.acceleration.min", "0.01"));
-            speedMaxValue = parseDouble(appProps.getProperty("app.physic.acceleration.max", "3.0"));
+            accMinValue = parseDouble(appProps.getProperty("app.physic.acceleration.min", "0.01"));
+            accMaxValue = parseDouble(appProps.getProperty("app.physic.acceleration.max", "3.0"));
+
+
+            colSpeedMinValue = parseDouble(appProps.getProperty("app.collision.speed.min", "0.1"));
+            colSpeedMaxValue = parseDouble(appProps.getProperty("app.collision.speed.max", "8.0"));
 
             fps = parseInt(appProps.getProperty("app.screen.fps", "" + FPS_DEFAULT));
             frameTime = (long) (1000 / fps);
@@ -255,6 +260,8 @@ public class Application extends JFrame implements KeyListener {
                     case "spmax" -> speedMaxValue = parseDouble(values[1]);
                     case "accmin" -> accMinValue = parseDouble(values[1]);
                     case "accmax" -> accMaxValue = parseDouble(values[1]);
+                    case "cspmin" -> colSpeedMinValue = parseDouble(values[1]);
+                    case "cspmax" -> colSpeedMaxValue = parseDouble(values[1]);
                     case "fps" -> fps = parseDouble(values[1]);
                     case "f", "fullScreen" -> convertStringToBoolean(values[1]);
                     default -> System.out.printf("\nERR : Unknown argument %s\n", arg);
@@ -317,7 +324,7 @@ public class Application extends JFrame implements KeyListener {
             moveCamera(g, activeCamera, -1);
             drawGrid(g, world, 16, 16);
             moveCamera(g, activeCamera, 1);
-            gPipeline.stream().filter(e -> e.isAlive() || e.life == -1)
+            gPipeline.stream().filter(e -> e.isAlive() || e.isInfiniteLife())
                     .forEach(e -> {
                         if (e.isNotStickToCamera()) {
                             moveCamera(g, activeCamera, -1);
@@ -407,8 +414,8 @@ public class Application extends JFrame implements KeyListener {
                 g.drawString(String.format("#%d", e.id), (int) e.x, offsetY);
                 // display LifeBar
                 g.setColor(Color.RED);
-                if (e.life != -1 && e.life != 0) {
-                    g.fillRect((int) e.x, (int) e.y - 4, (int) ((32) * e.life / e.startLife), 2);
+                if (e.duration != -1 && e.duration != 0) {
+                    g.fillRect((int) e.x, (int) e.y - 4, (int) ((32) * e.duration / e.startLife), 2);
                 }
                 if (config.debug > 1) {
                     // display colliding box
@@ -419,7 +426,7 @@ public class Application extends JFrame implements KeyListener {
                         g.setColor(Color.ORANGE);
                         g.drawString(String.format(Locale.ROOT, "name:%s", e.name), offsetX, offsetY + lineHeight);
                         g.drawString(String.format(Locale.ROOT, "pos:%03.0f,%03.0f", e.x, e.y), offsetX, offsetY + (lineHeight * 2));
-                        g.drawString(String.format("life:%d", e.life), offsetX, offsetY + (lineHeight * 3));
+                        g.drawString(String.format("life:%d", e.duration), offsetX, offsetY + (lineHeight * 3));
                         if (config.debug > 3) {
                             // display Physic parameters
                             g.drawString(String.format(Locale.ROOT, "spd:%03.2f,%03.2f", e.dx, e.dy), offsetX,
@@ -570,10 +577,10 @@ public class Application extends JFrame implements KeyListener {
                 e.update(elapsed);
                 // TODO update Entity Behavior
                 if (e.isAlive()) {
-                    if (e.life >= 0 && e.life != -1) {
-                        e.life -= Math.max(elapsed, 1.0);
+                    if (e.duration >= 0 && e.duration != -1) {
+                        e.duration -= Math.max(elapsed, 1.0);
                     } else {
-                        e.life = 0;
+                        e.duration = 0;
                     }
                 }
             });
@@ -589,12 +596,6 @@ public class Application extends JFrame implements KeyListener {
         private void updateEntity(Entity e, double elapsed) {
             applyPhysicRuleToEntity(e, elapsed);
             constrainsEntity(e);
-            //Behavior on "ball_" named Entities (TODO design Entity's Behaviors interface and impl.)
-            if (e.name.startsWith("ball_") && e.isAlive()) {
-                int score = (Integer) app.entities.get("player").getAttribute("score", 0);
-                score += (Integer) e.getAttribute("points", 5);
-                app.entities.get("player").setAttribute("score", score);
-            }
         }
 
         private void applyPhysicRuleToEntity(Entity e, double elapsed) {
@@ -627,7 +628,7 @@ public class Application extends JFrame implements KeyListener {
         }
 
         private void constrainsEntity(Entity e) {
-            if (e.isAlive()) {
+            if (e.isAlive() || e.isInfiniteLife()) {
                 constrainToWorld(e, world);
             }
         }
@@ -649,7 +650,9 @@ public class Application extends JFrame implements KeyListener {
                 e.ax = 0.0;
             }
             if (e.cbox.getBounds().getY() + e.cbox.getBounds().getHeight() > world.area.getHeight()) {
-                e.life = 0;
+                e.y = world.area.getHeight() - e.height;
+                e.dx *= -1 * e.elasticity;
+                e.ax = 0.0;
             }
         }
 
@@ -660,12 +663,16 @@ public class Application extends JFrame implements KeyListener {
 
     public static class CollisionDetector {
         private final Configuration config;
+        private final Application app;
+        private final World world;
 
         // ToDo! maintain a binTree to 'sub-space' world.
         public Map<String, Entity> colliders = new ConcurrentHashMap<>();
 
         public CollisionDetector(Application a, Configuration c, World w) {
             this.config = c;
+            this.app = a;
+            this.world = w;
         }
 
         public void add(Entity e) {
@@ -677,13 +684,17 @@ public class Application extends JFrame implements KeyListener {
         }
 
         private void detect() {
-            List<Entity> targets = colliders.values().stream().filter(e -> e.isAlive() || e.life == -1).toList();
+            List<Entity> targets = colliders.values().stream().filter(e -> e.isAlive() || e.isInfiniteLife()).toList();
             for (Entity e1 : colliders.values()) {
                 e1.collide = false;
                 for (Entity e2 : targets) {
                     e2.collide = false;
                     if (e1.id != e2.id && e1.cbox.getBounds().intersects(e2.cbox.getBounds())) {
                         resolve(e1, e2);
+                        e1.behaviors.values().stream()
+                                .filter(b -> b.getName().equals("onCollision"))
+                                .collect(Collectors.toList())
+                                .forEach(b -> b.onCollide(app, e1, e2));
                     }
                 }
             }
@@ -707,13 +718,13 @@ public class Application extends JFrame implements KeyListener {
                 double colSpeed = vRelSpeed.x * colNorm.x + vRelSpeed.y * colNorm.y;
                 var impulse = 2 * colSpeed / (e1.mass + e2.mass);
                 e1.dx -= Utils.ceilMinMaxValue(impulse * e2.mass * colSpeed * colNorm.x,
-                        config.speedMinValue, config.speedMaxValue);
+                        config.speedMinValue, config.colSpeedMaxValue);
                 e1.dy -= Utils.ceilMinMaxValue(impulse * e2.mass * colSpeed * colNorm.y,
-                        config.speedMinValue, config.speedMaxValue);
+                        config.speedMinValue, config.colSpeedMaxValue);
                 e2.dx += Utils.ceilMinMaxValue(impulse * e1.mass * colSpeed * colNorm.x,
-                        config.speedMinValue, config.speedMaxValue);
+                        config.speedMinValue, config.colSpeedMaxValue);
                 e2.dy += Utils.ceilMinMaxValue(impulse * e1.mass * colSpeed * colNorm.y,
-                        config.speedMinValue, config.speedMaxValue);
+                        config.speedMinValue, config.colSpeedMaxValue);
                 if (e1.name.equals("player") && config.debug > 4) {
                     System.out.printf("e1.%s collides e2.%s Vp=%s / dist=%f / norm=%s\n", e1.name, e2.name, vp, distance, colNorm);
                 }
@@ -882,7 +893,7 @@ public class Application extends JFrame implements KeyListener {
 
         // internal attributes
         protected int startLife = -1;
-        protected int life = -1;
+        protected int duration = -1;
         public Map<String, Object> attributes = new HashMap<>();
 
         public Map<String, Behavior> behaviors = new HashMap<>();
@@ -935,9 +946,8 @@ public class Application extends JFrame implements KeyListener {
             return this;
         }
 
-        public Entity setLife(int l) {
-            this.life = l;
-            this.startLife = l;
+        public synchronized Entity setDuration(int l) {
+            this.duration = l;
             return this;
         }
 
@@ -947,7 +957,11 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public boolean isAlive() {
-            return (life > 0);
+            return (duration > 0);
+        }
+
+        public boolean isInfiniteLife() {
+            return this.duration == -1;
         }
 
         public boolean isNotStickToCamera() {
@@ -1050,6 +1064,11 @@ public class Application extends JFrame implements KeyListener {
 
         public Entity activateAnimation(String key) {
             animations.activate(key);
+            return this;
+        }
+
+        public Entity addBehavior(Behavior b) {
+            this.behaviors.put(b.getName(), b);
             return this;
         }
 
@@ -1224,13 +1243,17 @@ public class Application extends JFrame implements KeyListener {
     }
 
     public interface Behavior {
-        public String getEntityFilteredName();
+        public String getName();
 
-        public void update(Application a, Entity e, double elapsed);
+        public void update(Application a, Entity e);
+
+        public void onCollide(Application a, Entity e1, Entity e2);
     }
 
     public static class DemoScene implements Scene {
         private final String name;
+
+        Font wlcFont;
 
         public DemoScene(String name) {
             this.name = name;
@@ -1238,7 +1261,10 @@ public class Application extends JFrame implements KeyListener {
 
         @Override
         public void create(Application app) throws IOException, FontFormatException {
+
             app.world.setFriction(0.98);
+            app.setAttribute("life", 5);
+            app.setAttribute("score", 0);
 
             Entity floor = new Entity("floor")
                     .setType(RECTANGLE)
@@ -1250,9 +1276,35 @@ public class Application extends JFrame implements KeyListener {
                     .setElasticity(0.1)
                     .setFriction(0.70)
                     .setMass(10000)
-                    .setLife(-1);
+                    .setDuration(-1);
             app.addEntity(floor);
+            Entity opf1 = new Entity("outPlatform_1")
+                    .setType(RECTANGLE)
+                    .setPhysicType(PhysicType.STATIC)
+                    .setColor(Color.RED)
+                    .setPosition(app.world.area.getWidth() - 16, app.world.area.getHeight() - 8)
+                    .setSize(16, 8)
+                    .setCollisionBox(0, 0, 0, 0)
+                    .setElasticity(0.1)
+                    .setFriction(0.70)
+                    .setMass(10000)
+                    .setDuration(-1)
+                    .setAttribute("dead", true);
 
+            app.addEntity(opf1);
+            Entity opf2 = new Entity("outPlatform_2")
+                    .setType(RECTANGLE)
+                    .setPhysicType(PhysicType.STATIC)
+                    .setColor(Color.RED)
+                    .setPosition(0, app.world.area.getHeight() - 8)
+                    .setSize(16, 8)
+                    .setCollisionBox(0, 0, 0, 0)
+                    .setElasticity(0.1)
+                    .setFriction(0.70)
+                    .setMass(10000)
+                    .setDuration(-1)
+                    .setAttribute("dead", true);
+            app.addEntity(opf2);
             generatePlatforms(app, 15);
 
             // A main player Entity.
@@ -1266,8 +1318,6 @@ public class Application extends JFrame implements KeyListener {
                     .setPriority(1)
                     .setMass(40.0)
                     .setCollisionBox(+4, -8, -4, -2)
-                    .setAttribute("life", 5)
-                    .setAttribute("score", 0)
                     .setAttribute("energy", 100)
                     .setAttribute("mana", 100)
                     .setAttribute("accStep", 0.05)
@@ -1289,8 +1339,26 @@ public class Application extends JFrame implements KeyListener {
                             6,
                             "/images/sprites01.png")
                     .setFrameDuration("jump", 60)
-                    .activateAnimation("idle");
+                    .activateAnimation("idle")
+                    .addBehavior(new Behavior() {
 
+                        @Override
+                        public String getName() {
+                            return "onCollision";
+                        }
+
+                        @Override
+                        public void onCollide(Application a, Entity e1, Entity e2) {
+                            if (e2.name.contains("ball_")) {
+                                reducePlayerEnergy(a, e1, e2);
+                            }
+                        }
+
+                        @Override
+                        public void update(Application a, Entity e) {
+
+                        }
+                    });
             app.addEntity(player);
 
             Camera cam = new Camera("cam01")
@@ -1301,13 +1369,13 @@ public class Application extends JFrame implements KeyListener {
 
             generateEntity(app, "ball_", 5, 2.5);
 
-            Font wlcFont = Font.createFont(
+            wlcFont = Font.createFont(
                             Font.PLAIN,
                             Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
                     .deriveFont(12.0f);
 
             // Score Display
-            int score = (int) player.getAttribute("score", 0);
+            int score = (int) app.getAttribute("score", 0);
             Font scoreFont = wlcFont.deriveFont(16.0f);
             String scoreTxt = String.format("%06d", score);
             TextEntity scoreTxtE = (TextEntity) new TextEntity("score")
@@ -1316,7 +1384,7 @@ public class Application extends JFrame implements KeyListener {
                     .setFont(scoreFont)
                     .setPosition(20, 30)
                     .setColor(Color.WHITE)
-                    .setLife(-1)
+                    .setDuration(-1)
                     .setStickToCamera(true);
             app.addEntity(scoreTxtE);
 
@@ -1327,7 +1395,7 @@ public class Application extends JFrame implements KeyListener {
                     .setFont(lifeFont)
                     .setPosition(app.config.screenWidth - 40, 30)
                     .setColor(Color.RED)
-                    .setLife(-1)
+                    .setDuration(-1)
                     .setPriority(10)
                     .setStickToCamera(true);
             app.addEntity(lifeTxt);
@@ -1341,7 +1409,7 @@ public class Application extends JFrame implements KeyListener {
                     .setPriority(10)
                     .setPosition(app.config.screenWidth - 40 - 4 - 32, 25);
             app.addEntity(energyGauge);
-            GaugeEntity manaGauge = (GaugeEntity) new GaugeEntity("energy")
+            GaugeEntity manaGauge = (GaugeEntity) new GaugeEntity("mana")
                     .setMax(100.0)
                     .setMin(0.0)
                     .setValue((int) player.getAttribute("mana", 100.0))
@@ -1358,7 +1426,7 @@ public class Application extends JFrame implements KeyListener {
                     .setFont(wlcFont)
                     .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
                     .setColor(Color.WHITE)
-                    .setLife(5000)
+                    .setDuration(5000)
                     .setPriority(20)
                     .setStickToCamera(true);
             app.addEntity(welcomeMsg);
@@ -1403,6 +1471,25 @@ public class Application extends JFrame implements KeyListener {
                     });
         }
 
+        private void reducePlayerEnergy(Application app, Entity player, Entity e) {
+            int hurt = (int) e.getAttribute("hurt", 0);
+            int energy = (int) player.getAttribute("energy", 0);
+            energy -= hurt;
+            if (energy < 0) {
+                int life = (int) app.getAttribute("life", 0);
+                life -= 1;
+                if (life < 0) {
+                    app.setAttribute("endOfGame", true);
+                    player.duration = 0;
+                } else {
+                    app.setAttribute("life", life);
+                    player.setAttribute("energy", 100);
+                }
+            } else {
+                player.setAttribute("energy", energy -= hurt);
+            }
+        }
+
         private void generatePlatforms(Application app, int nbPf) {
             List<Entity> platforms = new ArrayList<>();
             Entity pf;
@@ -1428,34 +1515,64 @@ public class Application extends JFrame implements KeyListener {
 
         private Entity createPlatform(Application app, int i) {
             double pfWidth = ((int) (Math.random() * 5) + 4);
-            double maxCols = app.world.area.getHeight() / 16;
-            double maxRows = app.world.area.getHeight() / 48;// height of 1 pf + 1 player
-            double pfCol = (int) (Math.random() * maxRows);
+            double maxCols = (app.world.area.getWidth() / 16.0);
+            // 48=height of 1 pf + 1 player, -(3 + 3) to prevent create platform too low and too high
+            double maxRows = (app.world.area.getHeight() / 48) - 6;
+            double pfCol = (int) (Math.random() * maxCols);
             pfCol = pfCol < maxCols ? pfCol : maxRows - pfWidth;
+            double pfRow = (int) ((Math.random() * maxRows) + 3);
+
             Entity pf = new Entity("pf_" + i)
                     .setType(RECTANGLE)
                     .setPhysicType(PhysicType.STATIC)
                     .setColor(Color.LIGHT_GRAY)
                     .setPosition(
                             pfCol * 16,
-                            (((int) (Math.random() * maxRows) * 48)))
+                            pfRow * 48)
                     .setSize(pfWidth * 16, 16)
                     .setCollisionBox(0, 0, 0, 0)
                     .setElasticity(0.1)
                     .setFriction(0.70)
                     .setMass(10000)
-                    .setLife(-1);
+                    .setDuration(-1);
             return pf;
         }
 
         @Override
         public void update(Application app, double elapsed) {
-            if (app.entities.containsKey("player") && app.entities.containsKey("score")) {
+            if (app.entities.containsKey("score") && app.entities.containsKey("player")) {
                 // update score
-                Entity p = app.entities.get("player");
-                int score = (int) p.getAttribute("score", 0);
+                int score = (int) app.getAttribute("score", 0);
                 TextEntity scoreEntity = (TextEntity) app.entities.get("score");
                 scoreEntity.setText(String.format("%06d", score));
+
+                int life = (int) app.getAttribute("life", 0);
+                TextEntity lifeEntity = (TextEntity) app.entities.get("life");
+                lifeEntity.setText(String.format("%d", life));
+
+                Entity player = app.entities.get("player");
+
+                int energy = (int) player.getAttribute("energy", 0);
+                GaugeEntity energyEntity = (GaugeEntity) app.entities.get("energy");
+                energyEntity.setValue(energy);
+
+                int mana = (int) player.getAttribute("mana", 0);
+                GaugeEntity manaEntity = (GaugeEntity) app.entities.get("mana");
+                manaEntity.setValue(mana);
+
+                if (energy <= 0 && life <= 0) {
+                    player.setDuration(0);
+                    app.addEntity(new TextEntity("YouAreDead")
+                            .setText(I18n.get("app.player.dead"))
+                            .setText(I18n.get("app.message.welcome"))
+                            .setAlign(TextAlign.CENTER)
+                            .setFont(wlcFont)
+                            .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
+                            .setColor(Color.WHITE)
+                            .setDuration(-1)
+                            .setPriority(20)
+                            .setStickToCamera(true));
+                }
             }
         }
 
@@ -1528,12 +1645,38 @@ public class Application extends JFrame implements KeyListener {
                         .setAcceleration(
                                 (Math.random() * 2 * acc) - acc,
                                 (Math.random() * 2 * acc) - acc)
-                        .setColor(new Color((float) Math.random(), (float) Math.random(), (float) Math.random()))
-                        .setLife((int) ((Math.random() * 5) + 5) * 5000)
+                        .setColor(Color.RED)
+                        .setDuration((int) ((Math.random() * 5) + 5) * 5000)
                         .setElasticity(0.65)
                         .setFriction(0.98)
                         .setMass(5.0)
-                        .setPriority(2);
+                        .setPriority(2)
+                        // player will loose 1 point of energy.
+                        .setAttribute("hurt", 1)
+                        // player can win 10 to 50 points
+                        .setAttribute("points", (int) (10 + (Math.random() * 4)) * 10)
+                        .addBehavior(new Behavior() {
+                            @Override
+                            public String getName() {
+                                return "onCollision";
+                            }
+
+                            @Override
+                            public void onCollide(Application a, Entity e1, Entity e2) {
+                                // If hurt a dead attribute platform => Die !
+                                if ((boolean) e2.getAttribute("dead", false) && e1.isAlive()) {
+                                    int score = (int) a.getAttribute("score", 0);
+                                    int points = (int) e1.getAttribute("points", 0);
+                                    a.setAttribute("score", score + points);
+                                    e1.setDuration(0);
+                                }
+                            }
+
+                            @Override
+                            public void update(Application a, Entity e) {
+
+                            }
+                        });
                 app.addEntity(e);
             }
         }
@@ -1573,6 +1716,7 @@ public class Application extends JFrame implements KeyListener {
     private long computationTime = 0;
 
     private Map<String, Entity> entities = new HashMap<>();
+    private Map<String, Object> attributes = new HashMap<>();
 
     private World world;
 
@@ -1666,6 +1810,15 @@ public class Application extends JFrame implements KeyListener {
         render.addToPipeline(entity);
         collisionDetect.add(entity);
         entities.put(entity.name, entity);
+    }
+
+    public Application setAttribute(String attrName, Object attrValue) {
+        this.attributes.put(attrName, attrValue);
+        return this;
+    }
+
+    public Object getAttribute(String attrName, Object defaultValue) {
+        return (this.attributes.getOrDefault(attrName, defaultValue));
     }
 
     private void loop() {
