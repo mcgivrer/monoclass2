@@ -47,14 +47,23 @@ You can run it by executing the following command line :
 $> scripts/build.sh r
 ```
 
-(see [Vuild V3 README](https://gist.github.com/mcgivrer/a31510019029eba73edf5721a93c3dec#file-readme-md) for details on
+(see [Build V3 README](https://gist.github.com/mcgivrer/a31510019029eba73edf5721a93c3dec#file-readme-md) for details on
 build script)
+
+Or if you build it with `scripts/build.sh a`, you will be able to run it with :
+
+```shell
+$> java --enable-preview -jar target/monoclass2-1.0.3.jar
+```
 
 You will get the following window
 
-![Latest update preparing the v1.0.3 with Collision detection and platforms](docs/images/collision-detection-and-platform.png "Latest update preparing the v1.0.3 with Collision detection and platforms")
+![DaGame pre-release preparing the v1.0.3 with Behavior and gameplay](docs/images/behaviors-and-gameplay.png "DaGame pre-release preparing the v1.0.3 with Behavior and gameplay")
 
-_figure 1 - Latest update preparing the v1.0.3 with Collision detection and platforms_
+_figure 1 - DaGame pre-release preparing the v1.0.3 with Behavior and gameplay_
+
+> :blue_book: _**NOTE**_
+> _You can notice the new Time display, limiting the time play._
 
 ## Contribute
 
