@@ -234,26 +234,6 @@ public class DemoScene implements Scene {
                     app.config.debug = app.config.debug + 1 < 5 ? app.config.debug + 1 : 0;
                     return this;
                 },
-                // create perturbation on "ball" objects
-                KeyEvent.VK_P, o -> {
-                    emitPerturbationOnEntity(app, "ball_", 2.5);
-                    return this;
-                },
-                // add new balls
-                KeyEvent.VK_PAGE_UP, o -> {
-                    generateEntity(app, "ball_", 5, 2.5);
-                    return this;
-                },
-                // remove balls
-                KeyEvent.VK_PAGE_DOWN, o -> {
-                    removeEntity(app, "ball_", 5);
-                    return this;
-                },
-                // remove all balls
-                KeyEvent.VK_BACK_SPACE, o -> {
-                    removeEntity(app, "ball_", -1);
-                    return this;
-                },
                 // I quit !
                 KeyEvent.VK_ESCAPE, o -> {
                     app.requestExit();
@@ -331,65 +311,65 @@ public class DemoScene implements Scene {
 
     @Override
     public synchronized void update(Application app, double elapsed) {
-        //if (app.entities.containsKey("score") && app.entities.containsKey("player")) {
-        Entity player = app.getEntity("player");
+        if (app.entities.containsKey("score") && app.entities.containsKey("player")) {
+            Entity player = app.getEntity("player");
 
-        // Update timer
-        long time = (long) app.getAttribute("time", 0);
-        time -= elapsed;
-        time = time >= 0 ? time : 0;
-        app.setAttribute("time", time);
+            // Update timer
+            long time = (long) app.getAttribute("time", 0);
+            time -= elapsed;
+            time = time >= 0 ? time : 0;
+            app.setAttribute("time", time);
 
-        // display timer
-        TextEntity timeTxt = (TextEntity) app.getEntity("time");
-        String timeStr = String.format("%02d:%02d", (int) (time / (60 * 1000)), (int) ((time % (60 * 1000)) / 1000));
-        timeTxt.setText(timeStr);
+            // display timer
+            TextEntity timeTxt = (TextEntity) app.getEntity("time");
+            String timeStr = String.format("%02d:%02d", (int) (time / (60 * 1000)), (int) ((time % (60 * 1000)) / 1000));
+            timeTxt.setText(timeStr);
 
-        // if time=0 => game over !
-        if (time == 0) {
-            player.activateAnimation("dead");
-            app.addEntity(new TextEntity("YouAreDead")
-                    .setText(I18n.get("app.player.dead"))
-                    .setAlign(CENTER)
-                    .setFont(wlcFont)
-                    .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
-                    .setColor(Color.WHITE)
-                    .setInitialDuration(-1)
-                    .setPriority(20)
-                    .setStickToCamera(true));
+            // if time=0 => game over !
+            if (time == 0) {
+                player.activateAnimation("dead");
+                app.addEntity(new TextEntity("YouAreDead")
+                        .setText(I18n.get("app.player.dead"))
+                        .setAlign(CENTER)
+                        .setFont(wlcFont)
+                        .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
+                        .setColor(Color.WHITE)
+                        .setInitialDuration(-1)
+                        .setPriority(20)
+                        .setStickToCamera(true));
+            }
+
+            // update score
+            int score = (int) app.getAttribute("score", 0);
+            TextEntity scoreEntity = (TextEntity) app.getEntity("score");
+            scoreEntity.setText(String.format("%06d", score));
+
+            int life = (int) app.getAttribute("life", 0);
+            TextEntity lifeEntity = (TextEntity) app.getEntity("life");
+            lifeEntity.setText(String.format("%d", life));
+
+
+            int energy = (int) player.getAttribute("energy", 0);
+            GaugeEntity energyEntity = (GaugeEntity) app.getEntity("energy");
+            energyEntity.setValue(energy);
+
+            int mana = (int) player.getAttribute("mana", 0);
+            GaugeEntity manaEntity = (GaugeEntity) app.getEntity("mana");
+            manaEntity.setValue(mana);
+
+            if (energy <= 0 && life <= 0) {
+                player.activateAnimation("dead");
+                app.addEntity(new TextEntity("YouAreDead")
+                        .setText(I18n.get("app.player.dead"))
+                        .setAlign(CENTER)
+                        .setFont(wlcFont)
+                        .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
+                        .setColor(Color.WHITE)
+                        .setInitialDuration(-1)
+                        .setPriority(20)
+                        .setStickToCamera(true));
+            }
         }
-
-        // update score
-        int score = (int) app.getAttribute("score", 0);
-        TextEntity scoreEntity = (TextEntity) app.getEntity("score");
-        scoreEntity.setText(String.format("%06d", score));
-
-        int life = (int) app.getAttribute("life", 0);
-        TextEntity lifeEntity = (TextEntity) app.getEntity("life");
-        lifeEntity.setText(String.format("%d", life));
-
-
-        int energy = (int) player.getAttribute("energy", 0);
-        GaugeEntity energyEntity = (GaugeEntity) app.getEntity("energy");
-        energyEntity.setValue(energy);
-
-        int mana = (int) player.getAttribute("mana", 0);
-        GaugeEntity manaEntity = (GaugeEntity) app.getEntity("mana");
-        manaEntity.setValue(mana);
-
-        if (energy <= 0 && life <= 0) {
-            player.activateAnimation("dead");
-            app.addEntity(new TextEntity("YouAreDead")
-                    .setText(I18n.get("app.player.dead"))
-                    .setAlign(CENTER)
-                    .setFont(wlcFont)
-                    .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
-                    .setColor(Color.WHITE)
-                    .setInitialDuration(-1)
-                    .setPriority(20)
-                    .setStickToCamera(true));
-        }
-        //}
     }
 
     @Override
@@ -448,26 +428,13 @@ public class DemoScene implements Scene {
         //todo release all resources captured by the scene.
     }
 
-    public void removeEntity(Application app, String filterValue, int i) {
-        i = (i == -1) ? app.entities.size() : i;
-        List<Entity> etbr = app.entities.values().stream().filter(e -> e.name.contains(filterValue)).limit(i)
-                .toList();
-        for (int idx = 0; idx < i; idx++) {
-            if (idx < etbr.size()) {
-                Entity e = etbr.get(idx);
-                app.entities.remove(e.name);
-                app.render.remove(e);
-            }
-        }
-    }
-
     private void generateEntity(Application app, String namePrefix, int nbEntity, double acc) {
         for (int i = 0; i < nbEntity; i++) {
             Entity e = new Entity(namePrefix + Application.getEntityIndex())
                     .setType(ELLIPSE)
                     .setSize(8, 8)
                     .setPosition(Math.random() * app.world.area.getWidth(),
-                            Math.random() * (app.world.area.getHeight()-48))
+                            Math.random() * (app.world.area.getHeight() - 48))
                     .setColor(Color.RED)
                     .setInitialDuration((int) ((Math.random() * 5) + 5) * 5000)
                     .setElasticity(0.65)
@@ -505,15 +472,6 @@ public class DemoScene implements Scene {
                     });
             app.addEntity(e);
         }
-    }
-
-    private void emitPerturbationOnEntity(Application app, String filterPrefix, double waveSize) {
-        app.entities.values()
-                .stream()
-                .filter(e -> e.name.startsWith(filterPrefix)).toList()
-                .forEach(e -> e.forces.add(new Application.Vec2d(
-                        (Math.random() * 2 * waveSize) - waveSize,
-                        (Math.random() * 2 * waveSize) - waveSize)));
     }
 
 }

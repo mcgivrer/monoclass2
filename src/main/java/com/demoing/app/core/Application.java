@@ -1196,9 +1196,6 @@ public class Application extends JFrame implements KeyListener {
             return this;
         }
 
-        @Override
-        public void update(double elapsed) {
-        }
     }
 
     public static class GaugeEntity extends Entity {
@@ -1453,6 +1450,33 @@ public class Application extends JFrame implements KeyListener {
         render.addToPipeline(entity);
         collisionDetect.add(entity);
         entities.put(entity.name, entity);
+    }
+
+    public void removeEntity(String filterValue, int i) {
+        i = (i == -1) ? entities.size() : i;
+        List<Entity> etbr = filterEntitiesOnName(filterValue, i);
+        for (int idx = 0; idx < i; idx++) {
+            if (idx < etbr.size()) {
+                Entity e = etbr.get(idx);
+                removeEntity(e.name);
+            }
+        }
+    }
+
+    public void removeEntity(String name) {
+        Entity e = entities.get(name);
+        render.remove(e);
+        collisionDetect.colliders.remove(e);
+        entities.remove(name);
+    }
+
+    public List<Entity> filterEntitiesOnName(String filterValue, int i) {
+        List<Entity> etbr = entities.values()
+                .stream()
+                .filter(e -> e.name.contains(filterValue))
+                .limit(i)
+                .toList();
+        return etbr;
     }
 
     public synchronized Entity getEntity(String name) {
