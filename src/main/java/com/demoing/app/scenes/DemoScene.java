@@ -40,38 +40,40 @@ public class DemoScene implements Scene {
                 .setType(RECTANGLE)
                 .setPhysicType(STATIC)
                 .setColor(Color.LIGHT_GRAY)
-                .setPosition(16, app.world.area.getHeight() - 16)
-                .setSize(app.world.area.getWidth() - 32, 16)
+                .setPosition(32, app.world.area.getHeight() - 16)
+                .setSize(app.world.area.getWidth() - 64, 16)
                 .setCollisionBox(0, 0, 0, 0)
                 .setElasticity(0.1)
                 .setFriction(0.70)
                 .setMass(10000);
         app.addEntity(floor);
+
         Entity opf1 = new Entity("outPlatform_1")
                 .setType(RECTANGLE)
                 .setPhysicType(STATIC)
                 .setColor(Color.RED)
-                .setPosition(app.world.area.getWidth() - 16, app.world.area.getHeight() - 8)
-                .setSize(16, 8)
+                .setPosition(app.world.area.getWidth() - 32, app.world.area.getHeight() - 8)
+                .setSize(32, 8)
                 .setCollisionBox(0, 0, 0, 0)
                 .setElasticity(0.1)
                 .setFriction(0.70)
                 .setMass(10000)
                 .setAttribute("dead", true);
-
         app.addEntity(opf1);
+
         Entity opf2 = new Entity("outPlatform_2")
                 .setType(RECTANGLE)
                 .setPhysicType(STATIC)
                 .setColor(Color.RED)
                 .setPosition(0, app.world.area.getHeight() - 8)
-                .setSize(16, 8)
+                .setSize(32, 8)
                 .setCollisionBox(0, 0, 0, 0)
                 .setElasticity(0.1)
                 .setFriction(0.70)
                 .setMass(10000)
                 .setAttribute("dead", true);
         app.addEntity(opf2);
+
         generatePlatforms(app, 15);
 
         // A main player Entity.
@@ -214,7 +216,7 @@ public class DemoScene implements Scene {
                 .setFont(wlcFont)
                 .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
                 .setColor(Color.WHITE)
-                .setDuration(5000)
+                .setInitialDuration(5000)
                 .setPriority(20)
                 .setStickToCamera(true);
         app.addEntity(welcomeMsg);
@@ -352,7 +354,7 @@ public class DemoScene implements Scene {
                     .setFont(wlcFont)
                     .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
                     .setColor(Color.WHITE)
-                    .setDuration(-1)
+                    .setInitialDuration(-1)
                     .setPriority(20)
                     .setStickToCamera(true));
         }
@@ -383,7 +385,7 @@ public class DemoScene implements Scene {
                     .setFont(wlcFont)
                     .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
                     .setColor(Color.WHITE)
-                    .setDuration(-1)
+                    .setInitialDuration(-1)
                     .setPriority(20)
                     .setStickToCamera(true));
         }
@@ -466,11 +468,8 @@ public class DemoScene implements Scene {
                     .setSize(8, 8)
                     .setPosition(Math.random() * app.world.area.getWidth(),
                             Math.random() * (app.world.area.getHeight()-48))
-                    .setAcceleration(
-                            (Math.random() * 2 * acc) - acc,
-                            (Math.random() * 2 * acc) - acc)
                     .setColor(Color.RED)
-                    .setDuration((int) ((Math.random() * 5) + 5) * 5000)
+                    .setInitialDuration((int) ((Math.random() * 5) + 5) * 5000)
                     .setElasticity(0.65)
                     .setFriction(0.98)
                     .setMass(5.0)

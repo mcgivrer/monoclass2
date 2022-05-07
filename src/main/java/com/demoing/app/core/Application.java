@@ -595,13 +595,7 @@ public class Application extends JFrame implements KeyListener {
                         .filter(b -> b.getEvent().contains(Behavior.updateEntity))
                         .collect(Collectors.toList())
                         .forEach(b -> b.update(app, e, elapsed));
-                if (e.isAlive()) {
-                    if (e.isAlive()) {
-                        e.setDuration(e.duration - (int) Math.max(elapsed, 1.0));
-                    } else {
-                        e.setDuration(0);
-                    }
-                }
+
             });
             // TODO update Scene Behaviors
             app.activeScene.getBehaviors().values().stream()
@@ -984,7 +978,7 @@ public class Application extends JFrame implements KeyListener {
             return this;
         }
 
-        public boolean isAlive() {
+        public synchronized boolean isAlive() {
             return (duration > 0);
         }
 
@@ -1058,7 +1052,13 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public void update(double elapsed) {
-
+            if (isAlive()) {
+                if (isAlive()) {
+                    setDuration(duration - (int) Math.max(elapsed, 1.0));
+                } else {
+                    setDuration(0);
+                }
+            }
             box.setRect(x, y, width, height);
             switch (type) {
                 case RECTANGLE, IMAGE, default -> cbox = new Rectangle2D.Double(
