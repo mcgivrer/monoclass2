@@ -1,4 +1,4 @@
-package com.demoing.app;
+package com.demoing.app.core;
 
 import javax.imageio.ImageIO;
 import javax.management.*;
@@ -11,6 +11,8 @@ import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
@@ -19,7 +21,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.demoing.app.Application.EntityType.*;
+import static com.demoing.app.core.Application.EntityType.*;
 
 public class Application extends JFrame implements KeyListener {
 
@@ -28,6 +30,10 @@ public class Application extends JFrame implements KeyListener {
     private static long entityIndex = 0;
     private Map<String, Scene> scenes = new HashMap<>();
     private boolean sceneReady;
+
+    public static long getEntityIndex() {
+        return entityIndex;
+    }
 
     public enum EntityType {
         RECTANGLE,
@@ -189,9 +195,11 @@ public class Application extends JFrame implements KeyListener {
 
     public static class Configuration {
         Properties appProps = new Properties();
-        private double screenWidth = 320.0, screenHeight = 200.0, displayScale = 2.0;
+        public double screenWidth = 320.0;
+        public double screenHeight = 200.0;
+        private double displayScale = 2.0;
         private double fps = 0.0;
-        private int debug;
+        public int debug;
         private long frameTime = 0;
         private double worldWidth = 0;
         private double worldHeight = 0;
@@ -206,6 +214,9 @@ public class Application extends JFrame implements KeyListener {
         private double accMinValue = 0.1;
         private double accMaxValue = 0.35;
 
+        public String scenes;
+        public String defaultScene;
+
         public Configuration(String fileName) {
             try {
                 appProps.load(this.getClass().getResourceAsStream(fileName));
@@ -219,15 +230,14 @@ public class Application extends JFrame implements KeyListener {
             screenWidth = parseDouble(appProps.getProperty("app.screen.width", "320.0"));
             screenHeight = parseDouble(appProps.getProperty("app.screen.height", "200.0"));
             displayScale = parseDouble(appProps.getProperty("app.screen.scale", "2.0"));
-            worldWidth = parseDouble(appProps.getProperty("app.world.width", "640.0"));
-            worldHeight = parseDouble(appProps.getProperty("app.world.height", "400.0"));
+            worldWidth = parseDouble(appProps.getProperty("app.world.area.width", "640.0"));
+            worldHeight = parseDouble(appProps.getProperty("app.world.area.height", "400.0"));
             worldGravity = parseDouble(appProps.getProperty("app.world.gravity", "400.0"));
 
             speedMinValue = parseDouble(appProps.getProperty("app.physic.speed.min", "0.1"));
             speedMaxValue = parseDouble(appProps.getProperty("app.physic.speed.max", "8.0"));
             accMinValue = parseDouble(appProps.getProperty("app.physic.acceleration.min", "0.01"));
             accMaxValue = parseDouble(appProps.getProperty("app.physic.acceleration.max", "3.0"));
-
 
             colSpeedMinValue = parseDouble(appProps.getProperty("app.collision.speed.min", "0.1"));
             colSpeedMaxValue = parseDouble(appProps.getProperty("app.collision.speed.max", "8.0"));
@@ -236,6 +246,9 @@ public class Application extends JFrame implements KeyListener {
             frameTime = (long) (1000 / fps);
             debug = parseInt(appProps.getProperty("app.debug.level", "0"));
             convertStringToBoolean(appProps.getProperty("app.screen.full", "false"));
+
+            scenes = appProps.getProperty("app.scenes");
+            defaultScene = appProps.getProperty("app.scene.default");
         }
 
         private double parseDouble(String stringValue) {
@@ -265,6 +278,7 @@ public class Application extends JFrame implements KeyListener {
                     case "cspmax" -> colSpeedMaxValue = parseDouble(values[1]);
                     case "fps" -> fps = parseDouble(values[1]);
                     case "f", "fullScreen" -> convertStringToBoolean(values[1]);
+                    case "scene" -> defaultScene = values[1];
                     default -> System.out.printf("\nERR : Unknown argument %s\n", arg);
                 }
             });
@@ -758,7 +772,7 @@ public class Application extends JFrame implements KeyListener {
         private final boolean[] keys = new boolean[65536];
         private boolean anyKeyPressed;
 
-        private Map<Integer, Function> actionMapping = new HashMap<>();
+        public Map<Integer, Function> actionMapping = new HashMap<>();
 
         @Override
         public void keyTyped(KeyEvent e) {
@@ -845,7 +859,7 @@ public class Application extends JFrame implements KeyListener {
 
     public static class World {
         public double friction = 1.0;
-        private Rectangle2D area;
+        public Rectangle2D area;
         public double gravity = 0.981;
 
         public World() {
@@ -873,7 +887,7 @@ public class Application extends JFrame implements KeyListener {
         public boolean collide;
         // id & naming attributes
         protected long id = entityIndex++;
-        protected String name = "entity_" + id;
+        public String name = "entity_" + id;
 
         // Rendering attributes
         public int priority;
@@ -1249,7 +1263,7 @@ public class Application extends JFrame implements KeyListener {
     }
 
     public interface Scene {
-        void create(Application app) throws Exception;
+        boolean create(Application app) throws Exception;
 
         void update(Application app, double elapsed);
 
@@ -1258,6 +1272,8 @@ public class Application extends JFrame implements KeyListener {
         String getName();
 
         Map<String, Behavior> getBehaviors();
+
+        void dispose();
     }
 
     public interface Behavior {
@@ -1274,502 +1290,6 @@ public class Application extends JFrame implements KeyListener {
         public void onCollide(Application a, Entity e1, Entity e2);
     }
 
-    public static class DemoScene implements Scene {
-        private final String name;
-
-        Font wlcFont;
-
-        private Map<String, Behavior> behaviors = new ConcurrentHashMap<>();
-
-        public DemoScene(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public void create(Application app) throws IOException, FontFormatException {
-
-            app.world.setFriction(0.98);
-            app.setAttribute("life", 5);
-            app.setAttribute("score", 0);
-            app.setAttribute("time", (long) (180 * 1000));
-
-            Entity floor = new Entity("floor")
-                    .setType(RECTANGLE)
-                    .setPhysicType(PhysicType.STATIC)
-                    .setColor(Color.LIGHT_GRAY)
-                    .setPosition(16, app.world.area.getHeight() - 16)
-                    .setSize(app.world.area.getWidth() - 32, 16)
-                    .setCollisionBox(0, 0, 0, 0)
-                    .setElasticity(0.1)
-                    .setFriction(0.70)
-                    .setMass(10000);
-            app.addEntity(floor);
-            Entity opf1 = new Entity("outPlatform_1")
-                    .setType(RECTANGLE)
-                    .setPhysicType(PhysicType.STATIC)
-                    .setColor(Color.RED)
-                    .setPosition(app.world.area.getWidth() - 16, app.world.area.getHeight() - 8)
-                    .setSize(16, 8)
-                    .setCollisionBox(0, 0, 0, 0)
-                    .setElasticity(0.1)
-                    .setFriction(0.70)
-                    .setMass(10000)
-                    .setAttribute("dead", true);
-
-            app.addEntity(opf1);
-            Entity opf2 = new Entity("outPlatform_2")
-                    .setType(RECTANGLE)
-                    .setPhysicType(PhysicType.STATIC)
-                    .setColor(Color.RED)
-                    .setPosition(0, app.world.area.getHeight() - 8)
-                    .setSize(16, 8)
-                    .setCollisionBox(0, 0, 0, 0)
-                    .setElasticity(0.1)
-                    .setFriction(0.70)
-                    .setMass(10000)
-                    .setAttribute("dead", true);
-            app.addEntity(opf2);
-            generatePlatforms(app, 15);
-
-            // A main player Entity.
-            Entity player = new Entity("player")
-                    .setType(IMAGE)
-                    .setPosition(app.world.area.getWidth() * 0.5, app.world.area.getHeight() * 0.5)
-                    .setSize(32.0, 32.0)
-                    .setElasticity(0.0)
-                    .setFriction(0.98)
-                    .setColor(Color.RED)
-                    .setPriority(1)
-                    .setMass(40.0)
-                    .setCollisionBox(+4, -8, -4, -2)
-                    .setAttribute("energy", 100)
-                    .setAttribute("mana", 100)
-                    .setAttribute("accStep", 0.05)
-                    .addAnimation("idle",
-                            0, 0,
-                            32, 32,
-                            13,
-                            "/images/sprites01.png")
-                    .setFrameDuration("idle", 200)
-                    .addAnimation("walk",
-                            0, 32,
-                            32, 32,
-                            8,
-                            "/images/sprites01.png")
-                    .setFrameDuration("walk", 60)
-                    .addAnimation("jump",
-                            0, 5 * 32,
-                            32, 32,
-                            6,
-                            "/images/sprites01.png")
-                    .setFrameDuration("jump", 60)
-                    .addAnimation("dead",
-                            0, 7 * 32,
-                            32, 32,
-                            7,
-                            "/images/sprites01.png")
-                    .setFrameDuration("dead", 60)
-                    .activateAnimation("idle")
-                    .addBehavior(new Behavior() {
-
-                        @Override
-                        public String getEvent() {
-                            return Behavior.onCollision;
-                        }
-
-                        @Override
-                        public void onCollide(Application a, Entity e1, Entity e2) {
-                            if (e2.name.contains("ball_")) {
-                                reducePlayerEnergy(a, e1, e2);
-                            }
-                        }
-
-                        @Override
-                        public void update(Application a, Entity e, double d) {
-
-                        }
-
-                        public void update(Application a, double d) {
-
-                        }
-                    });
-            app.addEntity(player);
-
-            Camera cam = new Camera("cam01")
-                    .setViewport(new Rectangle2D.Double(0, 0, app.config.screenWidth, app.config.screenHeight))
-                    .setTarget(player)
-                    .setTweenFactor(0.005);
-            app.render.addCamera(cam);
-
-            generateEntity(app, "ball_", 30, 2.5);
-
-            wlcFont = Font.createFont(
-                            Font.PLAIN,
-                            Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
-                    .deriveFont(12.0f);
-
-            // Score Display
-            int score = (int) app.getAttribute("score", 0);
-            Font scoreFont = wlcFont.deriveFont(16.0f);
-            String scoreTxt = String.format("%06d", score);
-            TextEntity scoreTxtE = (TextEntity) new TextEntity("score")
-                    .setText(scoreTxt)
-                    .setAlign(TextAlign.LEFT)
-                    .setFont(scoreFont)
-                    .setPosition(20, 30)
-                    .setColor(Color.WHITE)
-                    .setStickToCamera(true);
-            app.addEntity(scoreTxtE);
-
-            long time = (long) app.getAttribute("time", 0);
-            Font timeFont = wlcFont.deriveFont(16.0f);
-            String timeTxt = String.format("%02d:%02d", (int) (time / 60 * 1000), (int) (time % 60 * 1000));
-            TextEntity timeTxtE = (TextEntity) new TextEntity("time")
-                    .setText(timeTxt)
-                    .setAlign(TextAlign.CENTER)
-                    .setFont(scoreFont)
-                    .setPosition(app.config.screenWidth / 2, 30)
-                    .setColor(Color.WHITE)
-                    .setStickToCamera(true);
-            app.addEntity(timeTxtE);
-
-            Font lifeFont = new Font("Arial", Font.PLAIN, 16);
-            TextEntity lifeTxt = (TextEntity) new TextEntity("life")
-                    .setText("5")
-                    .setAlign(TextAlign.LEFT)
-                    .setFont(lifeFont)
-                    .setPosition(app.config.screenWidth - 40, 30)
-                    .setColor(Color.RED)
-                    .setPriority(10)
-                    .setStickToCamera(true);
-            app.addEntity(lifeTxt);
-
-            GaugeEntity energyGauge = (GaugeEntity) new GaugeEntity("energy")
-                    .setMax(100.0)
-                    .setMin(0.0)
-                    .setValue((int) player.getAttribute("energy", 100.0))
-                    .setColor(Color.RED)
-                    .setSize(32, 6)
-                    .setPriority(10)
-                    .setPosition(app.config.screenWidth - 40 - 4 - 32, 25);
-            app.addEntity(energyGauge);
-
-            GaugeEntity manaGauge = (GaugeEntity) new GaugeEntity("mana")
-                    .setMax(100.0)
-                    .setMin(0.0)
-                    .setValue((int) player.getAttribute("mana", 100.0))
-                    .setColor(Color.BLUE)
-                    .setSize(32, 6)
-                    .setPriority(10)
-                    .setPosition(app.config.screenWidth - 40 - 4 - 32, 15);
-            app.addEntity(manaGauge);
-
-            // A welcome Text
-            TextEntity welcomeMsg = (TextEntity) new TextEntity("welcome")
-                    .setText(I18n.get("app.message.welcome"))
-                    .setAlign(TextAlign.CENTER)
-                    .setFont(wlcFont)
-                    .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
-                    .setColor(Color.WHITE)
-                    .setDuration(5000)
-                    .setPriority(20)
-                    .setStickToCamera(true);
-            app.addEntity(welcomeMsg);
-
-            // mapping of keys actions:
-
-            app.actionHandler.actionMapping = Map.of(
-                    // reset the scene
-                    KeyEvent.VK_Z, o -> {
-                        app.reset();
-                        return this;
-                    },
-                    // manage debug level
-                    KeyEvent.VK_D, o -> {
-                        app.config.debug = app.config.debug + 1 < 5 ? app.config.debug + 1 : 0;
-                        return this;
-                    },
-                    // create perturbation on "ball" objects
-                    KeyEvent.VK_P, o -> {
-                        emitPerturbationOnEntity(app, "ball_", 2.5);
-                        return this;
-                    },
-                    // add new balls
-                    KeyEvent.VK_PAGE_UP, o -> {
-                        generateEntity(app, "ball_", 5, 2.5);
-                        return this;
-                    },
-                    // remove balls
-                    KeyEvent.VK_PAGE_DOWN, o -> {
-                        removeEntity(app, "ball_", 5);
-                        return this;
-                    },
-                    // remove all balls
-                    KeyEvent.VK_BACK_SPACE, o -> {
-                        removeEntity(app, "ball_", -1);
-                        return this;
-                    },
-                    // I quit !
-                    KeyEvent.VK_ESCAPE, o -> {
-                        app.requestExit();
-                        return this;
-                    });
-        }
-
-        private void reducePlayerEnergy(Application app, Entity player, Entity e) {
-            int hurt = (int) e.getAttribute("hurt", 0);
-            int energy = (int) player.getAttribute("energy", 0);
-            energy -= hurt;
-            if (energy < 0) {
-                int life = (int) app.getAttribute("life", 0);
-                life -= 1;
-                if (life < 0) {
-                    app.setAttribute("endOfGame", true);
-                    player.duration = 0;
-                } else {
-                    app.setAttribute("life", life);
-                    player.setAttribute("energy", 100);
-                }
-            } else {
-                player.setAttribute("energy", energy -= hurt);
-            }
-        }
-
-        private void generatePlatforms(Application app, int nbPf) {
-            List<Entity> platforms = new ArrayList<>();
-            Entity pf;
-            boolean found = false;
-            for (int i = 0; i < nbPf; i++) {
-                while (true) {
-                    pf = createPlatform(app, i);
-                    found = false;
-                    for (Entity p : platforms) {
-                        if (p.bbox.intersects(pf.bbox.getBounds())) {
-                            found = true;
-                        }
-                    }
-                    if (!found) {
-                        break;
-                    }
-                }
-                platforms.add(pf);
-                app.addEntity(pf);
-            }
-
-        }
-
-        private Entity createPlatform(Application app, int i) {
-            double pfWidth = ((int) (Math.random() * 5) + 4);
-            double maxCols = (app.world.area.getWidth() / 16.0);
-            // 48=height of 1 pf + 1 player, -(3 + 3) to prevent create platform too low and too high
-            double maxRows = (app.world.area.getHeight() / 48) - 6;
-            double pfCol = (int) (Math.random() * maxCols);
-            pfCol = pfCol < maxCols ? pfCol : maxRows - pfWidth;
-            double pfRow = (int) ((Math.random() * maxRows) + 3);
-
-            Entity pf = new Entity("pf_" + i)
-                    .setType(RECTANGLE)
-                    .setPhysicType(PhysicType.STATIC)
-                    .setColor(Color.LIGHT_GRAY)
-                    .setPosition(
-                            pfCol * 16,
-                            pfRow * 48)
-                    .setSize(pfWidth * 16, 16)
-                    .setCollisionBox(0, 0, 0, 0)
-                    .setElasticity(0.1)
-                    .setFriction(0.70)
-                    .setMass(10000)
-                    .setDuration(-1);
-            return pf;
-        }
-
-        @Override
-        public synchronized void update(Application app, double elapsed) {
-            //if (app.entities.containsKey("score") && app.entities.containsKey("player")) {
-            Entity player = app.getEntity("player");
-
-            // Update timer
-            long time = (long) app.getAttribute("time", 0);
-            time -= elapsed;
-            time = time >= 0 ? time : 0;
-            app.setAttribute("time", time);
-
-            // display timer
-            TextEntity timeTxt = (TextEntity) app.getEntity("time");
-            String timeStr = String.format("%02d:%02d", (int) (time / (60 * 1000)), (int) ((time % (60 * 1000)) / 1000));
-            timeTxt.setText(timeStr);
-
-            // if time=0 => game over !
-            if (time == 0) {
-                player.activateAnimation("dead");
-                app.addEntity(new TextEntity("YouAreDead")
-                        .setText(I18n.get("app.player.dead"))
-                        .setAlign(TextAlign.CENTER)
-                        .setFont(wlcFont)
-                        .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
-                        .setColor(Color.WHITE)
-                        .setDuration(-1)
-                        .setPriority(20)
-                        .setStickToCamera(true));
-            }
-
-            // update score
-            int score = (int) app.getAttribute("score", 0);
-            TextEntity scoreEntity = (TextEntity) app.getEntity("score");
-            scoreEntity.setText(String.format("%06d", score));
-
-            int life = (int) app.getAttribute("life", 0);
-            TextEntity lifeEntity = (TextEntity) app.getEntity("life");
-            lifeEntity.setText(String.format("%d", life));
-
-
-            int energy = (int) player.getAttribute("energy", 0);
-            GaugeEntity energyEntity = (GaugeEntity) app.getEntity("energy");
-            energyEntity.setValue(energy);
-
-            int mana = (int) player.getAttribute("mana", 0);
-            GaugeEntity manaEntity = (GaugeEntity) app.getEntity("mana");
-            manaEntity.setValue(mana);
-
-            if (energy <= 0 && life <= 0) {
-                player.activateAnimation("dead");
-                app.addEntity(new TextEntity("YouAreDead")
-                        .setText(I18n.get("app.player.dead"))
-                        .setAlign(TextAlign.CENTER)
-                        .setFont(wlcFont)
-                        .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
-                        .setColor(Color.WHITE)
-                        .setDuration(-1)
-                        .setPriority(20)
-                        .setStickToCamera(true));
-            }
-            //}
-        }
-
-        @Override
-        public void input(Application app) {
-            Entity p = app.getEntity("player");
-            if (Optional.ofNullable(p).isPresent()) {
-                double speed = (double) p.getAttribute("accStep", 0.05);
-                double jumpFactor = (double) p.getAttribute("jumpFactor", 12.0);
-                boolean action = (boolean) p.getAttribute("action", false);
-                if (app.isCtrlPressed()) {
-                    speed *= 2;
-                }
-                if (app.isShiftPressed()) {
-                    speed *= 4;
-                }
-                p.activateAnimation("idle");
-                if (app.getKeyPressed(KeyEvent.VK_LEFT)) {
-                    p.activateAnimation("walk");
-                    p.forces.add(new Vec2d(-speed, 0.0));
-                    action = true;
-                }
-                if (app.getKeyPressed(KeyEvent.VK_RIGHT)) {
-                    p.activateAnimation("walk");
-                    p.forces.add(new Vec2d(speed, 0.0));
-                    action = true;
-                }
-                if (app.getKeyPressed(KeyEvent.VK_UP)) {
-                    p.activateAnimation("jump");
-                    p.forces.add(new Vec2d(0.0, -jumpFactor * speed));
-                    action = true;
-                }
-                if (app.getKeyPressed(KeyEvent.VK_DOWN)) {
-                    p.forces.add(new Vec2d(0.0, speed));
-                    action = true;
-                }
-
-                if (!action) {
-                    p.dx *= p.friction;
-                    p.dx *= p.friction;
-                }
-            }
-        }
-
-        @Override
-        public String getName() {
-            return name;
-        }
-
-        @Override
-        public Map<String, Behavior> getBehaviors() {
-            return behaviors;
-        }
-
-        public void removeEntity(Application app, String filterValue, int i) {
-            i = (i == -1) ? app.entities.size() : i;
-            List<Entity> etbr = app.entities.values().stream().filter(e -> e.name.contains(filterValue)).limit(i)
-                    .toList();
-            for (int idx = 0; idx < i; idx++) {
-                if (idx < etbr.size()) {
-                    Entity e = etbr.get(idx);
-                    app.entities.remove(e.name);
-                    app.render.remove(e);
-                }
-            }
-        }
-
-        private void generateEntity(Application app, String namePrefix, int nbEntity, double acc) {
-            for (int i = 0; i < nbEntity; i++) {
-                Entity e = new Entity(namePrefix + entityIndex)
-                        .setType(ELLIPSE)
-                        .setSize(8, 8)
-                        .setPosition(Math.random() * app.world.area.getWidth(),
-                                Math.random() * app.world.area.getHeight())
-                        .setAcceleration(
-                                (Math.random() * 2 * acc) - acc,
-                                (Math.random() * 2 * acc) - acc)
-                        .setColor(Color.RED)
-                        .setDuration((int) ((Math.random() * 5) + 5) * 5000)
-                        .setElasticity(0.65)
-                        .setFriction(0.98)
-                        .setMass(5.0)
-                        .setPriority(2)
-                        // player will loose 1 point of energy.
-                        .setAttribute("hurt", 1)
-                        // player can win 10 to 50 points
-                        .setAttribute("points", (int) (10 + (Math.random() * 4)) * 10)
-                        .addBehavior(new Behavior() {
-                            @Override
-                            public String getEvent() {
-                                return "onCollision";
-                            }
-
-                            @Override
-                            public void onCollide(Application a, Entity e1, Entity e2) {
-                                // If hurt a dead attribute platform => Die !
-                                if ((boolean) e2.getAttribute("dead", false) && e1.isAlive()) {
-                                    int score = (int) a.getAttribute("score", 0);
-                                    int points = (int) e1.getAttribute("points", 0);
-                                    a.setAttribute("score", score + points);
-                                    e1.setDuration(0);
-                                }
-                            }
-
-                            @Override
-                            public void update(Application a, Entity e, double d) {
-
-                            }
-
-                            public void update(Application a, double d) {
-                            }
-                        });
-                app.addEntity(e);
-            }
-        }
-
-        private void emitPerturbationOnEntity(Application app, String filterPrefix, double waveSize) {
-            app.entities.values()
-                    .stream()
-                    .filter(e -> e.name.startsWith(filterPrefix)).toList()
-                    .forEach(e -> e.forces.add(new Vec2d(
-                            (Math.random() * 2 * waveSize) - waveSize,
-                            (Math.random() * 2 * waveSize) - waveSize)));
-        }
-
-    }
-
     public boolean exit = false;
 
     public boolean pause = false;
@@ -1780,11 +1300,11 @@ public class Application extends JFrame implements KeyListener {
     private boolean keyCtrlPressed;
     private boolean keyShiftPressed;
 
-    private Configuration config;
-    private Render render;
+    public Configuration config;
+    public Render render;
     private PhysicEngine physicEngine;
     private CollisionDetector collisionDetect;
-    private ActionHandler actionHandler;
+    public ActionHandler actionHandler;
     private Scene activeScene;
 
     private AppStatus appStats;
@@ -1793,10 +1313,10 @@ public class Application extends JFrame implements KeyListener {
 
     private long computationTime = 0;
 
-    private Map<String, Entity> entities = new HashMap<>();
-    private Map<String, Object> attributes = new HashMap<>();
+    public Map<String, Entity> entities = new HashMap<>();
+    public Map<String, Object> attributes = new HashMap<>();
 
-    private World world;
+    public World world;
 
     public Application(String[] args) {
         NumberFormat.getInstance(Locale.ROOT);
@@ -1804,8 +1324,10 @@ public class Application extends JFrame implements KeyListener {
     }
 
     protected void run() {
-        loop();
-        dispose();
+        if (start()) {
+            loop();
+            dispose();
+        }
     }
 
     private void initialize(String[] args) {
@@ -1813,24 +1335,71 @@ public class Application extends JFrame implements KeyListener {
         world = new World()
                 .setArea(config.worldWidth, config.worldHeight)
                 .setGravity(config.worldGravity);
+    }
+
+    private boolean start() {
+        try {
+            initializeServices();
+            createWindow();
+            if (loadScenes()) {
+                // prepapre services
+                createJMXStatus(this);
+                System.out.printf("INFO: scene %s activated and created.\n", activeScene.getName());
+            }
+        } catch (Exception e) {
+            System.out.println("ERR: Unable to initialize scene: " + e.getLocalizedMessage());
+            return false;
+        }
+        return true;
+    }
+
+    private void initializeServices() {
         render = new Render(this, config, world);
         physicEngine = new PhysicEngine(this, config, world);
         collisionDetect = new CollisionDetector(this, config, world);
         actionHandler = new ActionHandler();
-        createWindow();
+    }
 
-        // add a new scene
-        scenes.put("demo", new DemoScene("demo"));
-        activeScene = scenes.get("demo");
-
-        try {
-            createScene();
-            System.out.printf("INFO: scene %s activated.\n", activeScene.getName());
-        } catch (Exception e) {
-            System.out.println("ERR: Unable to initialize scene: " + e.getLocalizedMessage());
+    private boolean loadScenes() {
+        String[] scenesList = config.scenes.split(",");
+        for (String scene : scenesList) {
+            String[] sceneStr = scene.split(":");
+            try {
+                Class<?> clazzScene = Class.forName(sceneStr[1]);
+                final Constructor<?> sceneConstructor = clazzScene.getConstructor(String.class);
+                Scene s = (Scene) sceneConstructor.newInstance(sceneStr[0]);
+                scenes.put(sceneStr[0], s);
+                activateScene(config.defaultScene);
+            } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
+                     InvocationTargetException e) {
+                System.out.println("ERR: Unable to load scene from configuration file:"
+                        + e.getLocalizedMessage()
+                        + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
+                return false;
+            }
         }
+        return true;
+    }
 
-        createJMXStatus(this);
+    protected void createScene() throws Exception {
+        activeScene.create(this);
+    }
+
+    protected void activateScene(String name) {
+        if (scenes.containsKey(name)) {
+            if (Optional.ofNullable(this.activeScene).isPresent()) {
+                this.activeScene.dispose();
+            }
+            Scene scene = scenes.get(name);
+            try {
+                sceneReady = scene.create(this);
+                this.activeScene = scene;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            System.out.print("ERR: Unable to load unknown scene " + name);
+        }
     }
 
     private void createJMXStatus(Application application) {
@@ -1838,7 +1407,7 @@ public class Application extends JFrame implements KeyListener {
         appStats.register(application);
     }
 
-    private void reset() {
+    public void reset() {
         try {
             render.clear();
             entities.clear();
@@ -1874,12 +1443,6 @@ public class Application extends JFrame implements KeyListener {
         addKeyListener(actionHandler);
         pack();
         setVisible(true);
-    }
-
-    protected void createScene() throws Exception {
-        sceneReady = false;
-        activeScene.create(this);
-        sceneReady = true;
     }
 
     public void requestExit() {
