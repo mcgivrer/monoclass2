@@ -110,7 +110,6 @@ public class Application extends JFrame implements KeyListener {
                      | MalformedObjectNameException e) {
                 e.printStackTrace();
             }
-
         }
 
         public synchronized void update(Application app) {
