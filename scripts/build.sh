@@ -48,8 +48,8 @@ function compile() {
   # Compile class files
   rm -Rf $CLASSES/*
   echo "|_ 2. compile sources from '$SRC' ..."
-  find $SRC -name '*.java' >$LIBS/sources.lst
-  javac $COMPILATION_OPTS @$LIBS/options.txt @$LIBS/sources.lst -cp $CLASSES
+  find $SRC -name '*.java' >$TARGET/sources.lst
+  javac $COMPILATION_OPTS @$LIBS/options.txt @$TARGET/sources.lst -cp $CLASSES
   echo "   done."
 }
 #
