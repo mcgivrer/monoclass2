@@ -1,10 +1,10 @@
 ---
-title: MonoClass2, a JDK fun sample usage 
-author: Frédéric Delorme 
-description: A bunch of discovery on the Java JDK \ 
-latest release into a fun and entertaining sample of code. 
-created: 2022-04-29 
-tags: java,jdk,sample,game,jep420
+title: MonoClass2, a JDK fun sample usage
+author: Frédéric Delorme
+description: A bunch of discovery on the Java JDK \
+latest release into a fun and entertaining sample of code.
+created: 2022-04-29
+tags: java,jdk17,jdk18,sample,game,jep420
 ---
 
 ## Introduction
@@ -16,7 +16,7 @@ JEP420 Pattern Matching `switch`, `@FunctionalInterface` and some enhancement on
 ## The project
 
 The [`Application`](https://github.com/mcgivrer/monoclass2/blob/feature/add-camera-entity/src/main/java/com/demoing/app/Application.java#L17)
-class (we can not talk about a project for a 500 LoCs class) is composed of some attribtues and methods (sic) and a
+class (we can not talk about a project for a 1500 LoCs class) is composed of some attribtues and methods (sic) and a
 limited number of subclasses.
 
 ```plantuml
@@ -36,7 +36,7 @@ Application --> Application::I18n
 @enduml
 ```
 
-_figure 1 - Class Diagram for Application and its
+_figure $fig+ - Class Diagram for Application and its
 subclasses_ _[edit](https://github.com/mcgivrer/monoclass2/blob/feature/add-camera-entity/docs/class-diagram.txt)_
 
 So, [`I18n`](https://github.com/mcgivrer/monoclass2/blob/feature/add-camera-entity/src/main/java/com/demoing/app/Application.java#L69)
@@ -118,6 +118,8 @@ Application -> I18n
 @enduml
 ```
 
+_figure $fig+ - the full Application class diagram_
+
 ### Configuration
 
 The `Configuration` class will provide attributes and their default values from a configuration properties file. It is
@@ -136,7 +138,9 @@ speed and position according to some applied forces to the `Application` entitie
 A small math class is added and is more a helper than a real Vector, the `Vec2d` class, to support needs for forces
 computation.
 
-![img.png](images/physic-engine-with-gravity.png)
+![a Gravity effect](images/physic-engine-with-gravity.png "a Gravity effect")
+
+_figure $fig+ - a Gravity effect !_
 
 ## JDK 17-18 advantages
 
@@ -148,7 +152,7 @@ type of Entity in the pipeline.
 class Render {
     public draw(double fps) {
         gPipeline.stream()
-                .filter(e -> e.isAlive() || e.life == -1)
+                .filter(e -> e.isAlive() || e.isNeverDying())
                 .forEach(e -> {
                     //...
                     switch (e) {
@@ -197,17 +201,20 @@ class Render {
 
 ## Bring Animation
 
-To product beautiful sprite, we need a Animation engine, let's have an Animation class, attribute for Entity, and adapt 
+To product beautiful sprite, we need a Animation engine, let's have an Animation class, attribute for Entity, and adapt
 the Render and entity update to process animations set and display a moving Sprite !
 
-Animation is map of set of frames, each set of frame must ave a an easy way to define/identify it, a simple String  key will do the job.
+Animation is map of set of frames, each set of frame must ave a an easy way to define/identify it, a simple String key
+will do the job.
 
->**NOTE**
-> _As a sample graphics, we will use a sprites image board from [Elthen adventurer sprites](https://elthen.itch.io/pixel-art-adventurer-sprites) thanks to his [fair licensing](https://www.patreon.com/posts/27430241)._
+> **NOTE**
+> _As a sample graphics, we will use a sprites image board
+from [Elthen adventurer sprites](https://elthen.itch.io/pixel-art-adventurer-sprites) thanks to
+his [fair licensing](https://www.patreon.com/posts/27430241)._
 
 ![Sprites sheet from Elthen](../src/main/resources/images/sprites01.png)
 
-_figure 3 - The sprites resources used as animation sample._
+_figure $fig+ - The sprites resources used as animation sample._
 
 The `Entity` class will now have an animations attribute.
 
@@ -228,12 +235,14 @@ Entity --> Animation:animations
 @enduml
 ```
 
+_figure $fig+ - Class diagram for Animation as animations Entity attribute_
+
 ### Animation
 
 The sub-class Animation will support all animation definition and operations:
 
 ```java
-public static class Animation{
+public static class Animation {
     Map<String, BufferedImage[]> animationSet = new HashMap<>();
     Map<String, Integer> frameDuration = new HashMap<>();
     public String currentAnimationSet;
@@ -241,10 +250,6 @@ public static class Animation{
     private long internalAnimationTime;
 }
 ```
-
-
-
-
 
 The attributes are :
 
@@ -254,41 +259,61 @@ The attributes are :
 - `currentFrame` is the active frame for the current animation set,
 - `internalAnimationTime` is an internal time counter for frame animation purpose.
 
-And based on those attribute we will animate the frame for any entity which will have a not null animation attribute. The `Render` class will support animation rendering in the `draw()` method, but also adding a 'direction' attribute in the `Entity` to define the way to draw the image (left of right):
+And based on those attribute we will animate the frame for any entity which will have a not null animation attribute.
+The `Render` class will support animation rendering in the `draw()` method, but also adding a 'direction' attribute in
+the `Entity` to define the way to draw the image (left of right):
 
 ```java
-public static class Render{
+public static class Render {
     //...
-    case Entity ee -> {
-        switch (ee.type) {
-            //...
-            case IMAGE -> {
-                BufferedImage sprite = (BufferedImage) (ee.isAnimation() ? ee.animation.getFrame() : ee.image);
-                if (ee.getDirection() > 0) {
-                    g.drawImage(sprite, (int) ee.x, (int) ee.y, null);
-                } else {
-                    g.drawImage(sprite,
-                            (int) (ee.x + ee.width), (int) ee.y,
-                            (int) (-ee.width), (int) ee.height,
-                            null);
+    public void draw(Entity e) {
+        switch (e) {
+            case Entity ee -> {
+                switch (ee.type) {
+                    //...
+                    case IMAGE -> {
+                        BufferedImage sprite = (BufferedImage)
+                                (ee.isAnimation()
+                                        ? ee.animation.getFrame()
+                                        : ee.image);
+                        if (ee.getDirection() > 0) {
+                            g.drawImage(
+                                    sprite,
+                                    (int) ee.x,
+                                    (int) ee.y,
+                                    null);
+                        } else {
+                            g.drawImage(sprite,
+                                    (int) (ee.x + ee.width),
+                                    (int) ee.y,
+                                    (int) (-ee.width),
+                                    (int) ee.height,
+                                    null);
+                        }
+                    }
                 }
             }
+            //...
         }
+        //...
     }
     //...
 }
 ```
 
-The Entity will have 2 new thins, an animation `attribute` and a `getDirection()` method, and the `update()` method is slightly adapted to manage animation update:
+The Entity will have 2 new things, an `animation` attribute and a `getDirection()` method, and the `update()` method is
+slightly adapted to manage animation update:
 
 ```java
 public static class Entity {
     //...
     public Animation animation;
+
     //...
     public int getDirection() {
         return this.dx > 0 ? 1 : -1;
     }
+
     //...
     public void update(double elapsed) {
         box.setRect(x, y, width, height);
@@ -306,10 +331,10 @@ And a set of helpers are added to directly manage animation from Entity fluent A
 public static class Entity {
     //...
     public Entity addAnimation(
-            String key, 
-            int x, int y, 
-            int tw, int th, 
-            int nbFrames,      
+            String key,
+            int x, int y,
+            int tw, int th,
+            int nbFrames,
             String pathToImage) {
         if (Optional.ofNullable(this.animation).isEmpty()) {
             this.animation = new Animation();
@@ -338,8 +363,10 @@ public static class Entity {
 Then to use it in the `Application#createScene()` :
 
 ```java
-public class Application .. {
-    public void createScene(){
+import java.awt.event.KeyListener;
+
+public class Application extends JFrame implements KeyListener {
+    public void createScene() {
         //...
         Entity player = new Entity("player")
                 .setType(IMAGE)
@@ -355,12 +382,563 @@ public class Application .. {
 }
 ```
 
-Here is added an animation set named `idle` from the image `images/sprites01.png` from the point `(0,0)` with a frame size of `(32x32)` and having `13` frames in the set.
+Here is added an animation set named `idle` from the image `images/sprites01.png` from the point `(0,0)` with a frame
+size of `(32x32)` and having `13` frames in the set.
 
-You can add any number of frames set with differente name to the Entity.  
+You can add any number of frames set with differente name to the Entity.
 
 > **IMPORTANT**
 > _Don't forget to set the Entity Size corresponding to the size of your animation set frame size._
+
+![Animation of sprites and red life bar are some of useful things](images/animation-lifebar.png "Animation of sprites and red life bar are some of useful things")
+
+_figure $fig+ - Animation of sprites and red life bar are some of useful things_
+
+## Collision Detection
+
+Collision Detection has 2 possibilities : 2 dynamic object are colliding, or a dynamic and sa static object are
+colliding.
+These are the 2 cases we will process in our `CollisionDetector` service.
+
+We need to use carefully the PhysicType with STATIC and DYNAMIC values.
+
+```java
+public enum PhysicType {
+    DYNAMIC,
+    STATIC
+}
+```
+
+### Updating Entity
+
+The Entity already take benefits of this type for the physicEngine computation. Now we will reuse it into the collision
+detection and resolution.
+
+The implementation for colliding object will be based on the `Shape` variant object `Rectangle2D` and `Ellipse2D`
+from the `java.awt.geom` package.
+
+We need to add a new collision box (cbox) which will be accordingly to the ObjectType a Rectangle2D or an Ellipse2D:
+
+```java
+public static class Entity {
+    //...
+    public Entity setSize(double w, double h) {
+        this.width = w;
+        this.height = h;
+        box.setRect(x, y, w, h);
+        setCollisionBox(0, 0, 0, 0);
+        return this;
+    }
+
+    //...
+    public Entity setCollisionBox(double left, double top, double right, double bottom) {
+        switch (type) {
+            case IMAGE, RECTANGLE, default -> this.bbox = new Rectangle2D.Double(left, top, right, bottom);
+            case ELLIPSE -> this.bbox = new Ellipse2D.Double(left, top, right, bottom);
+        }
+        update(0.0);
+        return this;
+    }
+
+    //...
+    public void update(double elapsed) {
+        //...
+        switch (type) {
+            case RECTANGLE, IMAGE, default -> cbox = new Rectangle2D.Double(
+                    box.getX() + bbox.getBounds().getX(),
+                    box.getY() + bbox.getBounds().getY(),
+                    box.getWidth() - (bbox.getBounds().getWidth() + bbox.getBounds().getX()),
+                    box.getHeight() - (bbox.getBounds().getHeight() + bbox.getBounds().getY()));
+            case ELLIPSE -> cbox = new Ellipse2D.Double(
+                    box.getX() + bbox.getBounds().getX(),
+                    box.getY() + bbox.getBounds().getY(),
+                    box.getWidth() - (bbox.getBounds().getWidth() + bbox.getBounds().getX()),
+                    box.getHeight() - (bbox.getBounds().getHeight() + bbox.getBounds().getY()));
+        }
+        //...
+    }
+}
+```
+
+### Collision Detector
+
+Ok, now the fun part with the collision detection :
+
+```java
+public static class CollisionDetector {
+    //...
+    private void detect() {
+        List<Entity> targets = colliders.values()
+                .stream()
+                .filter(e -> e.isAlive() || e.isNeverDying())
+                .toList();
+        for (Entity e1 : colliders.values()) {
+            e1.collide = false;
+            for (Entity e2 : targets) {
+                e2.collide = false;
+                if (e1.id != e2.id && e1.cbox.getBounds().intersects(e2.cbox.getBounds())) {
+                    resolve(e1, e2);
+                }
+            }
+        }
+    }
+    //...
+}
+```
+
+As soon a collision is detected, we try and solve it :
+
+```java
+public static class CollisionDetector {
+    //...
+    private void resolve(Entity e1, Entity e2) {
+        e1.collide = true;
+        e2.collide = true;
+        Vec2d vp = new Vec2d((e2.x - e1.x), (e2.y - e1.y));
+        double distance = Math.sqrt((e2.x - e1.x) * (e2.x - e1.x) + (e2.y - e1.y) * (e2.y - e1.y));
+        Vec2d colNorm = new Vec2d(vp.x / distance, vp.y / distance);
+        if (e1.physicType == PhysicType.DYNAMIC && e2.physicType == PhysicType.DYNAMIC) {
+            Vec2d vRelSpeed = new Vec2d(e1.dx - e2.dx, e1.dy - e2.dy);
+            double colSpeed = vRelSpeed.x * colNorm.x + vRelSpeed.y * colNorm.y;
+            var impulse = 2 * colSpeed / (e1.mass + e2.mass);
+            e1.dx -= Utils.ceilMinMaxValue(impulse * e2.mass * colSpeed * colNorm.x,
+                    config.speedMinValue, config.speedMaxValue);
+            e1.dy -= Utils.ceilMinMaxValue(impulse * e2.mass * colSpeed * colNorm.y,
+                    config.speedMinValue, config.speedMaxValue);
+            e2.dx += Utils.ceilMinMaxValue(impulse * e1.mass * colSpeed * colNorm.x,
+                    config.speedMinValue, config.speedMaxValue);
+            e2.dy += Utils.ceilMinMaxValue(impulse * e1.mass * colSpeed * colNorm.y,
+                    config.speedMinValue, config.speedMaxValue);
+            if (e1.name.equals("player") && config.debug > 4) {
+                System.out.printf("e1.%s collides e2.%s Vp=%s / dist=%f / norm=%s\n", e1.name, e2.name, vp, distance, colNorm);
+            }
+        } else {
+            if (e1.physicType == PhysicType.DYNAMIC && e2.physicType == PhysicType.STATIC) {
+                if (e1.y + e1.height > e2.y && vp.y > 0) {
+                    e1.y = e2.y - e1.height;
+                    e1.dy = -e1.dy * e1.elasticity;
+                } else {
+                    e1.dy = -e1.dy * e1.elasticity;
+                    e1.y = e2.y + e2.height;
+                }
+                if (e1.name.equals("player") && config.debug > 4) {
+                    System.out.printf("e1.%s collides static e2.%s\n", e1.name, e2.name);
+                }
+            }
+        }
+    }
+    //...
+}
+```
+
+Ouch !
+
+The resolve collision is really tricky. yes, and it depends on what collide what.
+
+> **NOTE**
+> As we intend to develop Platform Game, we will concentrate our effort on such usage.
+
+We so first compute basic values like distance, penetration vector and its corresponding normalized vector.
+
+then, we detect is we are in front of (1) DYNAMIC vs. DYNAMIC collision or a (2) DYNAMIC vs. STATIC collision.
+
+1. The first case is the more tricky and require more mathematics. I won't go in details, because this not my special
+   skills.
+   please, go and visit the very good post on [the Spicy Yoghurt](https://spicyyoghurt.com/) :
+   ['Collision Detection Physic'](https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
+   "Go and visit the really good article about javascript game development"),
+   all is really crystal clear.
+
+```java
+public static class CollisionDetector {
+    //...
+    public void resolve(Entity e1, Entity e2) {
+        //...
+        // Dynamic case
+        Vec2d vRelSpeed = new Vec2d(e1.dx - e2.dx, e1.dy - e2.dy);
+        double colSpeed = vRelSpeed.x * colNorm.x + vRelSpeed.y * colNorm.y;
+        var impulse = 2 * colSpeed / (e1.mass + e2.mass);
+        // Resulting effect from e2 to e1
+        e1.dx -= Utils.ceilMinMaxValue(impulse * e2.mass * colSpeed * colNorm.x,
+                config.speedMinValue, config.speedMaxValue);
+        e1.dy -= Utils.ceilMinMaxValue(impulse * e2.mass * colSpeed * colNorm.y,
+                config.speedMinValue, config.speedMaxValue);
+        // Resulting effect from e1 to e2
+        e2.dx += Utils.ceilMinMaxValue(impulse * e1.mass * colSpeed * colNorm.x,
+                config.speedMinValue, config.speedMaxValue);
+        e2.dy += Utils.ceilMinMaxValue(impulse * e1.mass * colSpeed * colNorm.y,
+                config.speedMinValue, config.speedMaxValue);
+        //...
+    }
+    //...
+}
+```
+
+2. With a DYNAMIC vs. STATIC, things are different : one of the 2 object won't move, and the reverse effect is different
+   on the DYNAMIC object. As here most if the STATIC object would be platform, we will test differently things: we will
+   only detect if the DYNAMIC object is upper or bellow the STATIC one, and modify its vertical position regarding
+   the position and size of STATIC object.
+
+```java
+public static class CollisionDetector {
+    //...
+    public void resolve(Entity e1, Entity e2) {
+        //...    
+        // Static case
+        if (e1.y + e1.height > e2.y && vp.y > 0) {
+            e1.y = e2.y - e1.height;
+            e1.dy = -e1.dy * e1.elasticity;
+        } else {
+            e1.dy = -e1.dy * e1.elasticity;
+            e1.y = e2.y + e2.height;
+        }
+    }
+    //...
+}
+```
+
+### Configuration
+
+You may have noticed the new configuration attributes:
+
+- `speedMinValue` the minimum speed value below the value is reduced to 0.0 to remove noise effect on Entity's speed
+  computation (default value in configuration properties file : `app.physic.speed.min=0.1`),
+- `speedMaxValue` the maximum speed that will be used as a max threshold for any Entity (default value in configuration
+  properties file : `app.physic.speed.max=3.2`),.
+
+- `accMinValue` the minimum acceleration value below the value is reduced to 0.0 to remove noise effect on Entity's
+  acceleration (default value in configuration properties file : `app.physic.acceleration.min=0.01`),
+- `accMaxValue` the maximum acceleration that will be used as a max threshold for any Entity (default value in
+  configuration properties file : `app.physic.acceleration.max=3.5`),.
+
+And specific values for collision resolution:
+
+- `colSpeedMinValue` the minimum speed value below the value is reduced to 0.0 to remove noise effect on Entity's speed
+  computation on collision (default value in configuration properties file : `app.physic.speed.min=0.1`),
+- `colSpeedMaxValue` the maximum speed that will be used as a max threshold for any Entity on collision (default value
+  in configuration
+  properties file : `app.physic.speed.max=3.2`),.
+
+```properties
+app.physic.speed.min=0.1
+app.physic.speed.max=3.2
+app.physic.acceleration.min=0.01
+app.physic.acceleration.max=3.5
+app.collision.speed.min=0.1
+app.collision.speed.max=1.2
+```
+
+_figure $fig+ - `app.properties` file modified with new `PhysicEngine` threshold values._
+
+Here is a screen capture from the new CollisionDetector with platforms implementation:
+
+![Collision Detecion and platforms](images/collision-detection-and-platform.png "Collision detection and platforms")
+
+_figure $fig+ - Collision detection and platforms_
+
+## Behavior's
+
+One way to implement quickly some enhancement in a game is to provide the opportunity to add dynamically some new
+behaviors
+to some game component. The solution is `Behavior`.
+
+We are going to add behavior to be triggered on some new events or process.
+
+Adding the `Behavior` on `Entity` will allow us to bring some basic gameplay. Particularly in the collision
+event (`onCollision`), where sme new thing may happen:
+
+- increase the player score each time a ball is destroyed,
+- impact player energy each time a ball collide the player, and manage energy and life of the player.
+
+Adding new Platforms that contains a new attribute named "dead" and set to true. If a ball collide such platform, it
+disappear and raise the player score.
+
+Let's begin with the `Behavior` interface:
+
+```java
+public interface Behavior {
+    public String getName();
+
+    public void update(Application a, Entity e);
+
+    public void onCollide(Application a, Entity e1, Entity e2);
+}
+```
+
+The 2 possible processing are `onCollide` to process collision, and `update`, to manage entity at `Scene` level.
+
+The Entity behaviors are a new `Map<String,Behavior>`:
+
+```java
+public static class Entity {
+    //...
+    public Map<String, Behavior> behaviors = new HashMap<>();
+
+    //...
+    public Entity addBehavior(Behavior b) {
+        this.behaviors.put(b.getName(), b);
+        return this;
+    }
+    //...
+}
+```
+
+And in the `CollisionDetector` class :
+
+```java
+public static class CollisionDetector {
+    //...
+    private void detect() {
+        List<Entity> targets = colliders.values().stream().filter(e -> e.isAlive() || e.isInfiniteLife()).toList();
+        for (Entity e1 : colliders.values()) {
+            e1.collide = false;
+            for (Entity e2 : targets) {
+                e2.collide = false;
+                if (e1.id != e2.id && e1.cbox.getBounds().intersects(e2.cbox.getBounds())) {
+                    resolve(e1, e2);
+                    e1.behaviors.values().stream()
+                            .filter(b -> b.getName().equals("onCollision"))
+                            .collect(Collectors.toList())
+                            .forEach(b -> b.onCollide(app, e1, e2));
+                }
+            }
+        }
+    }
+    //...
+}
+```
+
+THe at entity creation, you can add dynamically a new behavior:
+
+```java
+public static class DemoScene {
+    //...
+    Entity player = new Entity("player")
+            //...
+            .addBehavior(new Behavior() {
+                @Override
+                public String getName() {
+                    return "onCollision";
+                }
+
+                @Override
+                public void onCollide(Application a, Entity e1, Entity e2) {
+                    if (e2.name.contains("ball_")) {
+                        reducePlayerEnergy(a, e1, e2);
+                    }
+                }
+
+                @Override
+                public void update(Application a, Entity e) {
+                }
+            });
+    //...
+}
+```
+
+Now if a collision happen between the player and a ball entity, the player energy will decrease (
+see `reducePlayerEnergy(a, e1, e2);` for details)
+And where a ball collide with anew platform having the "dead" attribute, the ball is disabled and the score is increase
+of the value of the attribute "points":
+
+```java
+public static class DemoScene {
+    //...
+    private void generateEntity(Application app, String namePrefix, int nbEntity, double acc) {
+        for (int i = 0; i < nbEntity; i++) {
+            Entity e = new Entity(namePrefix + entityIndex)
+                    //...
+                    .addBehavior(new Behavior() {
+                        @Override
+                        public String getName() {
+                            return "onCollision";
+                        }
+
+                        @Override
+                        public void onCollide(
+                                Application a,
+                                Entity e1,
+                                Entity e2) {
+                            // If hurt a dead attribute platform => Die !
+                            if ((boolean) e2.getAttribute("dead", false)
+                                    && e1.isAlive()) {
+                                // increase score
+                                int score = (int) a.getAttribute("score", 0);
+                                int points = (int) e1.getAttribute("points", 0);
+                                a.setAttribute("score", score + points);
+                                // kill ball entity
+                                e1.setDuration(0);
+                            }
+                        }
+                    });
+            //...
+        }
+    }
+    //...
+}
+```
+
+Some internal mechanism for score, life and energy won't be detailed here, but just parsing the code will let you
+discover it.
+
+> _**NOTE**_
+> _You must notice that score an,d life are Application attributes, and energy is player's Entity attribute._
+
+## Move to GamePLay
+
+To go further in the demonstration, we need to offer the possibility to dynamically load scene to the core application.
+To let instantiate Scene dynamically we need to extract the DemoScene from Application to a outer class.
+
+We need some attributes scope review from private to public in most of the service, but anyway, first change this
+scope.
+
+And the most important of this change is the way we are going to configure the scenes.
+
+The new method loadScene() and a full reorganisation of the Application start will bring new flexibility:
+
+### Configuration
+
+All start by some new configuration attributes:
+
+- `app.scenes` the list of scene with a  `[code]:[class],` list format,
+- `app.scene.default` the default scene to be activated at game start.
+
+```properties
+# scenes
+app.scenes=demo:com.demoing.app.scenes.DemoScene
+app.scene.default=demo
+```
+
+### Loading Scenes
+
+Loading the coma separated list of scene classes from `app.scenes` with their own activation key code,
+we provision the list of Scene ready to be used, and use the `app.scene.default` scene at start.
+
+```java
+public class Application {
+    //...
+    private boolean loadScenes() {
+        String[] scenesList = config.scenes.split(",");
+        for (String scene : scenesList) {
+            String[] sceneStr = scene.split(":");
+            try {
+                Class<?> clazzScene = Class.forName(sceneStr[1]);
+                final Constructor<?> sceneConstructor = clazzScene.getConstructor(String.class);
+                Scene s = (Scene) sceneConstructor.newInstance(sceneStr[0]);
+                scenes.put(sceneStr[0], s);
+                activateScene(config.defaultScene);
+            } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
+                     InvocationTargetException e) {
+                System.out.println("ERR: Unable to load scene from configuration file:"
+                        + e.getLocalizedMessage()
+                        + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
+                return false;
+            }
+        }
+        return true;
+    }
+    //...
+}
+```
+
+### Activating a scene
+
+The scene activation will do 3 things:
+
+1. release the previously activated scene,
+2. then, find the requested scene,
+3. create the scene.
+
+```java
+public class Application {
+    //...
+    protected void activateScene(String name) {
+        if (scenes.containsKey(name)) {
+            // (1)
+            if (Optional.ofNullable(this.activeScene).isPresent()) {
+                this.activeScene.dispose();
+            }
+            // (2)
+            Scene scene = scenes.get(name);
+            try {
+                // (3)
+                sceneReady = scene.create(this);
+                this.activeScene = scene;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            System.out.print("ERR: Unable to load unknown scene " + name);
+        }
+    }
+    //...
+}
+```
+
+### Application start modification
+
+The initialization is now really simplified and only read some configuration.
+
+```java
+public class Application {
+    //...
+    private void initialize(String[] args) {
+        config = new Configuration("/app.properties").parseArgs(args);
+        world = new World()
+                .setArea(config.worldWidth, config.worldHeight)
+                .setGravity(config.worldGravity);
+    }
+    //...
+
+}
+```
+
+The run operation is now simplified and conditioned by the start resulting status
+
+```java
+public class Application {
+    //...
+    protected void run() {
+        if (start()) {
+            loop();
+            dispose();
+        }
+    }
+    //...
+}
+```
+
+The start is initializing
+
+1. all the intern services,
+2. load the scenes and
+3. created the window.
+4. create the JMX metrics service
+
+```java
+public class Application {
+    //...
+    private boolean start() {
+        try {
+            // (1)
+            initializeServices();
+            // (2)
+            createWindow();
+            // (3)
+            if (loadScenes()) {
+                // (4)
+                createJMXStatus(this);
+                System.out.printf("INFO: scene %s activated and created.\n", activeScene.getName());
+            }
+        } catch (Exception e) {
+            System.out.println("ERR: Unable to initialize scene: " + e.getLocalizedMessage());
+            return false;
+        }
+        return true;
+    }
+    //...
+}
+```
 
 ## JMX metrics
 
@@ -424,9 +1002,9 @@ public class AppStatus implements AppStatusMBean {
             ObjectName objectName = new ObjectName("com.demoing.app:name=" + programName);
             platformMBeanServer.registerMBean(this, objectName);
         } catch (InstanceAlreadyExistsException
-                | MBeanRegistrationException
-                | NotCompliantMBeanException
-                | MalformedObjectNameException e) {
+                 | MBeanRegistrationException
+                 | NotCompliantMBeanException
+                 | MalformedObjectNameException e) {
             e.printStackTrace();
         }
     }
@@ -517,6 +1095,17 @@ And the debug attribute value can be dynamically changed :
 
 ![The Debug Level parameter can be changed during execution](images/jconsole-mbean-dyn-value.png)
 
+### Using ELK to monitor throughJMX
+
+_TODO_
+
+https://medium.com/analytics-vidhya/installing-elk-stack-in-docker-828df335e421
+
+see the [Docker-compose.yaml](./elk/Docker-compose.yaml "Open the docker compose file") file to install ELK through
+Docker.
+
+After installing the ELK through a docker-compose recipe, Kibana is reachable at http://localhost:5601
+
 ## Dockerize the Desktop java app
 
 _TODO_
@@ -537,14 +1126,11 @@ As soon as the docker image is built, you can execute it :
 docker run --rm -it monoclass2:latest
 ```
 
-## Using ELK to monitor throughJMX
+## Enhancement to come
 
-_TODO_
-
-https://medium.com/analytics-vidhya/installing-elk-stack-in-docker-828df335e421
-
-see the [Docker-compose.yaml](./elk/Docker-compose.yaml "Open the docker compose file") file to install ELK through
-Docker.
-
-After installing the ELK through a docker-compose recipe, Kibana is reachable at http://localhost:5601
-
+1. Enhance the Animation to propose more features like loop condition, and a list of frameDuration instead of only one
+   for all animation frames, proposing an `Animations` object to group `Animation`,
+2. Add a System for Scene management
+3. Add a System Management
+4. add Input Key mapping configuration
+5. Add Sound support (without external library ??)

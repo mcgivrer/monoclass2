@@ -2,20 +2,27 @@
 
 A **MonoClass 2** project test.
 
-This _small_ Java project with only one (master) class is a proof-of-concept of an over simplified java program to deliver maximum feature in a minimum number lines of code, and WITHOUT dependencies out of the JDK itself.
+This _small_ Java project with only one (master) class is a proof-of-concept of an over simplified java program to
+deliver maximum feature in a minimum number lines of code, and WITHOUT dependencies out of the JDK itself.
 
-A second challenge is in the no use for a build tool (maven or gradle) but nothing else than the JDK compiler tool and the magic of a bash script (Back to Roots !).
+A second challenge is in the no use for a build tool (maven or gradle) but nothing else than the JDK compiler tool and
+the magic of a bash script (Back to Roots !).
 
 And a last constrain is to reduce as much as possible the number of LoC, using enhancement from latest JDK.
 
-Have fun discover this beast of code, to learn and take benefits of some latest JDK features (like the [pattern matching for switch](https://openjdk.java.net/jeps/406 "ssee the official specification")), and moreover, overuse of lambda and stream each time this was possible.
+Have fun discover this beast of code, to learn and take benefits of some latest JDK features (like
+the [pattern matching for switch](https://openjdk.java.net/jeps/406 "ssee the official specification")), and moreover,
+overuse of lambda and stream each time this was possible.
 
 > :blue_book: _**NOTE**_[^1]
-> _If your are curious, just visit the "[Java Language Updates](https://docs.oracle.com/en/java/javase/18/language/java-language-changes.html "go to official source of information for Java evolution")" page from Oracle, you will discover accross release from 9 to 18, the list of new introduced features._
+> _If your are curious, just visit
+the "[Java Language Updates](https://docs.oracle.com/en/java/javase/18/language/java-language-changes.html "go to official source of information for Java evolution")"
+page from Oracle, you will discover accross release from 9 to 18, the list of new introduced features._
 >
-## A bit of doc please
 
-see the /docs for details
+## More Doc sir ?
+
+See the [/docs](docs/index.md) for details
 
 ## Build
 
@@ -27,7 +34,7 @@ $> scripts/build.sh a
 
 > :blue_book: _**NOTE**_
 > _for curious people, you can experiment the following command line :
-> `$> build h` 
+> `$> build h`
 > getting help in this cli build script._
 
 This will build a jar in `target/` directory.
@@ -40,9 +47,23 @@ You can run it by executing the following command line :
 $> scripts/build.sh r
 ```
 
-You will get the following window 
+(see [Build V3 README](https://gist.github.com/mcgivrer/a31510019029eba73edf5721a93c3dec#file-readme-md) for details on
+build script)
 
+Or if you build it with `scripts/build.sh a`, you will be able to run it with :
 
+```shell
+$> java --enable-preview -jar target/monoclass2-1.0.3.jar
+```
+
+You will get the following window
+
+![DaGame pre-release preparing the v1.0.3 with Behavior and gameplay](docs/images/behaviors-and-gameplay.png "DaGame pre-release preparing the v1.0.3 with Behavior and gameplay")
+
+_figure 1 - DaGame pre-release preparing the v1.0.3 with Behavior and gameplay_
+
+> :blue_book: _**NOTE**_
+> _You can notice the new Time display, limiting the time play._
 
 ## Contribute
 
