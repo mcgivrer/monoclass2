@@ -217,6 +217,9 @@ public class Application extends JFrame implements KeyListener {
         public String scenes;
         public String defaultScene;
 
+        public String defaultLanguage;
+
+
         public Configuration(String fileName) {
             try {
                 appProps.load(this.getClass().getResourceAsStream(fileName));
@@ -249,6 +252,8 @@ public class Application extends JFrame implements KeyListener {
 
             scenes = appProps.getProperty("app.scenes");
             defaultScene = appProps.getProperty("app.scene.default");
+
+            defaultLanguage = appProps.getProperty("app.language.default", "en_EN");
         }
 
         private double parseDouble(String stringValue) {
@@ -261,24 +266,26 @@ public class Application extends JFrame implements KeyListener {
 
         private Configuration parseArgs(String[] args) {
             Arrays.asList(args).forEach(arg -> {
-                String[] values = arg.split("=");
-                switch (values[0].toLowerCase()) {
-                    case "w", "width" -> screenWidth = parseDouble(values[1]);
-                    case "h", "height" -> screenHeight = parseDouble(values[1]);
-                    case "s", "scale" -> displayScale = parseDouble(values[1]);
-                    case "d", "debug" -> debug = parseInt(values[1]);
-                    case "ww", "worldwidth" -> worldWidth = parseDouble(values[1]);
-                    case "wh", "worldheight" -> worldHeight = parseDouble(values[1]);
-                    case "wg", "worldgravity" -> worldGravity = parseDouble(values[1]);
-                    case "spmin" -> speedMinValue = parseDouble(values[1]);
-                    case "spmax" -> speedMaxValue = parseDouble(values[1]);
-                    case "accmin" -> accMinValue = parseDouble(values[1]);
-                    case "accmax" -> accMaxValue = parseDouble(values[1]);
-                    case "cspmin" -> colSpeedMinValue = parseDouble(values[1]);
-                    case "cspmax" -> colSpeedMaxValue = parseDouble(values[1]);
-                    case "fps" -> fps = parseDouble(values[1]);
-                    case "f", "fullScreen" -> convertStringToBoolean(values[1]);
-                    case "scene" -> defaultScene = values[1];
+                String[] argSplit = arg.split("=");
+                System.out.println("- arg:" + argSplit[0] + "=" + argSplit[1]);
+                switch (argSplit[0].toLowerCase()) {
+                    case "w", "width" -> screenWidth = parseDouble(argSplit[1]);
+                    case "h", "height" -> screenHeight = parseDouble(argSplit[1]);
+                    case "s", "scale" -> displayScale = parseDouble(argSplit[1]);
+                    case "d", "debug" -> debug = parseInt(argSplit[1]);
+                    case "ww", "worldwidth" -> worldWidth = parseDouble(argSplit[1]);
+                    case "wh", "worldheight" -> worldHeight = parseDouble(argSplit[1]);
+                    case "wg", "worldgravity" -> worldGravity = parseDouble(argSplit[1]);
+                    case "spmin" -> speedMinValue = parseDouble(argSplit[1]);
+                    case "spmax" -> speedMaxValue = parseDouble(argSplit[1]);
+                    case "accmin" -> accMinValue = parseDouble(argSplit[1]);
+                    case "accmax" -> accMaxValue = parseDouble(argSplit[1]);
+                    case "cspmin" -> colSpeedMinValue = parseDouble(argSplit[1]);
+                    case "cspmax" -> colSpeedMaxValue = parseDouble(argSplit[1]);
+                    case "fps" -> fps = parseDouble(argSplit[1]);
+                    case "f", "fullScreen" -> convertStringToBoolean(argSplit[1]);
+                    case "scene" -> defaultScene = argSplit[1];
+                    case "l", "language", "lang" -> defaultLanguage = argSplit[1];
                     default -> System.out.printf("\nERR : Unknown argument %s\n", arg);
                 }
             });
@@ -788,10 +795,14 @@ public class Application extends JFrame implements KeyListener {
     }
 
     public static class I18n {
-        private static final ResourceBundle messages = ResourceBundle.getBundle("i18n.messages");
+        private static ResourceBundle messages = ResourceBundle.getBundle("i18n.messages");
 
         private I18n() {
+        }
 
+        public static void setLanguage(Configuration config) {
+            String[] langCountry = config.defaultLanguage.split("_");
+            messages = ResourceBundle.getBundle("i18n.messages", new Locale(langCountry[0], langCountry[1]));
         }
 
         public static String get(String key) {
@@ -893,7 +904,7 @@ public class Application extends JFrame implements KeyListener {
 
         // Position attributes
         public Rectangle2D.Double box = new Rectangle2D.Double(0, 0, 0, 0);
-        public Shape bbox = new Rectangle2D.Double(0, 0, 0, 0);
+        public Shape offsetbox = new Rectangle2D.Double(0, 0, 0, 0);
         public Shape cbox = new Rectangle2D.Double(0, 0, 0, 0);
         public double x = 0.0, y = 0.0;
         public Vec2d oldPos = new Vec2d(0, 0);
@@ -910,9 +921,9 @@ public class Application extends JFrame implements KeyListener {
         // internal attributes
         protected int startDuration = -1;
         protected int duration = -1;
-        public Map<String, Object> attributes = new HashMap<>();
+        public Map<String, Object> attributes = new ConcurrentHashMap<>();
 
-        public Map<String, Behavior> behaviors = new HashMap<>();
+        public Map<String, Behavior> behaviors = new ConcurrentHashMap<>();
 
         public Entity(String name) {
             this.name = name;
@@ -945,8 +956,8 @@ public class Application extends JFrame implements KeyListener {
          */
         public Entity setCollisionBox(double left, double top, double right, double bottom) {
             switch (type) {
-                case IMAGE, RECTANGLE, default -> this.bbox = new Rectangle2D.Double(left, top, right, bottom);
-                case ELLIPSE -> this.bbox = new Ellipse2D.Double(left, top, right, bottom);
+                case IMAGE, RECTANGLE, default -> this.offsetbox = new Rectangle2D.Double(left, top, right, bottom);
+                case ELLIPSE -> this.offsetbox = new Ellipse2D.Double(left, top, right, bottom);
             }
             update(0.0);
             return this;
@@ -1062,15 +1073,15 @@ public class Application extends JFrame implements KeyListener {
             box.setRect(x, y, width, height);
             switch (type) {
                 case RECTANGLE, IMAGE, default -> cbox = new Rectangle2D.Double(
-                        box.getX() + bbox.getBounds().getX(),
-                        box.getY() + bbox.getBounds().getY(),
-                        box.getWidth() - (bbox.getBounds().getWidth() + bbox.getBounds().getX()),
-                        box.getHeight() - (bbox.getBounds().getHeight() + bbox.getBounds().getY()));
+                        box.getX() + offsetbox.getBounds().getX(),
+                        box.getY() + offsetbox.getBounds().getY(),
+                        box.getWidth() - (offsetbox.getBounds().getWidth() + offsetbox.getBounds().getX()),
+                        box.getHeight() - (offsetbox.getBounds().getHeight() + offsetbox.getBounds().getY()));
                 case ELLIPSE -> cbox = new Ellipse2D.Double(
-                        box.getX() + bbox.getBounds().getX(),
-                        box.getY() + bbox.getBounds().getY(),
-                        box.getWidth() - (bbox.getBounds().getWidth() + bbox.getBounds().getX()),
-                        box.getHeight() - (bbox.getBounds().getHeight() + bbox.getBounds().getY()));
+                        box.getX() + offsetbox.getBounds().getX(),
+                        box.getY() + offsetbox.getBounds().getY(),
+                        box.getWidth() - (offsetbox.getBounds().getWidth() + offsetbox.getBounds().getX()),
+                        box.getHeight() - (offsetbox.getBounds().getHeight() + offsetbox.getBounds().getY()));
             }
 
             if (Optional.ofNullable(animations).isPresent()) {
@@ -1329,6 +1340,7 @@ public class Application extends JFrame implements KeyListener {
 
     private void initialize(String[] args) {
         config = new Configuration("/app.properties").parseArgs(args);
+        I18n.setLanguage(config);
         world = new World()
                 .setArea(config.worldWidth, config.worldHeight)
                 .setGravity(config.worldGravity);
