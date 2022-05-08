@@ -7,7 +7,7 @@ export PROGRAM_VERSION=1.0.3
 export PROGRAM_TITLE=MonoClass2
 export AUTHOR_NAME='Frédéric Delorme'
 export VENDOR_NAME=frederic.delorme@gmail.com
-export MAIN_CLASS=com.demoing.app.Application
+export MAIN_CLASS=com.demoing.app.core.Application
 export GIT_COMMIT_ID=$(git rev-parse HEAD)
 export JAVA_BUILD=$(java --version | head -1 | cut -f2 -d' ')
 # Paths
