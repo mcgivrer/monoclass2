@@ -1,15 +1,17 @@
 #!/bin/bash
 # more info at https://gist.github.com/mcgivrer/a31510019029eba73edf5721a93c3dec
 # Copyright 2020 Frederic Delorme (McGivrer) fredericDOTdelormeATgmailDOTcom
-#
+# Your program build definition
 export PROGRAM_NAME=monoclass2
-export PROGRAM_VERSION=1.0.2
+export PROGRAM_VERSION=1.0.3
 export PROGRAM_TITLE=MonoClass2
 export AUTHOR_NAME='Frédéric Delorme'
 export VENDOR_NAME=frederic.delorme@gmail.com
-export MAIN_CLASS=com.demoing.app.Application
+export MAIN_CLASS=com.demoing.app.core.Application
+# the tools and sources versions
 export GIT_COMMIT_ID=$(git rev-parse HEAD)
 export JAVA_BUILD=$(java --version | head -1 | cut -f2 -d' ')
+#
 # Paths
 export SRC=src
 export LIBS=lib
@@ -19,7 +21,7 @@ export CLASSES=$TARGET/classes
 export RESOURCES=$SRC/main/resources
 export COMPILATION_OPTS=--enable-preview
 export JAR_OPTS=--enable-preview
-
+#
 function manifest() {
   mkdir $TARGET
   echo "|_ 0. clear build directory"
@@ -73,11 +75,9 @@ function wrapJar() {
 }
 #
 function executeJar() {
-  if [ ! -f "$TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar" ]; then
-    manifest
-    compile
-    createJar
-  fi
+  manifest
+  compile
+  createJar
   echo "|_ 5.Execute just created JAR $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar"
   java $JAR_OPTS -jar $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar "$@"
 }
