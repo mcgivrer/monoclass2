@@ -940,6 +940,64 @@ public class Application {
 }
 ```
 
+## Default Language
+
+If no configuration is set, the System language will be set.
+But if the configuration key `app.language.default` is provided, the value will be applied to the I18n service:
+
+```java
+public static class I18n {
+    //...
+    public static void setLanguage(Configuration config) {
+        String[] langCountry = config.defaultLanguage.split("_");
+        messages = ResourceBundle.getBundle("i18n.messages", new Locale(langCountry[0], langCountry[1]));
+    }
+    //...
+} 
+```
+
+And, necessary need the new defaultLanguage attribute in the Configuration:
+
+```java
+public static class Configuration {
+    //...
+    public String defaultLanguage;
+
+    //...
+    private void loadConfig() {
+        //...
+        defaultLanguage = appProps.getProperty(
+                "app.language.default",
+                "en_EN");
+        //...
+    }
+
+    private Configuration parseArgs(String[] args) {
+        Arrays.asList(args).forEach(arg -> {
+            String[] values = arg.split("=");
+            switch (values[0].toLowerCase()) {
+                //...
+                case "l", "language", "lang" -> defaultLanguage = values[1];
+            }
+        });
+    }
+}
+```
+
+And now starting the jar with `lang=fr_FR` will start the game with a French translation:
+
+```shell
+$ java --enable-preview -jar target/monoclass2-1.0.3.jar \
+   lang=fr_FR
+```
+
+The current supported values in this demo are:
+
+- `fr_FR` for French language,
+- `en_EN` for English language,
+- `es_ES` for Spanish language,
+- `de_DE` for gGerman language.
+
 ## JMX metrics
 
 It's easy to add remote readable metrics with the builtin Java feature JMX.
@@ -1128,9 +1186,10 @@ docker run --rm -it monoclass2:latest
 
 ## Enhancement to come
 
-1. Enhance the Animation to propose more features like loop condition, and a list of frameDuration instead of only one
+1. ~~Add default language configuration,~~
+2. Enhance the Animation to propose more features like loop condition, and a list of frameDuration instead of only one
    for all animation frames, proposing an `Animations` object to group `Animation`,
-2. Add a System for Scene management
-3. Add a System Management
-4. add Input Key mapping configuration
-5. Add Sound support (without external library ??)
+3. Add a System for Scene management
+4. Add a System Management
+5. add Input Key mapping configuration
+6. Add Sound support (without external library ??)

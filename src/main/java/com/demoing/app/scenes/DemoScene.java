@@ -270,7 +270,7 @@ public class DemoScene implements Scene {
                 pf = createPlatform(app, i);
                 found = false;
                 for (Entity p : platforms) {
-                    if (p.bbox.intersects(pf.bbox.getBounds())) {
+                    if (p.cbox.intersects(pf.cbox.getBounds())) {
                         found = true;
                     }
                 }
