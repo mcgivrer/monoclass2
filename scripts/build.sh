@@ -8,7 +8,7 @@ export PROGRAM_TITLE=MonoClass2
 export AUTHOR_NAME='Frédéric Delorme'
 export VENDOR_NAME=frederic.delorme@gmail.com
 export MAIN_CLASS=com.demoing.app.core.Application
-export JAVADOC_CLASSPATH=com.demoing.app.core;com.demoing.app.scenes
+export JAVADOC_CLASSPATH="com.demoing.app.core com.demoing.app.scenes"
 export SOURCE_VERSION=17
 # the tools and sources versions
 export GIT_COMMIT_ID=$(git rev-parse HEAD)
@@ -63,7 +63,7 @@ echo "generate Javadoc "
   mkdir -p $TARGET/javadoc
   # Compile class files
   rm -Rf $TARGET/javadoc/*
-  echo "|_ 2-5. generate javadoc from '$SRC' ..."
+  echo "|_ 2-5. generate javadoc from '$JAVADOC_CLASSPATH' ..."
   #find $SRC -name '*.java' >$TARGET/sources.lst
   javadoc $COMPILATION_OPTS -source $SOURCE_VERSION -d $TARGET/javadoc -sourcepath $SRC/main/java $JAVADOC_CLASSPATH
   echo "   done."
@@ -112,6 +112,7 @@ function help() {
   echo "where:"
   echo " - a|A|all     : perform all following operations"
   echo " - c|C|compile : compile all sources project"
+  echo " - d|D|doc     : generate javadoc for project"
   echo " - j|J|jar     : build JAR with all resources"
   echo " - w|W|wrap    : Build and wrap jar as a shell script"
   echo " - s|S|sign    : Build and wrap signed jar as a shell script"
@@ -128,6 +129,7 @@ function run() {
   a | A | all)
     manifest
     compile
+    generatedoc
     createJar
     wrapJar
     ;;
