@@ -8,6 +8,8 @@ export PROGRAM_TITLE=MonoClass2
 export AUTHOR_NAME='Frédéric Delorme'
 export VENDOR_NAME=frederic.delorme@gmail.com
 export MAIN_CLASS=com.demoing.app.core.Application
+export JAVADOC_CLASSPATH=com.demoing.app.core;com.demoing.app.scenes
+export SOURCE_VERSION=17
 # the tools and sources versions
 export GIT_COMMIT_ID=$(git rev-parse HEAD)
 export JAVA_BUILD=$(java --version | head -1 | cut -f2 -d' ')
@@ -52,6 +54,22 @@ function compile() {
   javac $COMPILATION_OPTS @$LIBS/options.txt @$TARGET/sources.lst -cp $CLASSES
   echo "   done."
 }
+#
+function generatedoc(){
+echo "generate Javadoc "
+  echo "> from : $SRC"
+  echo "> to   : $TARGET/javadoc"
+  # prepare target
+  mkdir -p $TARGET/javadoc
+  # Compile class files
+  rm -Rf $TARGET/javadoc/*
+  echo "|_ 2-5. generate javadoc from '$SRC' ..."
+  #find $SRC -name '*.java' >$TARGET/sources.lst
+  javadoc $COMPILATION_OPTS -source $SOURCE_VERSION -d $TARGET/javadoc -sourcepath $SRC/main/java $JAVADOC_CLASSPATH
+  echo "   done."
+
+}
+
 #
 function createJar() {
   echo "|_ 3. package jar file '$TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar'..."
@@ -116,6 +134,11 @@ function run() {
   c | C | compile)
     manifest
     compile
+    ;;
+  d | D | doc)
+    manifest
+    compile
+    generatedoc
     ;;
   j | J | jar)
     createJar

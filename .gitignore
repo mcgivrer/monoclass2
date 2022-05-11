@@ -10,3 +10,4 @@
 **/*.jar
 **/*.lst
 
+./lib/jar-index.txt
