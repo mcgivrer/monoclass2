@@ -9,5 +9,4 @@
 **/*.class
 **/*.jar
 **/*.lst
-
-./lib/jar-index.txt
+/lib/jar-index.txt
