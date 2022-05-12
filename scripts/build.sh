@@ -16,7 +16,7 @@ export GIT_COMMIT_ID=$(git rev-parse HEAD)
 export JAVA_BUILD=$(java --version | head -1 | cut -f2 -d' ')
 #
 # Paths
-export SRC=src/main
+export SRC=src
 export LIBS=lib
 export LIB_TEST="./lib/test/junit-platform-console-standalone-1.8.2.jar"
 export TARGET=target
@@ -24,7 +24,7 @@ export BUILD=$TARGET/build
 export CLASSES=$TARGET/classes
 export RESOURCES=$SRC/main/resources
 export TESTRESOURCES=$SRC/test/resources
-export COMPILATION_OPTS="--enable-preview"
+export COMPILATION_OPTS="--enable-preview -Xlint:preview"
 export JAR_NAME=$PROGRAM_NAME-$PROGRAM_VERSION.jar
 # -Xlint:unchecked -Xlint:preview"
 export JAR_OPTS=--enable-preview
@@ -54,8 +54,8 @@ function compile() {
   mkdir -p $CLASSES
   # Compile class files
   rm -Rf $CLASSES/*
-  echo "|_ 2. compile sources from '$SRC' ..."
-  find $SRC -name '*.java' >$TARGET/sources.lst
+  echo "|_ 2. compile sources from '$SRC/main' ..."
+  find $SRC/main -name '*.java' >$TARGET/sources.lst
   javac $COMPILATION_OPTS @$LIBS/options.txt @$TARGET/sources.lst -cp $CLASSES
   echo "   done."
 }

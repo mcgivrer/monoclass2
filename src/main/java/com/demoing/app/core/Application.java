@@ -174,6 +174,7 @@ public class Application extends JFrame implements KeyListener {
          * @param nbEntitiesToAdd the number of entities to be added.
          * @deprecated
          */
+        @Deprecated
         void requestAddEntity(Integer nbEntitiesToAdd);
 
         /**
@@ -182,7 +183,8 @@ public class Application extends JFrame implements KeyListener {
          * @param nbEntitiesToRemove the number of entities to be removed
          * @deprecated
          */
-        void requestremoveEntity(Integer nbEntitiesToRemove);
+        @Deprecated
+        void requestRemoveEntity(Integer nbEntitiesToRemove);
 
         /**
          * Request to reset the current active Scene.
@@ -290,12 +292,20 @@ public class Application extends JFrame implements KeyListener {
 
         }
 
+        /**
+         *
+         */
         @Override
+        @Deprecated
         public synchronized void requestAddEntity(Integer nbEntity) {
         }
 
+        /**
+         *
+         */
         @Override
-        public synchronized void requestremoveEntity(Integer nbEntity) {
+        @Deprecated
+        public synchronized void requestRemoveEntity(Integer nbEntity) {
         }
 
         @Override
