@@ -407,8 +407,8 @@ public class DemoScene implements Scene {
             }
 
             if (!action) {
-                p.dx *= p.friction;
-                p.dx *= p.friction;
+                p.vel.x *= p.friction;
+                p.vel.x *= p.friction;
             }
         }
     }
