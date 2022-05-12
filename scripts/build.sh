@@ -69,8 +69,13 @@ echo "generate Javadoc "
   # Compile class files
   rm -Rf $TARGET/javadoc/*
   echo "|_ 2-5. generate javadoc from '$JAVADOC_CLASSPATH' ..."
-  #find $SRC -name '*.java' >$TARGET/sources.lst
-  javadoc $COMPILATION_OPTS -source $SOURCE_VERSION -d $TARGET/javadoc -sourcepath $SRC/main/java $JAVADOC_CLASSPATH
+  java -jar ./lib/tools/markdown2html-0.3.1.jar <README.md >$TARGET/javadoc/overview.html
+  javadoc $JAR_OPTS -source $SOURCE_VERSION \
+    -overview $TARGET/javadoc/overview.html \
+    -quiet -author -use -version \
+    -doctitle "<h1>$PROGRAM_TITLE</h1>" \
+    -d $TARGET/javadoc \
+    -sourcepath $SRC/main/java $JAVADOC_CLASSPATH  >> target/build.log
   echo "   done."
 
 }
