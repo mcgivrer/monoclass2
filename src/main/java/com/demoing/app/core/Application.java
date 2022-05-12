@@ -196,22 +196,22 @@ public class Application extends JFrame implements KeyListener {
         Properties appProps = new Properties();
         public double screenWidth = 320.0;
         public double screenHeight = 200.0;
-        private double displayScale = 2.0;
-        private double fps = 0.0;
+        public double displayScale = 2.0;
+        public double fps = 0.0;
         public int debug;
-        private long frameTime = 0;
-        private double worldWidth = 0;
-        private double worldHeight = 0;
-        private double worldGravity = 1.0;
-        private boolean fullScreen = false;
+        public long frameTime = 0;
+        public double worldWidth = 0;
+        public double worldHeight = 0;
+        public double worldGravity = 1.0;
+        public boolean fullScreen = false;
 
-        private double speedMinValue = 0.1;
-        private double speedMaxValue = 4.0;
-        private double colSpeedMinValue = 0.1;
-        private double colSpeedMaxValue = 2.0;
+        public double speedMinValue = 0.1;
+        public double speedMaxValue = 4.0;
+        public double colSpeedMinValue = 0.1;
+        public double colSpeedMaxValue = 2.0;
 
-        private double accMinValue = 0.1;
-        private double accMaxValue = 0.35;
+        public double accMinValue = 0.1;
+        public double accMaxValue = 0.35;
 
         public String scenes;
         public String defaultScene;

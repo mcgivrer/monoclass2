@@ -10,18 +10,23 @@ export VENDOR_NAME=frederic.delorme@gmail.com
 export MAIN_CLASS=com.demoing.app.core.Application
 export JAVADOC_CLASSPATH="com.demoing.app.core com.demoing.app.scenes"
 export SOURCE_VERSION=17
+export SRC_ENCODING=UTF-8
 # the tools and sources versions
 export GIT_COMMIT_ID=$(git rev-parse HEAD)
 export JAVA_BUILD=$(java --version | head -1 | cut -f2 -d' ')
 #
 # Paths
-export SRC=src
+export SRC=src/main
 export LIBS=lib
+export LIB_TEST="./lib/test/junit-platform-console-standalone-1.8.2.jar"
 export TARGET=target
 export BUILD=$TARGET/build
 export CLASSES=$TARGET/classes
 export RESOURCES=$SRC/main/resources
-export COMPILATION_OPTS=--enable-preview
+export TESTRESOURCES=$SRC/test/resources
+export COMPILATION_OPTS="--enable-preview"
+export JAR_NAME=$PROGRAM_NAME-$PROGRAM_VERSION.jar
+# -Xlint:unchecked -Xlint:preview"
 export JAR_OPTS=--enable-preview
 #
 function manifest() {
@@ -69,15 +74,31 @@ echo "generate Javadoc "
   echo "   done."
 
 }
-
+#
+function executeTests(){
+  echo "execute tests"
+  echo "> from : $SRC/test"
+  echo "> to   : $TARGET/test-classes"
+  mkdir -p $TARGET/test-classes
+  rm -Rf $TARGET/test-classes/*
+  echo "copy test resources"
+  cp -r ./src/test/resources/* $TARGET/test-classes
+  echo "compile test classes"
+  #list test sources
+  find ./src/test -name '*.java' >$TARGET/test-sources.lst
+  javac -source 17 -encoding $SRC_ENCODING $COMPILATION_OPTS -cp "$LIB_TEST;$CLASSES;." -d $TARGET/test-classes @$TARGET/test-sources.lst
+  echo "execute tests through JUnit"
+  java $JAR_OPTS -jar "$LIB_TEST" --class-path "$CLASSES;$TARGET/test-classes;$SRC/test/resources;" --scan-class-path
+  echo "done."
+}
 #
 function createJar() {
-  echo "|_ 3. package jar file '$TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar'..."
+  echo "|_ 3. package jar file '$TARGET/$JAR_NAME'..."
   if ([ $(ls $CLASSES | wc -l | grep -w "0") ]); then
     echo 'No compiled class files'
   else
     # Build JAR
-    jar -cfmv $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar $TARGET/manifest.mf -C $CLASSES . -C $RESOURCES .
+    jar -cfmv $TARGET/$JAR_NAME $TARGET/manifest.mf -C $CLASSES . -C $RESOURCES .
   fi
 
   echo "   |_ done."
@@ -113,6 +134,7 @@ function help() {
   echo " - a|A|all     : perform all following operations"
   echo " - c|C|compile : compile all sources project"
   echo " - d|D|doc     : generate javadoc for project"
+  echo " - t|T|test    : execute JUnit tests"
   echo " - j|J|jar     : build JAR with all resources"
   echo " - w|W|wrap    : Build and wrap jar as a shell script"
   echo " - s|S|sign    : Build and wrap signed jar as a shell script"
@@ -141,6 +163,11 @@ function run() {
     manifest
     compile
     generatedoc
+    ;;
+  t | T | test)
+    manifest
+    compile
+    executeTests
     ;;
   j | J | jar)
     createJar
