@@ -151,6 +151,7 @@ function run() {
   a | A | all)
     manifest
     compile
+    executeTests
     generatedoc
     createJar
     wrapJar
