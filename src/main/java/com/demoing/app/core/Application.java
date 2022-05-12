@@ -23,66 +23,178 @@ import java.util.stream.Collectors;
 
 import static com.demoing.app.core.Application.EntityType.*;
 
+/**
+ * <p>{@link Application} is a Proof of Concept of a game mechanics, satisfying to some rules:
+ * <ul>
+ * <li>only one main java classe (sub classes and enum are authorized),</li>
+ * <li> limit the number of line of code (without javadoc)</li>
+ * <li> Build without any external tools but bash and JDK.</li>
+ * </ul>
+ * </p>
+ * <p>
+ * <p>The entrypoint is the {@link Application#run()} method to start.
+ * Its reading its default configuration from an <code>app.properties</code> file.
+ * </p>
+ *
+ * @author Frédéric Delorme
+ * @since 1.0.0
+ */
 public class Application extends JFrame implements KeyListener {
 
+    /**
+     * The Frame per Second rendering rate default value
+     */
     private static final int FPS_DEFAULT = 60;
-
+    /**
+     * internal counter for entity id.
+     */
     private static long entityIndex = 0;
+    /**
+     * THe map of Scene to be activated int o the Application instance.
+     * See <code>app.scenes</code> and <code>add.default.scene</code> in configuration files.
+     */
     private Map<String, Scene> scenes = new HashMap<>();
+    /**
+     * Scene readiness flag. After loaded and activated, the scene readiness state is set to true.
+     */
     private boolean sceneReady;
 
-    public static long getEntityIndex() {
-        return entityIndex;
-    }
 
+    /**
+     * The {@link EntityType} define the type of rendered entity, a RECTANGLE, an ELLIPSE or an IMAGE (see {@link BufferedImage}.
+     */
     public enum EntityType {
         RECTANGLE,
         ELLIPSE,
         IMAGE
     }
 
+    /**
+     * The {@link PhysicType} is used by the PhysicEngine to compute physic behavior for the object.
+     * It can be STATIC for static object like static platform, or DYNAMIC for moving objects.
+     */
     public enum PhysicType {
         DYNAMIC,
         STATIC
     }
 
+    /**
+     * THe TextAlign attribute value is use for TextEntity only, to define how the rendered text must be aligned.
+     * Possible values are LEFT, CENTER and RIGHT.
+     */
     public enum TextAlign {
         LEFT,
         CENTER,
         RIGHT
     }
 
+    /**
+     * This MBean is for metrics and action exposition through the JMX service. Connecting with the JConsole
+     * to this java process will provide some metrics and action.
+     */
     public interface AppStatusMBean {
+        /**
+         * Current level of debugging
+         *
+         * @return
+         */
         Integer getDebugLevel();
 
+        /**
+         * Set the level of debugging.
+         *
+         * @param d an int value from 0 to 5
+         */
         void setDebugLevel(Integer d);
 
+        /**
+         * Retrieve the current number of entities.
+         *
+         * @return an INteger value correspondong to the size of the {@link Application#entities} Map.
+         */
         Integer getNbEntities();
 
+        /**
+         * Return the number of elements in  the {@link Render} graphic pipeline (see {@link Render#gPipeline}).
+         *
+         * @return the size fo the gPipeline list.
+         */
         Integer getPipelineSize();
 
+        /**
+         * Return the current status of the PAUSE flag.
+         *
+         * @return true f the application is in pause mode.
+         */
         Boolean getPauseStatus();
 
+        /**
+         * Define and set the Pause ode to true or false.
+         *
+         * @param pause
+         */
         void setPauseStatus(Boolean pause);
 
+        /**
+         * Retrieve the value for the update spent time.
+         *
+         * @return a value in nanoseconds.
+         */
         Long getTimeUpdate();
 
+        /**
+         * Retrieve the value for the rendering spent time.
+         *
+         * @return a value in nanoseconds.
+         */
         Long getTimeRendering();
 
+        /**
+         * Retrieve the value for the global computation spent time.
+         *
+         * @return a value in nanoseconds.
+         */
         Long getTimeComputation();
 
+        /**
+         * Retrieve the real Frame Per Second measured in the main loop.
+         *
+         * @return
+         */
         Long getRealFPS();
 
+        /**
+         * Request to exit from application.
+         */
         void requestQuit();
 
-        void requestAddEntity(Integer add);
+        /**
+         * Add <code>nbEntitiesToAdd</code> random entities
+         *
+         * @param nbEntitiesToAdd the number of entities to be added.
+         * @deprecated
+         */
+        void requestAddEntity(Integer nbEntitiesToAdd);
 
-        void requestremoveEntity(Integer add);
+        /**
+         * Remove <code>nbEntitiesToRemove</code> entities
+         *
+         * @param nbEntitiesToRemove the number of entities to be removed
+         * @deprecated
+         */
+        void requestremoveEntity(Integer nbEntitiesToRemove);
 
+        /**
+         * Request to reset the current active Scene.
+         */
         void requestReset();
 
     }
 
+    /**
+     * Implementation of the JMX service to deliver the AppStatusMBean.
+     * (please see JMX API on officiel support site)
+     */
     public class AppStatus implements AppStatusMBean {
         private Application app;
         private int debugLevel;
@@ -192,33 +304,102 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    /**
+     * The Configuration class provide default attributes values provision from a <code>app.properties</code> file.
+     * Based on a simple {@link Properties} java class, it eases the initialization of the {@link Application}.
+     */
     public static class Configuration {
         Properties appProps = new Properties();
+        /**
+         * default width of the screen
+         */
         public double screenWidth = 320.0;
+        /**
+         * default height of the screen
+         */
         public double screenHeight = 200.0;
+        /**
+         * display pixel scale at start.
+         */
         public double displayScale = 2.0;
+        /**
+         * the required Frame Per Second to update game mechanic and render to screen.
+         */
         public double fps = 0.0;
+        /**
+         * The internal display debug level to display infirmation at rendering time on screen
+         * (level from 0 =No debug to 5 max level debug info).
+         */
         public int debug;
+
         public long frameTime = 0;
+
+        /**
+         * Default World play area width
+         */
         public double worldWidth = 0;
+        /**
+         * Default World play area height
+         */
         public double worldHeight = 0;
+        /**
+         * Default World play area gravity
+         */
         public double worldGravity = 1.0;
+        /**
+         * Flag to define fullscreen mode.  true=> full screen.
+         */
         public boolean fullScreen = false;
 
+        /**
+         * Default minimum speed for PhysicEngine. under this value, considere 0.
+         */
         public double speedMinValue = 0.1;
+        /**
+         * Default maximum speed for PhysicEngine, fixing upper threshold.
+         */
         public double speedMaxValue = 4.0;
-        public double colSpeedMinValue = 0.1;
-        public double colSpeedMaxValue = 2.0;
-
+        /**
+         * Default minimum acceleration for PhysicEngine. under this value, considere 0.
+         */
         public double accMinValue = 0.1;
+        /**
+         * Default maximum acceleration for PhysicEngine, fixing upper threshold.
+         */
         public double accMaxValue = 0.35;
 
+        /**
+         * Default minimum speed for CollisionDetector. under this value, considere 0.
+         */
+        public double colSpeedMinValue = 0.1;
+        /**
+         * Default maximum speed for CollisionDetector, fixing upper threshold.
+         */
+        public double colSpeedMaxValue = 2.0;
+
+        /**
+         * The default Scenes list.
+         * format "[code1]:[path_to_class1];[code1]:[path_to_class1];"
+         */
         public String scenes;
+        /**
+         * Default scene to be activated at start e.g.: 'code1'.
+         */
         public String defaultScene;
 
+        /**
+         * Default language to be activated at start (e.g. en_EN).
+         *
+         * @see I18n
+         */
         public String defaultLanguage;
 
 
+        /**
+         * Initialize configuration with the filename properties file.
+         *
+         * @param fileName the path and name of the properties file to be loaded.
+         */
         public Configuration(String fileName) {
             try {
                 appProps.load(this.getClass().getResourceAsStream(fileName));
@@ -228,6 +409,9 @@ public class Application extends JFrame implements KeyListener {
             }
         }
 
+        /**
+         * Map Properties attributes values to Configuration attributes.
+         */
         private void loadConfig() {
             screenWidth = parseDouble(appProps.getProperty("app.screen.width", "320.0"));
             screenHeight = parseDouble(appProps.getProperty("app.screen.height", "200.0"));
@@ -255,14 +439,33 @@ public class Application extends JFrame implements KeyListener {
             defaultLanguage = appProps.getProperty("app.language.default", "en_EN");
         }
 
+        /**
+         * Parse a String value to a Double one.
+         *
+         * @param stringValue the string value to be converted to double.
+         * @return
+         */
         private double parseDouble(String stringValue) {
             return Double.parseDouble(stringValue);
         }
 
+        /**
+         * Part s String value to an Integer value.
+         *
+         * @param stringValue the string value to be converted to int.
+         * @return
+         */
         private int parseInt(String stringValue) {
             return Integer.parseInt(stringValue);
         }
 
+        /**
+         * Parse a list of arguments (typically produced from command line interface) and extract arguments values
+         * to configuration attributes values.
+         *
+         * @param args the main arguments list
+         * @return the updated Configuration object.
+         */
         private Configuration parseArgs(String[] args) {
             Arrays.asList(args).forEach(arg -> {
                 String[] argSplit = arg.split("=");
@@ -291,23 +494,62 @@ public class Application extends JFrame implements KeyListener {
             return this;
         }
 
-        private void convertStringToBoolean(String values) {
-            fullScreen = "on|ON|true|True|TRUE".contains(values);
+        /**
+         * Convert a String value to a boolean value. Will transform "ON", "on", "true", "TRUE", "1" or "True" to a true bollean value.
+         *
+         * @param value the String value to be converted to boolean.
+         */
+        private void convertStringToBoolean(String value) {
+            fullScreen = "on|ON|true|True|TRUE|1".contains(value);
         }
 
     }
 
+    /**
+     * The {@link Render} service will provide the drawing process to  display entities to the {@link Application}
+     * display buffer,  and then copy the buffer to the application window (see {@link JFrame}.
+     */
     public static class Render {
+        /**
+         * A reference to the Application configuration.
+         */
         private final Configuration config;
+        /**
+         * The World object defining the play area limit.
+         */
         private final World world;
+        /**
+         * The Parent App.
+         */
         Application app;
+        /**
+         * The internal rendering graphics buffer.
+         */
         BufferedImage buffer;
+        /**
+         * The debug font to be used to display debug level information.
+         */
         private Font debugFont;
+        /**
+         * Intrenal metric to measure rendering time.
+         */
         long renderingTime = 0;
-
+        /**
+         * The list of object to be rendered: the rendering pipeline.
+         */
         private List<Entity> gPipeline = new CopyOnWriteArrayList<>();
+        /**
+         * The current active camera to draw all the scene entities from this point of view.
+         */
         Camera activeCamera;
 
+        /**
+         * Initialize the Render service with the parent Application, the current Configuration, and its World object.
+         *
+         * @param a the parent Application
+         * @param c the Configuration object for this instance.
+         * @param w the World object defining the play area limits.
+         */
         public Render(Application a, Configuration c, World w) {
             this.app = a;
             this.config = c;
@@ -517,12 +759,24 @@ public class Application extends JFrame implements KeyListener {
             g2.dispose();
         }
 
+        /**
+         * Move rendering point of view to Camera cam, with a direction -1 move to camera, 1 move back from camera.
+         *
+         * @param g         the Graphics API device.
+         * @param cam       the camera to move to/from.
+         * @param direction the direction of the move : -1 move to camera, 1 move back from camera.
+         */
         private void moveCamera(Graphics2D g, Camera cam, double direction) {
             if (Optional.ofNullable(activeCamera).isPresent()) {
                 g.translate(cam.pos.x * direction, cam.pos.y * direction);
             }
         }
 
+        /**
+         * Add an entity to the rendering pipeline.
+         *
+         * @param entity te Entity to be added to the rendering process.
+         */
         public void addToPipeline(Entity entity) {
             if (!gPipeline.contains(entity)) {
                 gPipeline.add(entity);
@@ -530,19 +784,35 @@ public class Application extends JFrame implements KeyListener {
             }
         }
 
+        /**
+         * Define the active Camera.
+         *
+         * @param cam A Camera object to be activated as the Rendering point of view.
+         */
         public void addCamera(Camera cam) {
             this.activeCamera = cam;
         }
 
+        /**
+         * Clear the current rendering pipeline.
+         */
         public void clear() {
             gPipeline.clear();
         }
 
+        /**
+         * Free all resources before closing the service.
+         */
         public void dispose() {
             clear();
             buffer = null;
         }
 
+        /**
+         * Remove an entity from the rendering pipeline.
+         *
+         * @param e the Entity to be removed from the pipeline.
+         */
         public void remove(Entity e) {
             gPipeline.remove(e);
         }
@@ -1622,6 +1892,16 @@ public class Application extends JFrame implements KeyListener {
         boolean status = !this.keys[keyCode] && prevKeys[keyCode];
         prevKeys[keyCode] = false;
         return status;
+    }
+
+
+    /**
+     * Retrieve the internal entity Index current value.
+     *
+     * @return
+     */
+    public static long getEntityIndex() {
+        return entityIndex;
     }
 
     public static void main(String[] args) {
