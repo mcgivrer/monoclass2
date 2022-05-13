@@ -212,7 +212,7 @@ will do the job.
 from [Elthen adventurer sprites](https://elthen.itch.io/pixel-art-adventurer-sprites) thanks to
 his [fair licensing](https://www.patreon.com/posts/27430241)._
 
-![Sprites sheet from Elthen](../src/main/resources/images/sprites01.png)
+![Sprites sheet from Elthen](../src/main/resources/images/illustration-sprites.png)
 
 _figure $fig+ - The sprites resources used as animation sample._
 
