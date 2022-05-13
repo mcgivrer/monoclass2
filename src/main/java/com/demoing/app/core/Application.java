@@ -987,7 +987,7 @@ public class Application extends JFrame implements KeyListener {
                     if (e1.id != e2.id && e1.cbox.getBounds().intersects(e2.cbox.getBounds())) {
                         resolve(e1, e2);
                         e1.behaviors.values().stream()
-                                .filter(b -> b.getEvent().equals("onCollision"))
+                                .filter(b -> b.getEvent().equals(Behavior.onCollision))
                                 .collect(Collectors.toList())
                                 .forEach(b -> b.onCollide(app, e1, e2));
                     }
@@ -1382,11 +1382,11 @@ public class Application extends JFrame implements KeyListener {
             }
         }
 
-        public Entity addAnimation(String key, int x, int y, int tw, int th, int nbFrames, String pathToImage) {
+        public Entity addAnimation(String key, int x, int y, int tw, int th, int[] durations, String pathToImage, int loop) {
             if (Optional.ofNullable(this.animations).isEmpty()) {
                 this.animations = new Animation();
             }
-            this.animations.addAnimationSet(key, pathToImage, x, y, tw, th, nbFrames);
+            this.animations.addAnimationSet(key, pathToImage, x, y, tw, th, durations, loop);
             return this;
         }
 
@@ -1404,19 +1404,42 @@ public class Application extends JFrame implements KeyListener {
             return this;
         }
 
-        public Entity setFrameDuration(String key, int frameDuration) {
-            animations.setFrameDuration(key, frameDuration);
-            return this;
-        }
-
         public int getDirection() {
             return this.vel.x > 0 ? 1 : -1;
         }
     }
 
+    public static class AnimationSet {
+        String name;
+        BufferedImage[] frames;
+        int[] durations;
+        int loop;
+        private int width;
+        private int height;
+
+        public AnimationSet(String key) {
+            this.name = key;
+        }
+
+        public AnimationSet setFramesDuration(int[] d) {
+            this.durations = d;
+            return this;
+        }
+
+        public AnimationSet setSize(int w, int h) {
+            this.width = w;
+            this.height = h;
+            return this;
+        }
+
+        public AnimationSet setLoop(int l) {
+            this.loop = l;
+            return this;
+        }
+    }
+
     public static class Animation {
-        Map<String, BufferedImage[]> animationSet = new HashMap<>();
-        Map<String, Integer> frameDuration = new HashMap<>();
+        Map<String, AnimationSet> animationSet = new HashMap<>();
         public String currentAnimationSet;
         public int currentFrame;
         private long internalAnimationTime;
@@ -1428,47 +1451,50 @@ public class Application extends JFrame implements KeyListener {
             currentFrame = 0;
         }
 
-        public Animation setFrameDuration(String key, int time) {
-
-            this.frameDuration.put(key, time);
-            return this;
-        }
-
         public Animation activate(String key) {
             this.currentAnimationSet = key;
-            if (currentFrame > this.animationSet.get(key).length) {
+            AnimationSet aSet = this.animationSet.get(key);
+            if (currentFrame > aSet.frames.length) {
                 this.currentFrame = 0;
                 this.internalAnimationTime = 0;
             }
             return this;
         }
 
-        public void addAnimationSet(String key, String imgSrc, int x, int y, int tw, int th, int nbFrames) {
+        public Animation addAnimationSet(String key, String imgSrc, int x, int y, int tw, int th, int[] durations, int loop) {
             try {
+                AnimationSet aSet = new AnimationSet(key).setSize(tw, th);
                 BufferedImage image = ImageIO.read(Objects.requireNonNull(this.getClass().getResourceAsStream(imgSrc)));
-                BufferedImage[] buffer = new BufferedImage[nbFrames];
-                for (int i = 0; i < nbFrames; i++) {
+                aSet.frames = new BufferedImage[durations.length];
+                for (int i = 0; i < durations.length; i++) {
                     BufferedImage frame = image.getSubimage(x + (i * tw), y, tw, th);
-                    buffer[i] = frame;
+                    aSet.frames[i] = frame;
                 }
-                animationSet.put(key, buffer);
+                aSet.setFramesDuration(durations);
+                aSet.setLoop(loop);
+                animationSet.put(key, aSet);
             } catch (IOException e) {
                 System.out.println("ERR: unable to read image from '" + imgSrc + "'");
             }
+            return this;
         }
 
         public synchronized void update(long elapsedTime) {
             internalAnimationTime += elapsedTime;
-            if (internalAnimationTime > frameDuration.get(currentAnimationSet)) {
+            AnimationSet aSet = animationSet.get(currentAnimationSet);
+            currentFrame = aSet.durations.length > currentFrame ? currentFrame : 0;
+            if (internalAnimationTime > aSet.durations[currentFrame]) {
                 internalAnimationTime = 0;
-                currentFrame = currentFrame + 1 < animationSet.get(currentAnimationSet).length ? currentFrame + 1 : (loop ? 0 : currentFrame);
+                currentFrame = currentFrame + 1 < aSet.frames.length
+                        ? currentFrame + 1
+                        : (aSet.loop == -1 || currentFrame < aSet.loop ? 0 : currentFrame);
             }
         }
 
         public synchronized BufferedImage getFrame() {
             if (animationSet.get(currentAnimationSet) != null
-                    && currentFrame < animationSet.get(currentAnimationSet).length) {
-                return animationSet.get(currentAnimationSet)[currentFrame];
+                    && currentFrame < animationSet.get(currentAnimationSet).frames.length) {
+                return animationSet.get(currentAnimationSet).frames[currentFrame];
             }
             return null;
         }

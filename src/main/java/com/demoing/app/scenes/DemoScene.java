@@ -93,27 +93,23 @@ public class DemoScene implements Scene {
                 .addAnimation("idle",
                         0, 0,
                         32, 32,
-                        13,
-                        "/images/sprites01.png")
-                .setFrameDuration("idle", 200)
+                        new int[]{60,60,60,60,60,60,60,60,60,60,60,60,60},
+                        "/images/sprites01.png",-1)
                 .addAnimation("walk",
                         0, 32,
                         32, 32,
-                        8,
-                        "/images/sprites01.png")
-                .setFrameDuration("walk", 60)
+                        new int[]{60,60,60,60,60,60,60,60},
+                        "/images/sprites01.png", -1)
                 .addAnimation("jump",
                         0, 5 * 32,
                         32, 32,
-                        6,
-                        "/images/sprites01.png")
-                .setFrameDuration("jump", 60)
+                        new int[]{60,60,60,60,60,60},
+                        "/images/sprites01.png",-1)
                 .addAnimation("dead",
                         0, 7 * 32,
                         32, 32,
-                        7,
-                        "/images/sprites01.png")
-                .setFrameDuration("dead", 60)
+                        new int[]{60,60,60,60,60,60,60},
+                        "/images/sprites01.png",1)
                 .activateAnimation("idle")
                 .addBehavior(new Behavior() {
 
