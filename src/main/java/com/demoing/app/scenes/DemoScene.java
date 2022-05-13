@@ -93,28 +93,28 @@ public class DemoScene implements Scene {
                 .addAnimation("idle",
                         0, 0,
                         32, 32,
-                        new int[]{60,60,60,60,60,60,60,60,60,60,60,60,60},
-                        "/images/sprites01.png",-1)
+                        new int[]{450, 60, 60, 250, 60, 60, 60, 450, 60, 60, 60, 250, 60},
+                        "/images/sprites01.png", -1)
                 .addAnimation("walk",
                         0, 32,
                         32, 32,
-                        new int[]{60,60,60,60,60,60,60,60},
+                        new int[]{60, 60, 60, 150, 60, 60, 60, 150},
                         "/images/sprites01.png", -1)
                 .addAnimation("jump",
                         0, 5 * 32,
                         32, 32,
-                        new int[]{60,60,60,60,60,60},
-                        "/images/sprites01.png",-1)
+                        new int[]{60, 60, 250, 250, 60, 60},
+                        "/images/sprites01.png", -1)
                 .addAnimation("dead",
                         0, 7 * 32,
                         32, 32,
-                        new int[]{60,60,60,60,60,60,60},
-                        "/images/sprites01.png",1)
+                        new int[]{160, 160, 160, 160, 160, 160, 500},
+                        "/images/sprites01.png", 0)
                 .activateAnimation("idle")
                 .addBehavior(new Behavior() {
 
                     @Override
-                    public String getEvent() {
+                    public String filterOnEvent() {
                         return onCollision;
                     }
 
@@ -142,7 +142,7 @@ public class DemoScene implements Scene {
                 .setTweenFactor(0.005);
         app.render.addCamera(cam);
 
-        generateEntity(app, "ball_", 30, 2.5);
+        generateEntity(app, "ball_", 10, 2.5);
 
         wlcFont = Font.createFont(
                         Font.PLAIN,
@@ -234,7 +234,13 @@ public class DemoScene implements Scene {
                 KeyEvent.VK_ESCAPE, o -> {
                     app.requestExit();
                     return this;
-                });
+                },
+                KeyEvent.VK_K, o -> {
+                    Entity p = app.entities.get("player");
+                    p.setAttribute("energy", 0);
+                    return this;
+                }
+        );
         return true;
     }
 
@@ -443,7 +449,7 @@ public class DemoScene implements Scene {
                     .setAttribute("points", (int) (10 + (Math.random() * 4)) * 10)
                     .addBehavior(new Behavior() {
                         @Override
-                        public String getEvent() {
+                        public String filterOnEvent() {
                             return "onCollision";
                         }
 

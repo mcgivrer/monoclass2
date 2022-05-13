@@ -597,7 +597,7 @@ public class Application extends JFrame implements KeyListener {
             moveCamera(g, activeCamera, -1);
             drawGrid(g, world, 16, 16);
             moveCamera(g, activeCamera, 1);
-            gPipeline.stream().filter(e -> e.isAlive() || e.isInfiniteLife())
+            gPipeline.stream().filter(e -> e.isAlive() || e.isPersistent())
                     .forEach(e -> {
                         if (e.isNotStickToCamera()) {
                             moveCamera(g, activeCamera, -1);
@@ -684,9 +684,8 @@ public class Application extends JFrame implements KeyListener {
                 int offsetY = (int) (e.pos.y - 8);
                 g.drawString(String.format("#%d", e.id), (int) e.pos.x, offsetY);
                 // display LifeBar
-                if (!e.isInfiniteLife() && e.isAlive()) {
-                    g.setColor(Color.RED);
-                    g.fillRect((int) e.pos.x, (int) e.pos.y - 4, (int) ((32) * e.duration / e.startDuration), 2);
+                if (e.isAlive()) {
+                    drawLifeBar(g, e);
                 }
                 if (config.debug > 1) {
                     // display colliding box
@@ -716,6 +715,18 @@ public class Application extends JFrame implements KeyListener {
 
                 }
             }
+        }
+
+        private void drawLifeBar(Graphics2D g, Entity e) {
+            g.setColor(Color.RED);
+            float ratio = 0.0f;
+            if (e.isPersistent()) {
+                g.setColor(Color.ORANGE);
+                ratio = 1.0f;
+            } else {
+                ratio = (1.0f * e.duration) / (1.0f * e.startDuration);
+            }
+            g.fillRect((int) e.pos.x, (int) e.pos.y - 4, (int) (32.0 * ratio), 2);
         }
 
         /**
@@ -876,14 +887,14 @@ public class Application extends JFrame implements KeyListener {
                 e.update(elapsed);
                 // TODO update Entity Behavior
                 e.behaviors.values().stream()
-                        .filter(b -> b.getEvent().contains(Behavior.updateEntity))
+                        .filter(b -> b.filterOnEvent().contains(Behavior.updateEntity))
                         .collect(Collectors.toList())
                         .forEach(b -> b.update(app, e, elapsed));
 
             });
             // TODO update Scene Behaviors
             app.activeScene.getBehaviors().values().stream()
-                    .filter(b -> b.getEvent().contains(Behavior.updateScene))
+                    .filter(b -> b.filterOnEvent().contains(Behavior.updateScene))
                     .collect(Collectors.toList())
                     .forEach(b -> b.update(app, elapsed));
             //  update active camera if presents.
@@ -923,7 +934,7 @@ public class Application extends JFrame implements KeyListener {
         }
 
         private void constrainsEntity(Entity e) {
-            if (e.isAlive() || e.isInfiniteLife()) {
+            if (e.isAlive() || e.isPersistent()) {
                 constrainToWorld(e, world);
             }
         }
@@ -979,7 +990,7 @@ public class Application extends JFrame implements KeyListener {
         }
 
         private void detect() {
-            List<Entity> targets = colliders.values().stream().filter(e -> e.isAlive() || e.isInfiniteLife()).toList();
+            List<Entity> targets = colliders.values().stream().filter(e -> e.isAlive() || e.isPersistent()).toList();
             for (Entity e1 : colliders.values()) {
                 e1.collide = false;
                 for (Entity e2 : targets) {
@@ -987,7 +998,7 @@ public class Application extends JFrame implements KeyListener {
                     if (e1.id != e2.id && e1.cbox.getBounds().intersects(e2.cbox.getBounds())) {
                         resolve(e1, e2);
                         e1.behaviors.values().stream()
-                                .filter(b -> b.getEvent().equals(Behavior.onCollision))
+                                .filter(b -> b.filterOnEvent().equals(Behavior.onCollision))
                                 .collect(Collectors.toList())
                                 .forEach(b -> b.onCollide(app, e1, e2));
                     }
@@ -1283,10 +1294,13 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public synchronized boolean isAlive() {
+            if (attributes.containsKey("energy")) {
+                return ((int) attributes.get("energy")) > 0;
+            }
             return (duration > 0);
         }
 
-        public boolean isInfiniteLife() {
+        public boolean isPersistent() {
             return this.duration == -1;
         }
 
@@ -1356,9 +1370,10 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public void update(double elapsed) {
-            if (isAlive()) {
-                if (isAlive()) {
-                    setDuration(duration - (int) Math.max(elapsed, 1.0));
+            if (!isPersistent()) {
+                int val = (int) Math.max(elapsed, 1.0);
+                if (duration - val > 0) {
+                    setDuration(duration - val);
                 } else {
                     setDuration(0);
                 }
@@ -1400,7 +1415,7 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public Entity addBehavior(Behavior b) {
-            this.behaviors.put(b.getEvent(), b);
+            this.behaviors.put(b.filterOnEvent(), b);
             return this;
         }
 
@@ -1414,6 +1429,7 @@ public class Application extends JFrame implements KeyListener {
         BufferedImage[] frames;
         int[] durations;
         int loop;
+        int counter;
         private int width;
         private int height;
 
@@ -1457,6 +1473,7 @@ public class Application extends JFrame implements KeyListener {
             if (currentFrame > aSet.frames.length) {
                 this.currentFrame = 0;
                 this.internalAnimationTime = 0;
+                aSet.counter = 0;
             }
             return this;
         }
@@ -1485,9 +1502,14 @@ public class Application extends JFrame implements KeyListener {
             currentFrame = aSet.durations.length > currentFrame ? currentFrame : 0;
             if (internalAnimationTime > aSet.durations[currentFrame]) {
                 internalAnimationTime = 0;
-                currentFrame = currentFrame + 1 < aSet.frames.length
-                        ? currentFrame + 1
-                        : (aSet.loop == -1 || currentFrame < aSet.loop ? 0 : currentFrame);
+                if (currentFrame + 1 < aSet.frames.length) {
+                    currentFrame = currentFrame + 1;
+                } else {
+                    if (aSet.counter + 1 < aSet.loop) {
+                        aSet.counter++;
+                    }
+                    currentFrame = 0;
+                }
             }
         }
 
@@ -1604,17 +1626,17 @@ public class Application extends JFrame implements KeyListener {
     }
 
     public interface Behavior {
-        public final String onCollision = "onCollide";
-        public final String updateEntity = "updateEntity";
-        public final String updateScene = "updateScene";
+        String onCollision = "onCollide";
+        String updateEntity = "updateEntity";
+        String updateScene = "updateScene";
 
-        public String getEvent();
+        String filterOnEvent();
 
-        public void update(Application a, Entity e, double elapsed);
+        void update(Application a, Entity e, double elapsed);
 
-        public void update(Application a, double elapsed);
+        void update(Application a, double elapsed);
 
-        public void onCollide(Application a, Entity e1, Entity e2);
+        void onCollide(Application a, Entity e1, Entity e2);
     }
 
     public boolean exit = false;
