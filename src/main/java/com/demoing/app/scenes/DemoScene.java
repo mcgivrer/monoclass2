@@ -22,6 +22,7 @@ public class DemoScene implements Scene {
     Font wlcFont;
 
     private Map<String, Behavior> behaviors = new ConcurrentHashMap<>();
+    private boolean gameOver;
 
     public DemoScene(String name) {
         this.name = name;
@@ -29,6 +30,7 @@ public class DemoScene implements Scene {
 
     @Override
     public boolean create(Application app) throws IOException, FontFormatException {
+        gameOver = false;
         // define default world friction (air resistance ?)
         app.world.setFriction(0.98);
         // define Game global variables
@@ -217,6 +219,16 @@ public class DemoScene implements Scene {
                 .setStickToCamera(true);
         app.addEntity(welcomeMsg);
 
+        app.addEntity(new TextEntity("YouAreDead")
+                .setText(I18n.get("app.player.dead"))
+                .setAlign(CENTER)
+                .setFont(wlcFont)
+                .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
+                .setColor(Color.WHITE)
+                .setInitialDuration(0)
+                .setPriority(20)
+                .setStickToCamera(true));
+
         // mapping of keys actions:
 
         app.actionHandler.actionMapping = Map.of(
@@ -328,17 +340,8 @@ public class DemoScene implements Scene {
             timeTxt.setText(timeStr);
 
             // if time=0 => game over !
-            if (time == 0) {
-                player.activateAnimation("dead");
-                app.addEntity(new TextEntity("YouAreDead")
-                        .setText(I18n.get("app.player.dead"))
-                        .setAlign(CENTER)
-                        .setFont(wlcFont)
-                        .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
-                        .setColor(Color.WHITE)
-                        .setInitialDuration(-1)
-                        .setPriority(20)
-                        .setStickToCamera(true));
+            if (time == 0 && !gameOver) {
+                gameOver(app, player);
             }
 
             // update score
@@ -359,19 +362,17 @@ public class DemoScene implements Scene {
             GaugeEntity manaEntity = (GaugeEntity) app.getEntity("mana");
             manaEntity.setValue(mana);
 
-            if (energy <= 0 && life <= 0) {
-                player.activateAnimation("dead");
-                app.addEntity(new TextEntity("YouAreDead")
-                        .setText(I18n.get("app.player.dead"))
-                        .setAlign(CENTER)
-                        .setFont(wlcFont)
-                        .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
-                        .setColor(Color.WHITE)
-                        .setInitialDuration(-1)
-                        .setPriority(20)
-                        .setStickToCamera(true));
+            if (energy <= 0 && life <= 0 && !gameOver) {
+                gameOver(app, player);
             }
         }
+    }
+
+    private void gameOver(Application app, Entity player) {
+        player.activateAnimation("dead");
+        TextEntity youAreDead = (TextEntity) app.entities.get("YouAreDead");
+        youAreDead.setInitialDuration(-1);
+        gameOver = true;
     }
 
     @Override
