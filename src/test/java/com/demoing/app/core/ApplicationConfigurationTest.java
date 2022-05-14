@@ -22,8 +22,8 @@ public class ApplicationConfigurationTest {
         Assert.assertEquals("The Screen Width configuration has not been set", 320.0, app.config.screenWidth, 0.1);
         Assert.assertEquals("The Screen Height configuration has not been set", 200.0, app.config.screenHeight, 0.1);
         Assert.assertEquals("The Display Scale configuration has not been set", 2.5, app.config.displayScale, 0.1);
-        Assert.assertEquals("The list of scenes configuration has not been set", "demo:com.demoing.app.scenes.DemoScene", app.config.scenes);
-        Assert.assertEquals("The default scene configuration has not been set", "demo", app.config.defaultScene);
+        Assert.assertEquals("The list of scenes configuration has not been set", "test:com.demoing.app.tests.TestScene", app.config.scenes);
+        Assert.assertEquals("The default scene configuration has not been set", "test", app.config.defaultScene);
     }
 
     @Test
