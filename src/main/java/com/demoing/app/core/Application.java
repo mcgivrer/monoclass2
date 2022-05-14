@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
@@ -219,9 +220,9 @@ public class Application extends JFrame implements KeyListener {
                 ObjectName objectName = new ObjectName("com.demoing.app:name=" + programName);
                 platformMBeanServer.registerMBean(this, objectName);
             } catch (InstanceAlreadyExistsException
-                    | MBeanRegistrationException
-                    | NotCompliantMBeanException
-                    | MalformedObjectNameException e) {
+                     | MBeanRegistrationException
+                     | NotCompliantMBeanException
+                     | MalformedObjectNameException e) {
                 e.printStackTrace();
             }
         }
@@ -607,44 +608,19 @@ public class Application extends JFrame implements KeyListener {
 
                             // This is a TextEntity
                             case TextEntity te -> {
-                                g.setFont(te.font);
-                                int size = g.getFontMetrics().stringWidth(te.text);
-                                double offsetX = te.align.equals(TextAlign.RIGHT) ? -size
-                                        : te.align.equals(TextAlign.CENTER) ? -size * 0.5 : 0;
-                                g.drawString(te.text, (int) (te.pos.x + offsetX), (int) te.pos.y);
-                                e.width = size;
-                                e.height = g.getFontMetrics().getHeight();
-                                e.box.setRect(e.pos.x + offsetX, e.pos.y - e.height + g.getFontMetrics().getDescent(), e.width,
-                                        e.height);
+                                drawText(g, e, te);
                             }
+                            // This is a GaugeEntity
                             case GaugeEntity ge -> {
-                                g.setColor(Color.BLACK);
-                                g.fillRect((int) ge.pos.x, (int) ge.pos.y, (int) ge.width, (int) ge.height);
-                                g.setColor(ge.border);
-                                g.fillRect((int) ge.pos.x, (int) ge.pos.y, (int) ge.width, (int) ge.height);
-                                int value = (int) ((ge.value / ge.maxValue) * ge.width - 2);
-                                g.setColor(ge.color);
-                                g.fillRect((int) (ge.pos.x) + 1, (int) (ge.pos.y) + 1, value, (int) (ge.height) - 2);
+                                drawGauge(g, ge);
+                            }
+                            // This is a ValueEntity
+                            case ValueEntity se -> {
+                                drawValue(g, se);
                             }
                             // This is a basic entity
                             case Entity ee -> {
-                                switch (ee.type) {
-                                    case RECTANGLE -> g.fillRect((int) ee.pos.x, (int) ee.pos.y, (int) ee.width, (int) ee.height);
-                                    case ELLIPSE -> g.fillArc((int) ee.pos.x, (int) ee.pos.y, (int) ee.width, (int) ee.height, 0, 360);
-                                    case IMAGE -> {
-                                        BufferedImage sprite = (BufferedImage) (ee.getAnimations()
-                                                ? ee.animations.getFrame()
-                                                : ee.image);
-                                        if (ee.getDirection() > 0) {
-                                            g.drawImage(sprite, (int) ee.pos.x, (int) ee.pos.y, null);
-                                        } else {
-                                            g.drawImage(sprite,
-                                                    (int) (ee.pos.x + ee.width), (int) ee.pos.y,
-                                                    (int) (-ee.width), (int) ee.height,
-                                                    null);
-                                        }
-                                    }
-                                }
+                                drawEntity(g, ee);
                             }
                         }
                         drawDebugInfo(g, e);
@@ -655,6 +631,48 @@ public class Application extends JFrame implements KeyListener {
             g.dispose();
             renderToScreen(realFps);
             renderingTime = System.nanoTime() - startTime;
+        }
+
+        private void drawEntity(Graphics2D g, Entity ee) {
+            switch (ee.type) {
+                case RECTANGLE -> g.fillRect((int) ee.pos.x, (int) ee.pos.y, (int) ee.width, (int) ee.height);
+                case ELLIPSE -> g.fillArc((int) ee.pos.x, (int) ee.pos.y, (int) ee.width, (int) ee.height, 0, 360);
+                case IMAGE -> {
+                    BufferedImage sprite = (BufferedImage) (ee.getAnimations()
+                            ? ee.animations.getFrame()
+                            : ee.image);
+                    if (ee.getDirection() > 0) {
+                        g.drawImage(sprite, (int) ee.pos.x, (int) ee.pos.y, null);
+                    } else {
+                        g.drawImage(sprite,
+                                (int) (ee.pos.x + ee.width), (int) ee.pos.y,
+                                (int) (-ee.width), (int) ee.height,
+                                null);
+                    }
+                }
+            }
+        }
+
+        private void drawText(Graphics2D g, Entity e, TextEntity te) {
+            g.setFont(te.font);
+            int size = g.getFontMetrics().stringWidth(te.text);
+            double offsetX = te.align.equals(TextAlign.RIGHT) ? -size
+                    : te.align.equals(TextAlign.CENTER) ? -size * 0.5 : 0;
+            g.drawString(te.text, (int) (te.pos.x + offsetX), (int) te.pos.y);
+            e.width = size;
+            e.height = g.getFontMetrics().getHeight();
+            e.box.setRect(e.pos.x + offsetX, e.pos.y - e.height + g.getFontMetrics().getDescent(), e.width,
+                    e.height);
+        }
+
+        private void drawGauge(Graphics2D g, GaugeEntity ge) {
+            g.setColor(ge.shadow);
+            g.fillRect((int) ge.pos.x-1, (int) ge.pos.y-1, (int) ge.width+2, (int) ge.height+2);
+            g.setColor(ge.border);
+            g.fillRect((int) ge.pos.x, (int) ge.pos.y, (int) ge.width, (int) ge.height);
+            int value = (int) ((ge.value / ge.maxValue) * ge.width - 2);
+            g.setColor(ge.color);
+            g.fillRect((int) (ge.pos.x) + 1, (int) (ge.pos.y) + 1, value, (int) (ge.height) - 2);
         }
 
         /**
@@ -727,6 +745,34 @@ public class Application extends JFrame implements KeyListener {
                 ratio = (1.0f * e.duration) / (1.0f * e.startDuration);
             }
             g.fillRect((int) e.pos.x, (int) e.pos.y - 4, (int) (32.0 * ratio), 2);
+        }
+
+        /**
+         * Draw score with digital characters
+         *
+         * @param g  the Graphics2D API
+         * @param se ValueEntity object
+         */
+        private void drawValue(Graphics2D g, ValueEntity se) {
+            byte c[] = se.scoreTxt.getBytes(StandardCharsets.US_ASCII);
+            for (int pos = 0; pos < se.scoreTxt.length(); pos++) {
+                int v = c[pos];
+                drawFig(g, se, v - 48, se.pos.x + (pos * 8), se.pos.y);
+            }
+        }
+
+        /**
+         * Draw a simple figure
+         *
+         * @param g     the Graphics2D API
+         * @param value number value to draw
+         * @param x     horizontal position
+         * @param y     vertical position
+         */
+        private void drawFig(Graphics2D g, ValueEntity se, int value, double x, double y) {
+            assert (value > -1);
+            assert (value < 10);
+            g.drawImage(se.figs[value], (int) x, (int) y, null);
         }
 
         /**
@@ -1051,6 +1097,48 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    /**
+     * A Resource manager to load and buffered all necessary resources.
+     */
+    public static class Resources {
+        static Map<String, Object> resources = new ConcurrentHashMap<>();
+
+        public static BufferedImage loadImage(String path) {
+            BufferedImage img = null;
+            if (resources.containsKey(path)) {
+                img = (BufferedImage) resources.get(path);
+            } else {
+                try {
+                    img = ImageIO.read(Resources.class.getResourceAsStream(path));
+                    resources.put(path, img);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            return img;
+        }
+
+        public static Font loadFont(String path) {
+            Font f = null;
+            if (resources.containsKey(path)) {
+                f = (Font) resources.get(path);
+            } else {
+                try {
+                    f = Font.createFont(
+                            Font.PLAIN,
+                            Objects.requireNonNull(Resources.class.getResourceAsStream(path)));
+                } catch (FontFormatException | IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            return f;
+        }
+
+        public static void dispose() {
+            resources.clear();
+        }
+    }
+
     public static class ActionHandler implements KeyListener {
         private final boolean[] prevKeys = new boolean[65536];
         private final boolean[] keys = new boolean[65536];
@@ -1228,6 +1316,7 @@ public class Application extends JFrame implements KeyListener {
         public Map<String, Object> attributes = new ConcurrentHashMap<>();
 
         public Map<String, Behavior> behaviors = new ConcurrentHashMap<>();
+        private Color shadowColor = Color.BLACK;
 
         public Entity(String name) {
             this.name = name;
@@ -1422,6 +1511,15 @@ public class Application extends JFrame implements KeyListener {
         public int getDirection() {
             return this.vel.x > 0 ? 1 : -1;
         }
+
+        public String toString() {
+            return this.getClass().getSimpleName() + "[name:" + name + "]";
+        }
+
+        public Entity setShadow(Color shadow) {
+            this.shadowColor = shadow;
+            return this;
+        }
     }
 
     public static class AnimationSet {
@@ -1479,20 +1577,16 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public Animation addAnimationSet(String key, String imgSrc, int x, int y, int tw, int th, int[] durations, int loop) {
-            try {
-                AnimationSet aSet = new AnimationSet(key).setSize(tw, th);
-                BufferedImage image = ImageIO.read(Objects.requireNonNull(this.getClass().getResourceAsStream(imgSrc)));
-                aSet.frames = new BufferedImage[durations.length];
-                for (int i = 0; i < durations.length; i++) {
-                    BufferedImage frame = image.getSubimage(x + (i * tw), y, tw, th);
-                    aSet.frames[i] = frame;
-                }
-                aSet.setFramesDuration(durations);
-                aSet.setLoop(loop);
-                animationSet.put(key, aSet);
-            } catch (IOException e) {
-                System.out.println("ERR: unable to read image from '" + imgSrc + "'");
+            AnimationSet aSet = new AnimationSet(key).setSize(tw, th);
+            BufferedImage image = Resources.loadImage(imgSrc);
+            aSet.frames = new BufferedImage[durations.length];
+            for (int i = 0; i < durations.length; i++) {
+                BufferedImage frame = image.getSubimage(x + (i * tw), y, tw, th);
+                aSet.frames[i] = frame;
             }
+            aSet.setFramesDuration(durations);
+            aSet.setLoop(loop);
+            animationSet.put(key, aSet);
             return this;
         }
 
@@ -1579,6 +1673,39 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    public static class ValueEntity extends Entity {
+        int value;
+        String scoreTxt;
+        private BufferedImage[] figs;
+        private String format = "%d";
+
+        public ValueEntity(String name) {
+            super(name);
+            this.physicType = PhysicType.STATIC;
+        }
+
+        @Override
+        public void update(double elapsed) {
+            super.update(elapsed);
+            scoreTxt = String.format(format, value);
+        }
+
+        public ValueEntity setValue(int value) {
+            this.value = value;
+            return this;
+        }
+
+        public ValueEntity setFigures(BufferedImage[] figs) {
+            this.figs = figs;
+            return this;
+        }
+
+        public ValueEntity setFormat(String f) {
+            this.format = f;
+            return this;
+        }
+    }
+
     public static class Camera extends Entity {
 
         private Entity target;
@@ -1612,7 +1739,11 @@ public class Application extends JFrame implements KeyListener {
     }
 
     public interface Scene {
+
+        void prepare();
+
         boolean create(Application app) throws Exception;
+
 
         void update(Application app, double elapsed);
 
@@ -1721,7 +1852,7 @@ public class Application extends JFrame implements KeyListener {
                 scenes.put(sceneStr[0], s);
                 activateScene(config.defaultScene);
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                    InvocationTargetException e) {
+                     InvocationTargetException e) {
                 System.out.println("ERR: Unable to load scene from configuration file:"
                         + e.getLocalizedMessage()
                         + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
@@ -1742,10 +1873,11 @@ public class Application extends JFrame implements KeyListener {
             }
             Scene scene = scenes.get(name);
             try {
+                scene.prepare();
                 sceneReady = scene.create(this);
                 this.activeScene = scene;
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                System.out.println("ERR: Unable to initialize the Scene " + name + " => " + e.getLocalizedMessage());
             }
         } else {
             System.out.print("ERR: Unable to load unknown scene " + name);
