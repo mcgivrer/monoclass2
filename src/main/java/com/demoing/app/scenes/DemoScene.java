@@ -22,6 +22,7 @@ public class DemoScene implements Scene {
     Font wlcFont;
 
     private Map<String, Behavior> behaviors = new ConcurrentHashMap<>();
+    private boolean gameOver;
 
     public DemoScene(String name) {
         this.name = name;
@@ -29,6 +30,7 @@ public class DemoScene implements Scene {
 
     @Override
     public boolean create(Application app) throws IOException, FontFormatException {
+        gameOver = false;
         // define default world friction (air resistance ?)
         app.world.setFriction(0.98);
         // define Game global variables
@@ -93,32 +95,28 @@ public class DemoScene implements Scene {
                 .addAnimation("idle",
                         0, 0,
                         32, 32,
-                        13,
-                        "/images/sprites01.png")
-                .setFrameDuration("idle", 200)
+                        new int[]{450, 60, 60, 250, 60, 60, 60, 450, 60, 60, 60, 250, 60},
+                        "/images/sprites01.png", -1)
                 .addAnimation("walk",
                         0, 32,
                         32, 32,
-                        8,
-                        "/images/sprites01.png")
-                .setFrameDuration("walk", 60)
+                        new int[]{60, 60, 60, 150, 60, 60, 60, 150},
+                        "/images/sprites01.png", -1)
                 .addAnimation("jump",
                         0, 5 * 32,
                         32, 32,
-                        6,
-                        "/images/sprites01.png")
-                .setFrameDuration("jump", 60)
+                        new int[]{60, 60, 250, 250, 60, 60},
+                        "/images/sprites01.png", -1)
                 .addAnimation("dead",
                         0, 7 * 32,
                         32, 32,
-                        7,
-                        "/images/sprites01.png")
-                .setFrameDuration("dead", 60)
+                        new int[]{160, 160, 160, 160, 160, 160, 500},
+                        "/images/sprites01.png", 0)
                 .activateAnimation("idle")
                 .addBehavior(new Behavior() {
 
                     @Override
-                    public String getEvent() {
+                    public String filterOnEvent() {
                         return onCollision;
                     }
 
@@ -146,7 +144,7 @@ public class DemoScene implements Scene {
                 .setTweenFactor(0.005);
         app.render.addCamera(cam);
 
-        generateEntity(app, "ball_", 30, 2.5);
+        generateEntity(app, "ball_", 10, 2.5);
 
         wlcFont = Font.createFont(
                         Font.PLAIN,
@@ -221,6 +219,16 @@ public class DemoScene implements Scene {
                 .setStickToCamera(true);
         app.addEntity(welcomeMsg);
 
+        app.addEntity(new TextEntity("YouAreDead")
+                .setText(I18n.get("app.player.dead"))
+                .setAlign(CENTER)
+                .setFont(wlcFont)
+                .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
+                .setColor(Color.WHITE)
+                .setInitialDuration(0)
+                .setPriority(20)
+                .setStickToCamera(true));
+
         // mapping of keys actions:
 
         app.actionHandler.actionMapping = Map.of(
@@ -238,7 +246,13 @@ public class DemoScene implements Scene {
                 KeyEvent.VK_ESCAPE, o -> {
                     app.requestExit();
                     return this;
-                });
+                },
+                KeyEvent.VK_K, o -> {
+                    Entity p = app.entities.get("player");
+                    p.setAttribute("energy", 0);
+                    return this;
+                }
+        );
         return true;
     }
 
@@ -326,17 +340,8 @@ public class DemoScene implements Scene {
             timeTxt.setText(timeStr);
 
             // if time=0 => game over !
-            if (time == 0) {
-                player.activateAnimation("dead");
-                app.addEntity(new TextEntity("YouAreDead")
-                        .setText(I18n.get("app.player.dead"))
-                        .setAlign(CENTER)
-                        .setFont(wlcFont)
-                        .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
-                        .setColor(Color.WHITE)
-                        .setInitialDuration(-1)
-                        .setPriority(20)
-                        .setStickToCamera(true));
+            if (time == 0 && !gameOver) {
+                gameOver(app, player);
             }
 
             // update score
@@ -357,19 +362,17 @@ public class DemoScene implements Scene {
             GaugeEntity manaEntity = (GaugeEntity) app.getEntity("mana");
             manaEntity.setValue(mana);
 
-            if (energy <= 0 && life <= 0) {
-                player.activateAnimation("dead");
-                app.addEntity(new TextEntity("YouAreDead")
-                        .setText(I18n.get("app.player.dead"))
-                        .setAlign(CENTER)
-                        .setFont(wlcFont)
-                        .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
-                        .setColor(Color.WHITE)
-                        .setInitialDuration(-1)
-                        .setPriority(20)
-                        .setStickToCamera(true));
+            if (energy <= 0 && life <= 0 && !gameOver) {
+                gameOver(app, player);
             }
         }
+    }
+
+    private void gameOver(Application app, Entity player) {
+        player.activateAnimation("dead");
+        TextEntity youAreDead = (TextEntity) app.entities.get("YouAreDead");
+        youAreDead.setInitialDuration(-1);
+        gameOver = true;
     }
 
     @Override
@@ -447,7 +450,7 @@ public class DemoScene implements Scene {
                     .setAttribute("points", (int) (10 + (Math.random() * 4)) * 10)
                     .addBehavior(new Behavior() {
                         @Override
-                        public String getEvent() {
+                        public String filterOnEvent() {
                             return "onCollision";
                         }
 
