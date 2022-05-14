@@ -1,9 +1,9 @@
 ---
-title: MonoClass2, a JDK fun sample usage
-author: Frédéric Delorme
+title: MonoClass2, a JDK fun sample usage 
+author: Frédéric Delorme 
 description: A bunch of discovery on the Java JDK \
-latest release into a fun and entertaining sample of code.
-created: 2022-04-29
+latest release into a fun and entertaining sample of code. 
+created: 2022-04-29 
 tags: java,jdk17,jdk18,sample,game,jep420
 ---
 
@@ -208,9 +208,7 @@ Animation is map of set of frames, each set of frame must ave a an easy way to d
 will do the job.
 
 > **NOTE**
-> _As a sample graphics, we will use a sprites image board
-from [Elthen adventurer sprites](https://elthen.itch.io/pixel-art-adventurer-sprites) thanks to
-his [fair licensing](https://www.patreon.com/posts/27430241)._
+> _As a sample graphics, we will use a sprites image board from [Elthen adventurer sprites](https://elthen.itch.io/pixel-art-adventurer-sprites) thanks to his [fair licensing](https://www.patreon.com/posts/27430241)._
 
 ![Sprites sheet from Elthen](./images/illustration-sprites.png)
 
@@ -237,7 +235,7 @@ Entity --> Animation:animations
 
 _figure $fig+ - Class diagram for Animation as animations Entity attribute_
 
-### Animation
+### Animation class
 
 The sub-class Animation will support all animation definition and operations:
 
@@ -394,11 +392,123 @@ You can add any number of frames set with differente name to the Entity.
 
 _figure $fig+ - Animation of sprites and red life bar are some of useful things_
 
+### Animation Refactoring to add new attributes
+
+NOW we have a smooth animation mechanism, we can enhance it by adding new feature, bringing more thin control over
+animations frames and a loop capability with a max number of repetition (or infinite one).
+
+To perform such thing, the frame duration must be added, and frames/animation set will be split into `AnimationSet`, a
+new class to store frames, there duration and the loop attributes with its value:
+
+- 0 no looping,
+- 1-n looping with a number of time
+- -1 is an infinite looping.
+
+This new object `AnimationSet` will be:
+
+```java
+public static class AnimationSet {
+    private String name;
+    private BufferedImage[] frames;
+    private int[] duration;
+    private int loop;
+}
+```
+
+And the `Animation` class becomes :
+
+```java
+public static class Animation {
+    private Map<String, AnimationSet> animations;
+    public String currentAnimationSet;
+    public int currentFrame;
+    private long internalAnimationTime;
+}
+```
+
+Now we will need to adapt the Animation fluent API and the Entity helpers methods.
+
+```java
+public static class Animation {
+    //...
+    public Animation addAnimationSet(String key, String imgSrc, int x, int y, int tw, int th, int[] durations, int loop) {
+        try {
+            AnimationSet aSet = new AnimationSet(key).setSize(tw, th);
+            BufferedImage image = ImageIO.read(Objects.requireNonNull(this.getClass().getResourceAsStream(imgSrc)));
+            BufferedImage[] buffer = new BufferedImage[nbFrames];
+            for (int i = 0; i < nbFrames; i++) {
+                BufferedImage frame = image.getSubimage(x + (i * tw), y, tw, th);
+                aSet.frames[i] = frame;
+            }
+            aSet.setFramesDuration(durations);
+            aSet.setLoop(loop);
+            animations.put(key, aSet);
+        } catch (IOException e) {
+            System.out.println("ERR: unable to read image from '" + imgSrc + "'");
+        }
+        return this;
+    }
+    //...
+
+}
+```
+
+- activate an animation set:
+
+```java
+public static class Animation {
+    //...
+    public Animation activate(String key) {
+        this.currentAnimationSet = key;
+        if (currentFrame > this.animationSet.get(key).frames.length) {
+            this.currentFrame = 0;
+            this.internalAnimationTime = 0;
+        }
+        return this;
+    }
+    //...
+}
+```
+
+- update the current animation
+
+```java
+public static class Animation {
+    //...
+    public synchronized void update(long elapsedTime) {
+        internalAnimationTime += elapsedTime;
+        AnimationSet aSet = animationSet.get(currentAnimationSet);
+        if (internalAnimationTime > aSet.durations[currentFrame]) {
+            internalAnimationTime = 0;
+            currentFrame = currentFrame + 1 < aSet.frames.length 
+                    ? currentFrame + 1 
+                    : (aSet.loop == -1 || currentFrame < aSet.loop ? 0 : currentFrame);
+        }
+    }
+    //...
+}
+```
+
+- retrieve the current frame
+
+```java
+public static class Animation {
+    //...
+    public synchronized BufferedImage getFrame() {
+        if (animationSet.get(currentAnimationSet) != null
+                && currentFrame < animationSet.get(currentAnimationSet).frames.length) {
+            return animationSet.get(currentAnimationSet).frames[currentFrame];
+        }
+        return null;
+    }
+    //...
+}
+```
+
 ## Collision Detection
 
 Collision Detection has 2 possibilities : 2 dynamic object are colliding, or a dynamic and sa static object are
-colliding.
-These are the 2 cases we will process in our `CollisionDetector` service.
+colliding. These are the 2 cases we will process in our `CollisionDetector` service.
 
 We need to use carefully the PhysicType with STATIC and DYNAMIC values.
 
@@ -543,11 +653,9 @@ We so first compute basic values like distance, penetration vector and its corre
 then, we detect is we are in front of (1) DYNAMIC vs. DYNAMIC collision or a (2) DYNAMIC vs. STATIC collision.
 
 1. The first case is the more tricky and require more mathematics. I won't go in details, because this not my special
-   skills.
-   please, go and visit the very good post on [the Spicy Yoghurt](https://spicyyoghurt.com/) :
+   skills. please, go and visit the very good post on [the Spicy Yoghurt](https://spicyyoghurt.com/) :
    ['Collision Detection Physic'](https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
-   "Go and visit the really good article about javascript game development"),
-   all is really crystal clear.
+   "Go and visit the really good article about javascript game development"), all is really crystal clear.
 
 ```java
 public static class CollisionDetector {
@@ -576,8 +684,8 @@ public static class CollisionDetector {
 
 2. With a DYNAMIC vs. STATIC, things are different : one of the 2 object won't move, and the reverse effect is different
    on the DYNAMIC object. As here most if the STATIC object would be platform, we will test differently things: we will
-   only detect if the DYNAMIC object is upper or bellow the STATIC one, and modify its vertical position regarding
-   the position and size of STATIC object.
+   only detect if the DYNAMIC object is upper or bellow the STATIC one, and modify its vertical position regarding the
+   position and size of STATIC object.
 
 ```java
 public static class CollisionDetector {
@@ -616,8 +724,7 @@ And specific values for collision resolution:
 - `colSpeedMinValue` the minimum speed value below the value is reduced to 0.0 to remove noise effect on Entity's speed
   computation on collision (default value in configuration properties file : `app.physic.speed.min=0.1`),
 - `colSpeedMaxValue` the maximum speed that will be used as a max threshold for any Entity on collision (default value
-  in configuration
-  properties file : `app.physic.speed.max=3.2`),.
+  in configuration properties file : `app.physic.speed.max=3.2`),.
 
 ```properties
 app.physic.speed.min=0.1
@@ -639,8 +746,7 @@ _figure $fig+ - Collision detection and platforms_
 ## Behavior's
 
 One way to implement quickly some enhancement in a game is to provide the opportunity to add dynamically some new
-behaviors
-to some game component. The solution is `Behavior`.
+behaviors to some game component. The solution is `Behavior`.
 
 We are going to add behavior to be triggered on some new events or process.
 
@@ -789,8 +895,7 @@ discover it.
 To go further in the demonstration, we need to offer the possibility to dynamically load scene to the core application.
 To let instantiate Scene dynamically we need to extract the DemoScene from Application to a outer class.
 
-We need some attributes scope review from private to public in most of the service, but anyway, first change this
-scope.
+We need some attributes scope review from private to public in most of the service, but anyway, first change this scope.
 
 And the most important of this change is the way we are going to configure the scenes.
 
@@ -811,8 +916,8 @@ app.scene.default=demo
 
 ### Loading Scenes
 
-Loading the coma separated list of scene classes from `app.scenes` with their own activation key code,
-we provision the list of Scene ready to be used, and use the `app.scene.default` scene at start.
+Loading the coma separated list of scene classes from `app.scenes` with their own activation key code, we provision the
+list of Scene ready to be used, and use the `app.scene.default` scene at start.
 
 ```java
 public class Application {
@@ -828,7 +933,7 @@ public class Application {
                 scenes.put(sceneStr[0], s);
                 activateScene(config.defaultScene);
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                     InvocationTargetException e) {
+                    InvocationTargetException e) {
                 System.out.println("ERR: Unable to load scene from configuration file:"
                         + e.getLocalizedMessage()
                         + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
@@ -942,8 +1047,8 @@ public class Application {
 
 ## Default Language
 
-If no configuration is set, the System language will be set.
-But if the configuration key `app.language.default` is provided, the value will be applied to the I18n service:
+If no configuration is set, the System language will be set. But if the configuration key `app.language.default` is
+provided, the value will be applied to the I18n service:
 
 ```java
 public static class I18n {
@@ -1060,9 +1165,9 @@ public class AppStatus implements AppStatusMBean {
             ObjectName objectName = new ObjectName("com.demoing.app:name=" + programName);
             platformMBeanServer.registerMBean(this, objectName);
         } catch (InstanceAlreadyExistsException
-                 | MBeanRegistrationException
-                 | NotCompliantMBeanException
-                 | MalformedObjectNameException e) {
+                | MBeanRegistrationException
+                | NotCompliantMBeanException
+                | MalformedObjectNameException e) {
             e.printStackTrace();
         }
     }

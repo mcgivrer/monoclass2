@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
@@ -23,66 +24,180 @@ import java.util.stream.Collectors;
 
 import static com.demoing.app.core.Application.EntityType.*;
 
+/**
+ * <p>{@link Application} is a Proof of Concept of a game mechanics, satisfying to some rules:
+ * <ul>
+ * <li>only one main java classe (sub classes and enum are authorized),</li>
+ * <li> limit the number of line of code (without javadoc)</li>
+ * <li> Build without any external tools but bash and JDK.</li>
+ * </ul>
+ * </p>
+ * <p>
+ * <p>The entrypoint is the {@link Application#run()} method to start.
+ * Its reading its default configuration from an <code>app.properties</code> file.
+ * </p>
+ *
+ * @author Frédéric Delorme
+ * @since 1.0.0
+ */
 public class Application extends JFrame implements KeyListener {
 
+    /**
+     * The Frame per Second rendering rate default value
+     */
     private static final int FPS_DEFAULT = 60;
-
+    /**
+     * internal counter for entity id.
+     */
     private static long entityIndex = 0;
+    /**
+     * THe map of Scene to be activated int o the Application instance.
+     * See <code>app.scenes</code> and <code>add.default.scene</code> in configuration files.
+     */
     private Map<String, Scene> scenes = new HashMap<>();
+    /**
+     * Scene readiness flag. After loaded and activated, the scene readiness state is set to true.
+     */
     private boolean sceneReady;
 
-    public static long getEntityIndex() {
-        return entityIndex;
-    }
 
+    /**
+     * The {@link EntityType} define the type of rendered entity, a RECTANGLE, an ELLIPSE or an IMAGE (see {@link BufferedImage}.
+     */
     public enum EntityType {
         RECTANGLE,
         ELLIPSE,
         IMAGE
     }
 
+    /**
+     * The {@link PhysicType} is used by the PhysicEngine to compute physic behavior for the object.
+     * It can be STATIC for static object like static platform, or DYNAMIC for moving objects.
+     */
     public enum PhysicType {
         DYNAMIC,
         STATIC
     }
 
+    /**
+     * THe TextAlign attribute value is use for TextEntity only, to define how the rendered text must be aligned.
+     * Possible values are LEFT, CENTER and RIGHT.
+     */
     public enum TextAlign {
         LEFT,
         CENTER,
         RIGHT
     }
 
+    /**
+     * This MBean is for metrics and action exposition through the JMX service. Connecting with the JConsole
+     * to this java process will provide some metrics and action.
+     */
     public interface AppStatusMBean {
+        /**
+         * Current level of debugging
+         *
+         * @return
+         */
         Integer getDebugLevel();
 
+        /**
+         * Set the level of debugging.
+         *
+         * @param d an int value from 0 to 5
+         */
         void setDebugLevel(Integer d);
 
+        /**
+         * Retrieve the current number of entities.
+         *
+         * @return an INteger value correspondong to the size of the {@link Application#entities} Map.
+         */
         Integer getNbEntities();
 
+        /**
+         * Return the number of elements in  the {@link Render} graphic pipeline (see {@link Render#gPipeline}).
+         *
+         * @return the size fo the gPipeline list.
+         */
         Integer getPipelineSize();
 
+        /**
+         * Return the current status of the PAUSE flag.
+         *
+         * @return true f the application is in pause mode.
+         */
         Boolean getPauseStatus();
 
+        /**
+         * Define and set the Pause ode to true or false.
+         *
+         * @param pause
+         */
         void setPauseStatus(Boolean pause);
 
+        /**
+         * Retrieve the value for the update spent time.
+         *
+         * @return a value in nanoseconds.
+         */
         Long getTimeUpdate();
 
+        /**
+         * Retrieve the value for the rendering spent time.
+         *
+         * @return a value in nanoseconds.
+         */
         Long getTimeRendering();
 
+        /**
+         * Retrieve the value for the global computation spent time.
+         *
+         * @return a value in nanoseconds.
+         */
         Long getTimeComputation();
 
+        /**
+         * Retrieve the real Frame Per Second measured in the main loop.
+         *
+         * @return
+         */
         Long getRealFPS();
 
+        /**
+         * Request to exit from application.
+         */
         void requestQuit();
 
-        void requestAddEntity(Integer add);
+        /**
+         * Add <code>nbEntitiesToAdd</code> random entities
+         *
+         * @param nbEntitiesToAdd the number of entities to be added.
+         * @deprecated
+         */
+        @Deprecated
+        void requestAddEntity(Integer nbEntitiesToAdd);
 
-        void requestremoveEntity(Integer add);
+        /**
+         * Remove <code>nbEntitiesToRemove</code> entities
+         *
+         * @param nbEntitiesToRemove the number of entities to be removed
+         * @deprecated
+         */
+        @Deprecated
+        void requestRemoveEntity(Integer nbEntitiesToRemove);
 
+        /**
+         * Request to reset the current active Scene.
+         */
         void requestReset();
 
     }
 
+    /**
+     * Implementation of the JMX service to deliver the AppStatusMBean.
+     * (please see JMX API on officiel support site)
+     */
     public class AppStatus implements AppStatusMBean {
         private Application app;
         private int debugLevel;
@@ -105,9 +220,9 @@ public class Application extends JFrame implements KeyListener {
                 ObjectName objectName = new ObjectName("com.demoing.app:name=" + programName);
                 platformMBeanServer.registerMBean(this, objectName);
             } catch (InstanceAlreadyExistsException
-                    | MBeanRegistrationException
-                    | NotCompliantMBeanException
-                    | MalformedObjectNameException e) {
+                     | MBeanRegistrationException
+                     | NotCompliantMBeanException
+                     | MalformedObjectNameException e) {
                 e.printStackTrace();
             }
         }
@@ -178,12 +293,20 @@ public class Application extends JFrame implements KeyListener {
 
         }
 
+        /**
+         *
+         */
         @Override
+        @Deprecated
         public synchronized void requestAddEntity(Integer nbEntity) {
         }
 
+        /**
+         *
+         */
         @Override
-        public synchronized void requestremoveEntity(Integer nbEntity) {
+        @Deprecated
+        public synchronized void requestRemoveEntity(Integer nbEntity) {
         }
 
         @Override
@@ -192,33 +315,102 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    /**
+     * The Configuration class provide default attributes values provision from a <code>app.properties</code> file.
+     * Based on a simple {@link Properties} java class, it eases the initialization of the {@link Application}.
+     */
     public static class Configuration {
         Properties appProps = new Properties();
+        /**
+         * default width of the screen
+         */
         public double screenWidth = 320.0;
+        /**
+         * default height of the screen
+         */
         public double screenHeight = 200.0;
-        private double displayScale = 2.0;
-        private double fps = 0.0;
+        /**
+         * display pixel scale at start.
+         */
+        public double displayScale = 2.0;
+        /**
+         * the required Frame Per Second to update game mechanic and render to screen.
+         */
+        public double fps = 0.0;
+        /**
+         * The internal display debug level to display infirmation at rendering time on screen
+         * (level from 0 =No debug to 5 max level debug info).
+         */
         public int debug;
-        private long frameTime = 0;
-        private double worldWidth = 0;
-        private double worldHeight = 0;
-        private double worldGravity = 1.0;
-        private boolean fullScreen = false;
 
-        private double speedMinValue = 0.1;
-        private double speedMaxValue = 4.0;
-        private double colSpeedMinValue = 0.1;
-        private double colSpeedMaxValue = 2.0;
+        public long frameTime = 0;
 
-        private double accMinValue = 0.1;
-        private double accMaxValue = 0.35;
+        /**
+         * Default World play area width
+         */
+        public double worldWidth = 0;
+        /**
+         * Default World play area height
+         */
+        public double worldHeight = 0;
+        /**
+         * Default World play area gravity
+         */
+        public double worldGravity = 1.0;
+        /**
+         * Flag to define fullscreen mode.  true=> full screen.
+         */
+        public boolean fullScreen = false;
 
+        /**
+         * Default minimum speed for PhysicEngine. under this value, considere 0.
+         */
+        public double speedMinValue = 0.1;
+        /**
+         * Default maximum speed for PhysicEngine, fixing upper threshold.
+         */
+        public double speedMaxValue = 4.0;
+        /**
+         * Default minimum acceleration for PhysicEngine. under this value, considere 0.
+         */
+        public double accMinValue = 0.1;
+        /**
+         * Default maximum acceleration for PhysicEngine, fixing upper threshold.
+         */
+        public double accMaxValue = 0.35;
+
+        /**
+         * Default minimum speed for CollisionDetector. under this value, considere 0.
+         */
+        public double colSpeedMinValue = 0.1;
+        /**
+         * Default maximum speed for CollisionDetector, fixing upper threshold.
+         */
+        public double colSpeedMaxValue = 2.0;
+
+        /**
+         * The default Scenes list.
+         * format "[code1]:[path_to_class1];[code1]:[path_to_class1];"
+         */
         public String scenes;
+        /**
+         * Default scene to be activated at start e.g.: 'code1'.
+         */
         public String defaultScene;
 
+        /**
+         * Default language to be activated at start (e.g. en_EN).
+         *
+         * @see I18n
+         */
         public String defaultLanguage;
 
 
+        /**
+         * Initialize configuration with the filename properties file.
+         *
+         * @param fileName the path and name of the properties file to be loaded.
+         */
         public Configuration(String fileName) {
             try {
                 appProps.load(this.getClass().getResourceAsStream(fileName));
@@ -228,6 +420,9 @@ public class Application extends JFrame implements KeyListener {
             }
         }
 
+        /**
+         * Map Properties attributes values to Configuration attributes.
+         */
         private void loadConfig() {
             screenWidth = parseDouble(appProps.getProperty("app.screen.width", "320.0"));
             screenHeight = parseDouble(appProps.getProperty("app.screen.height", "200.0"));
@@ -255,14 +450,33 @@ public class Application extends JFrame implements KeyListener {
             defaultLanguage = appProps.getProperty("app.language.default", "en_EN");
         }
 
+        /**
+         * Parse a String value to a Double one.
+         *
+         * @param stringValue the string value to be converted to double.
+         * @return
+         */
         private double parseDouble(String stringValue) {
             return Double.parseDouble(stringValue);
         }
 
+        /**
+         * Part s String value to an Integer value.
+         *
+         * @param stringValue the string value to be converted to int.
+         * @return
+         */
         private int parseInt(String stringValue) {
             return Integer.parseInt(stringValue);
         }
 
+        /**
+         * Parse a list of arguments (typically produced from command line interface) and extract arguments values
+         * to configuration attributes values.
+         *
+         * @param args the main arguments list
+         * @return the updated Configuration object.
+         */
         private Configuration parseArgs(String[] args) {
             Arrays.asList(args).forEach(arg -> {
                 String[] argSplit = arg.split("=");
@@ -291,23 +505,62 @@ public class Application extends JFrame implements KeyListener {
             return this;
         }
 
-        private void convertStringToBoolean(String values) {
-            fullScreen = "on|ON|true|True|TRUE".contains(values);
+        /**
+         * Convert a String value to a boolean value. Will transform "ON", "on", "true", "TRUE", "1" or "True" to a true bollean value.
+         *
+         * @param value the String value to be converted to boolean.
+         */
+        private void convertStringToBoolean(String value) {
+            fullScreen = "on|ON|true|True|TRUE|1".contains(value);
         }
 
     }
 
+    /**
+     * The {@link Render} service will provide the drawing process to  display entities to the {@link Application}
+     * display buffer,  and then copy the buffer to the application window (see {@link JFrame}.
+     */
     public static class Render {
+        /**
+         * A reference to the Application configuration.
+         */
         private final Configuration config;
+        /**
+         * The World object defining the play area limit.
+         */
         private final World world;
+        /**
+         * The Parent App.
+         */
         Application app;
+        /**
+         * The internal rendering graphics buffer.
+         */
         BufferedImage buffer;
+        /**
+         * The debug font to be used to display debug level information.
+         */
         private Font debugFont;
+        /**
+         * Intrenal metric to measure rendering time.
+         */
         long renderingTime = 0;
-
+        /**
+         * The list of object to be rendered: the rendering pipeline.
+         */
         private List<Entity> gPipeline = new CopyOnWriteArrayList<>();
+        /**
+         * The current active camera to draw all the scene entities from this point of view.
+         */
         Camera activeCamera;
 
+        /**
+         * Initialize the Render service with the parent Application, the current Configuration, and its World object.
+         *
+         * @param a the parent Application
+         * @param c the Configuration object for this instance.
+         * @param w the World object defining the play area limits.
+         */
         public Render(Application a, Configuration c, World w) {
             this.app = a;
             this.config = c;
@@ -345,7 +598,7 @@ public class Application extends JFrame implements KeyListener {
             moveCamera(g, activeCamera, -1);
             drawGrid(g, world, 16, 16);
             moveCamera(g, activeCamera, 1);
-            gPipeline.stream().filter(e -> e.isAlive() || e.isInfiniteLife())
+            gPipeline.stream().filter(e -> e.isAlive() || e.isPersistent())
                     .forEach(e -> {
                         if (e.isNotStickToCamera()) {
                             moveCamera(g, activeCamera, -1);
@@ -355,44 +608,19 @@ public class Application extends JFrame implements KeyListener {
 
                             // This is a TextEntity
                             case TextEntity te -> {
-                                g.setFont(te.font);
-                                int size = g.getFontMetrics().stringWidth(te.text);
-                                double offsetX = te.align.equals(TextAlign.RIGHT) ? -size
-                                        : te.align.equals(TextAlign.CENTER) ? -size * 0.5 : 0;
-                                g.drawString(te.text, (int) (te.pos.x + offsetX), (int) te.pos.y);
-                                e.width = size;
-                                e.height = g.getFontMetrics().getHeight();
-                                e.box.setRect(e.pos.x + offsetX, e.pos.y - e.height + g.getFontMetrics().getDescent(), e.width,
-                                        e.height);
+                                drawText(g, e, te);
                             }
+                            // This is a GaugeEntity
                             case GaugeEntity ge -> {
-                                g.setColor(Color.BLACK);
-                                g.fillRect((int) ge.pos.x, (int) ge.pos.y, (int) ge.width, (int) ge.height);
-                                g.setColor(ge.border);
-                                g.fillRect((int) ge.pos.x, (int) ge.pos.y, (int) ge.width, (int) ge.height);
-                                int value = (int) ((ge.value / ge.maxValue) * ge.width - 2);
-                                g.setColor(ge.color);
-                                g.fillRect((int) (ge.pos.x) + 1, (int) (ge.pos.y) + 1, value, (int) (ge.height) - 2);
+                                drawGauge(g, ge);
+                            }
+                            // This is a ValueEntity
+                            case ValueEntity se -> {
+                                drawValue(g, se);
                             }
                             // This is a basic entity
                             case Entity ee -> {
-                                switch (ee.type) {
-                                    case RECTANGLE -> g.fillRect((int) ee.pos.x, (int) ee.pos.y, (int) ee.width, (int) ee.height);
-                                    case ELLIPSE -> g.fillArc((int) ee.pos.x, (int) ee.pos.y, (int) ee.width, (int) ee.height, 0, 360);
-                                    case IMAGE -> {
-                                        BufferedImage sprite = (BufferedImage) (ee.getAnimations()
-                                                ? ee.animations.getFrame()
-                                                : ee.image);
-                                        if (ee.getDirection() > 0) {
-                                            g.drawImage(sprite, (int) ee.pos.x, (int) ee.pos.y, null);
-                                        } else {
-                                            g.drawImage(sprite,
-                                                    (int) (ee.pos.x + ee.width), (int) ee.pos.y,
-                                                    (int) (-ee.width), (int) ee.height,
-                                                    null);
-                                        }
-                                    }
-                                }
+                                drawEntity(g, ee);
                             }
                         }
                         drawDebugInfo(g, e);
@@ -403,6 +631,48 @@ public class Application extends JFrame implements KeyListener {
             g.dispose();
             renderToScreen(realFps);
             renderingTime = System.nanoTime() - startTime;
+        }
+
+        private void drawEntity(Graphics2D g, Entity ee) {
+            switch (ee.type) {
+                case RECTANGLE -> g.fillRect((int) ee.pos.x, (int) ee.pos.y, (int) ee.width, (int) ee.height);
+                case ELLIPSE -> g.fillArc((int) ee.pos.x, (int) ee.pos.y, (int) ee.width, (int) ee.height, 0, 360);
+                case IMAGE -> {
+                    BufferedImage sprite = (BufferedImage) (ee.getAnimations()
+                            ? ee.animations.getFrame()
+                            : ee.image);
+                    if (ee.getDirection() > 0) {
+                        g.drawImage(sprite, (int) ee.pos.x, (int) ee.pos.y, null);
+                    } else {
+                        g.drawImage(sprite,
+                                (int) (ee.pos.x + ee.width), (int) ee.pos.y,
+                                (int) (-ee.width), (int) ee.height,
+                                null);
+                    }
+                }
+            }
+        }
+
+        private void drawText(Graphics2D g, Entity e, TextEntity te) {
+            g.setFont(te.font);
+            int size = g.getFontMetrics().stringWidth(te.text);
+            double offsetX = te.align.equals(TextAlign.RIGHT) ? -size
+                    : te.align.equals(TextAlign.CENTER) ? -size * 0.5 : 0;
+            g.drawString(te.text, (int) (te.pos.x + offsetX), (int) te.pos.y);
+            e.width = size;
+            e.height = g.getFontMetrics().getHeight();
+            e.box.setRect(e.pos.x + offsetX, e.pos.y - e.height + g.getFontMetrics().getDescent(), e.width,
+                    e.height);
+        }
+
+        private void drawGauge(Graphics2D g, GaugeEntity ge) {
+            g.setColor(ge.shadow);
+            g.fillRect((int) ge.pos.x - 1, (int) ge.pos.y - 1, (int) ge.width + 2, (int) ge.height + 2);
+            g.setColor(ge.border);
+            g.fillRect((int) ge.pos.x, (int) ge.pos.y, (int) ge.width, (int) ge.height);
+            int value = (int) ((ge.value / ge.maxValue) * ge.width - 2);
+            g.setColor(ge.color);
+            g.fillRect((int) (ge.pos.x) + 1, (int) (ge.pos.y) + 1, value, (int) (ge.height) - 2);
         }
 
         /**
@@ -432,9 +702,8 @@ public class Application extends JFrame implements KeyListener {
                 int offsetY = (int) (e.pos.y - 8);
                 g.drawString(String.format("#%d", e.id), (int) e.pos.x, offsetY);
                 // display LifeBar
-                if (!e.isInfiniteLife() && e.isAlive()) {
-                    g.setColor(Color.RED);
-                    g.fillRect((int) e.pos.x, (int) e.pos.y - 4, (int) ((32) * e.duration / e.startDuration), 2);
+                if (e.isAlive()) {
+                    drawLifeBar(g, e);
                 }
                 if (config.debug > 1) {
                     // display colliding box
@@ -464,6 +733,46 @@ public class Application extends JFrame implements KeyListener {
 
                 }
             }
+        }
+
+        private void drawLifeBar(Graphics2D g, Entity e) {
+            g.setColor(Color.RED);
+            float ratio = 0.0f;
+            if (e.isPersistent()) {
+                g.setColor(Color.ORANGE);
+                ratio = 1.0f;
+            } else {
+                ratio = (1.0f * e.duration) / (1.0f * e.startDuration);
+            }
+            g.fillRect((int) e.pos.x, (int) e.pos.y - 4, (int) (32.0 * ratio), 2);
+        }
+
+        /**
+         * Draw score with digital characters
+         *
+         * @param g  the Graphics2D API
+         * @param se ValueEntity object
+         */
+        private void drawValue(Graphics2D g, ValueEntity se) {
+            byte c[] = se.scoreTxt.getBytes(StandardCharsets.US_ASCII);
+            for (int pos = 0; pos < se.scoreTxt.length(); pos++) {
+                int v = c[pos];
+                drawFig(g, se, v - 48, se.pos.x + (pos * 8), se.pos.y);
+            }
+        }
+
+        /**
+         * Draw a simple figure
+         *
+         * @param g     the Graphics2D API
+         * @param value number value to draw
+         * @param x     horizontal position
+         * @param y     vertical position
+         */
+        private void drawFig(Graphics2D g, ValueEntity se, int value, double x, double y) {
+            assert (value > -1);
+            assert (value < 10);
+            g.drawImage(se.figs[value], (int) x, (int) y, null);
         }
 
         /**
@@ -517,12 +826,24 @@ public class Application extends JFrame implements KeyListener {
             g2.dispose();
         }
 
+        /**
+         * Move rendering point of view to Camera cam, with a direction -1 move to camera, 1 move back from camera.
+         *
+         * @param g         the Graphics API device.
+         * @param cam       the camera to move to/from.
+         * @param direction the direction of the move : -1 move to camera, 1 move back from camera.
+         */
         private void moveCamera(Graphics2D g, Camera cam, double direction) {
             if (Optional.ofNullable(activeCamera).isPresent()) {
                 g.translate(cam.pos.x * direction, cam.pos.y * direction);
             }
         }
 
+        /**
+         * Add an entity to the rendering pipeline.
+         *
+         * @param entity te Entity to be added to the rendering process.
+         */
         public void addToPipeline(Entity entity) {
             if (!gPipeline.contains(entity)) {
                 gPipeline.add(entity);
@@ -530,19 +851,35 @@ public class Application extends JFrame implements KeyListener {
             }
         }
 
+        /**
+         * Define the active Camera.
+         *
+         * @param cam A Camera object to be activated as the Rendering point of view.
+         */
         public void addCamera(Camera cam) {
             this.activeCamera = cam;
         }
 
+        /**
+         * Clear the current rendering pipeline.
+         */
         public void clear() {
             gPipeline.clear();
         }
 
+        /**
+         * Free all resources before closing the service.
+         */
         public void dispose() {
             clear();
             buffer = null;
         }
 
+        /**
+         * Remove an entity from the rendering pipeline.
+         *
+         * @param e the Entity to be removed from the pipeline.
+         */
         public void remove(Entity e) {
             gPipeline.remove(e);
         }
@@ -596,14 +933,14 @@ public class Application extends JFrame implements KeyListener {
                 e.update(elapsed);
                 // TODO update Entity Behavior
                 e.behaviors.values().stream()
-                        .filter(b -> b.getEvent().contains(Behavior.updateEntity))
+                        .filter(b -> b.filterOnEvent().contains(Behavior.updateEntity))
                         .collect(Collectors.toList())
                         .forEach(b -> b.update(app, e, elapsed));
 
             });
             // TODO update Scene Behaviors
             app.activeScene.getBehaviors().values().stream()
-                    .filter(b -> b.getEvent().contains(Behavior.updateScene))
+                    .filter(b -> b.filterOnEvent().contains(Behavior.updateScene))
                     .collect(Collectors.toList())
                     .forEach(b -> b.update(app, elapsed));
             //  update active camera if presents.
@@ -643,7 +980,7 @@ public class Application extends JFrame implements KeyListener {
         }
 
         private void constrainsEntity(Entity e) {
-            if (e.isAlive() || e.isInfiniteLife()) {
+            if (e.isAlive() || e.isPersistent()) {
                 constrainToWorld(e, world);
             }
         }
@@ -699,7 +1036,7 @@ public class Application extends JFrame implements KeyListener {
         }
 
         private void detect() {
-            List<Entity> targets = colliders.values().stream().filter(e -> e.isAlive() || e.isInfiniteLife()).toList();
+            List<Entity> targets = colliders.values().stream().filter(e -> e.isAlive() || e.isPersistent()).toList();
             for (Entity e1 : colliders.values()) {
                 e1.collide = false;
                 for (Entity e2 : targets) {
@@ -707,7 +1044,7 @@ public class Application extends JFrame implements KeyListener {
                     if (e1.id != e2.id && e1.cbox.getBounds().intersects(e2.cbox.getBounds())) {
                         resolve(e1, e2);
                         e1.behaviors.values().stream()
-                                .filter(b -> b.getEvent().equals("onCollision"))
+                                .filter(b -> b.filterOnEvent().equals(Behavior.onCollision))
                                 .collect(Collectors.toList())
                                 .forEach(b -> b.onCollide(app, e1, e2));
                     }
@@ -757,6 +1094,66 @@ public class Application extends JFrame implements KeyListener {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * A Resource manager to load and buffered all necessary resources.
+     */
+    public static class Resources {
+        /**
+         * THe internal buffer for resources
+         */
+        static Map<String, Object> resources = new ConcurrentHashMap<>();
+
+        /**
+         * Load an image and store it into buffer.
+         *
+         * @param path path of the image
+         * @return the loaded image.
+         */
+        public static BufferedImage loadImage(String path) {
+            BufferedImage img = null;
+            if (resources.containsKey(path)) {
+                img = (BufferedImage) resources.get(path);
+            } else {
+                try {
+                    img = ImageIO.read(Resources.class.getResourceAsStream(path));
+                    resources.put(path, img);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            return img;
+        }
+
+        /**
+         * Load a Font and store it into buffer.
+         *
+         * @param path path of the Font (True Type Font)
+         * @return the loaded Font
+         */
+        public static Font loadFont(String path) {
+            Font f = null;
+            if (resources.containsKey(path)) {
+                f = (Font) resources.get(path);
+            } else {
+                try {
+                    f = Font.createFont(
+                            Font.PLAIN,
+                            Objects.requireNonNull(Resources.class.getResourceAsStream(path)));
+                } catch (FontFormatException | IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            return f;
+        }
+
+        /**
+         * Free all loaded resources.
+         */
+        public static void dispose() {
+            resources.clear();
         }
     }
 
@@ -937,6 +1334,7 @@ public class Application extends JFrame implements KeyListener {
         public Map<String, Object> attributes = new ConcurrentHashMap<>();
 
         public Map<String, Behavior> behaviors = new ConcurrentHashMap<>();
+        private Color shadowColor = Color.BLACK;
 
         public Entity(String name) {
             this.name = name;
@@ -1003,10 +1401,13 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public synchronized boolean isAlive() {
+            if (attributes.containsKey("energy")) {
+                return ((int) attributes.get("energy")) > 0;
+            }
             return (duration > 0);
         }
 
-        public boolean isInfiniteLife() {
+        public boolean isPersistent() {
             return this.duration == -1;
         }
 
@@ -1076,9 +1477,10 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public void update(double elapsed) {
-            if (isAlive()) {
-                if (isAlive()) {
-                    setDuration(duration - (int) Math.max(elapsed, 1.0));
+            if (!isPersistent()) {
+                int val = (int) Math.max(elapsed, 1.0);
+                if (duration - val > 0) {
+                    setDuration(duration - val);
                 } else {
                     setDuration(0);
                 }
@@ -1102,11 +1504,11 @@ public class Application extends JFrame implements KeyListener {
             }
         }
 
-        public Entity addAnimation(String key, int x, int y, int tw, int th, int nbFrames, String pathToImage) {
+        public Entity addAnimation(String key, int x, int y, int tw, int th, int[] durations, String pathToImage, int loop) {
             if (Optional.ofNullable(this.animations).isEmpty()) {
                 this.animations = new Animation();
             }
-            this.animations.addAnimationSet(key, pathToImage, x, y, tw, th, nbFrames);
+            this.animations.addAnimationSet(key, pathToImage, x, y, tw, th, durations, loop);
             return this;
         }
 
@@ -1120,23 +1522,56 @@ public class Application extends JFrame implements KeyListener {
         }
 
         public Entity addBehavior(Behavior b) {
-            this.behaviors.put(b.getEvent(), b);
-            return this;
-        }
-
-        public Entity setFrameDuration(String key, int frameDuration) {
-            animations.setFrameDuration(key, frameDuration);
+            this.behaviors.put(b.filterOnEvent(), b);
             return this;
         }
 
         public int getDirection() {
             return this.vel.x > 0 ? 1 : -1;
         }
+
+        public String toString() {
+            return this.getClass().getSimpleName() + "[name:" + name + "]";
+        }
+
+        public Entity setShadow(Color shadow) {
+            this.shadowColor = shadow;
+            return this;
+        }
+    }
+
+    public static class AnimationSet {
+        String name;
+        BufferedImage[] frames;
+        int[] durations;
+        int loop;
+        int counter;
+        private int width;
+        private int height;
+
+        public AnimationSet(String key) {
+            this.name = key;
+        }
+
+        public AnimationSet setFramesDuration(int[] d) {
+            this.durations = d;
+            return this;
+        }
+
+        public AnimationSet setSize(int w, int h) {
+            this.width = w;
+            this.height = h;
+            return this;
+        }
+
+        public AnimationSet setLoop(int l) {
+            this.loop = l;
+            return this;
+        }
     }
 
     public static class Animation {
-        Map<String, BufferedImage[]> animationSet = new HashMap<>();
-        Map<String, Integer> frameDuration = new HashMap<>();
+        Map<String, AnimationSet> animationSet = new HashMap<>();
         public String currentAnimationSet;
         public int currentFrame;
         private long internalAnimationTime;
@@ -1148,47 +1583,52 @@ public class Application extends JFrame implements KeyListener {
             currentFrame = 0;
         }
 
-        public Animation setFrameDuration(String key, int time) {
-
-            this.frameDuration.put(key, time);
-            return this;
-        }
-
         public Animation activate(String key) {
             this.currentAnimationSet = key;
-            if (currentFrame > this.animationSet.get(key).length) {
+            AnimationSet aSet = this.animationSet.get(key);
+            if (currentFrame > aSet.frames.length) {
                 this.currentFrame = 0;
                 this.internalAnimationTime = 0;
+                aSet.counter = 0;
             }
             return this;
         }
 
-        public void addAnimationSet(String key, String imgSrc, int x, int y, int tw, int th, int nbFrames) {
-            try {
-                BufferedImage image = ImageIO.read(Objects.requireNonNull(this.getClass().getResourceAsStream(imgSrc)));
-                BufferedImage[] buffer = new BufferedImage[nbFrames];
-                for (int i = 0; i < nbFrames; i++) {
-                    BufferedImage frame = image.getSubimage(x + (i * tw), y, tw, th);
-                    buffer[i] = frame;
-                }
-                animationSet.put(key, buffer);
-            } catch (IOException e) {
-                System.out.println("ERR: unable to read image from '" + imgSrc + "'");
+        public Animation addAnimationSet(String key, String imgSrc, int x, int y, int tw, int th, int[] durations, int loop) {
+            AnimationSet aSet = new AnimationSet(key).setSize(tw, th);
+            BufferedImage image = Resources.loadImage(imgSrc);
+            aSet.frames = new BufferedImage[durations.length];
+            for (int i = 0; i < durations.length; i++) {
+                BufferedImage frame = image.getSubimage(x + (i * tw), y, tw, th);
+                aSet.frames[i] = frame;
             }
+            aSet.setFramesDuration(durations);
+            aSet.setLoop(loop);
+            animationSet.put(key, aSet);
+            return this;
         }
 
         public synchronized void update(long elapsedTime) {
             internalAnimationTime += elapsedTime;
-            if (internalAnimationTime > frameDuration.get(currentAnimationSet)) {
+            AnimationSet aSet = animationSet.get(currentAnimationSet);
+            currentFrame = aSet.durations.length > currentFrame ? currentFrame : 0;
+            if (internalAnimationTime > aSet.durations[currentFrame]) {
                 internalAnimationTime = 0;
-                currentFrame = currentFrame + 1 < animationSet.get(currentAnimationSet).length ? currentFrame + 1 : (loop ? 0 : currentFrame);
+                if (currentFrame + 1 < aSet.frames.length) {
+                    currentFrame = currentFrame + 1;
+                } else {
+                    if (aSet.counter + 1 < aSet.loop) {
+                        aSet.counter++;
+                    }
+                    currentFrame = 0;
+                }
             }
         }
 
         public synchronized BufferedImage getFrame() {
             if (animationSet.get(currentAnimationSet) != null
-                    && currentFrame < animationSet.get(currentAnimationSet).length) {
-                return animationSet.get(currentAnimationSet)[currentFrame];
+                    && currentFrame < animationSet.get(currentAnimationSet).frames.length) {
+                return animationSet.get(currentAnimationSet).frames[currentFrame];
             }
             return null;
         }
@@ -1251,6 +1691,39 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    public static class ValueEntity extends Entity {
+        int value;
+        String scoreTxt;
+        private BufferedImage[] figs;
+        private String format = "%d";
+
+        public ValueEntity(String name) {
+            super(name);
+            this.physicType = PhysicType.STATIC;
+        }
+
+        @Override
+        public void update(double elapsed) {
+            super.update(elapsed);
+            scoreTxt = String.format(format, value);
+        }
+
+        public ValueEntity setValue(int value) {
+            this.value = value;
+            return this;
+        }
+
+        public ValueEntity setFigures(BufferedImage[] figs) {
+            this.figs = figs;
+            return this;
+        }
+
+        public ValueEntity setFormat(String f) {
+            this.format = f;
+            return this;
+        }
+    }
+
     public static class Camera extends Entity {
 
         private Entity target;
@@ -1284,6 +1757,8 @@ public class Application extends JFrame implements KeyListener {
     }
 
     public interface Scene {
+        void prepare();
+
         boolean create(Application app) throws Exception;
 
         void update(Application app, double elapsed);
@@ -1298,17 +1773,17 @@ public class Application extends JFrame implements KeyListener {
     }
 
     public interface Behavior {
-        public final String onCollision = "onCollide";
-        public final String updateEntity = "updateEntity";
-        public final String updateScene = "updateScene";
+        String onCollision = "onCollide";
+        String updateEntity = "updateEntity";
+        String updateScene = "updateScene";
 
-        public String getEvent();
+        String filterOnEvent();
 
-        public void update(Application a, Entity e, double elapsed);
+        void update(Application a, Entity e, double elapsed);
 
-        public void update(Application a, double elapsed);
+        void update(Application a, double elapsed);
 
-        public void onCollide(Application a, Entity e1, Entity e2);
+        void onCollide(Application a, Entity e1, Entity e2);
     }
 
     public boolean exit = false;
@@ -1393,7 +1868,7 @@ public class Application extends JFrame implements KeyListener {
                 scenes.put(sceneStr[0], s);
                 activateScene(config.defaultScene);
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                    InvocationTargetException e) {
+                     InvocationTargetException e) {
                 System.out.println("ERR: Unable to load scene from configuration file:"
                         + e.getLocalizedMessage()
                         + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
@@ -1414,10 +1889,11 @@ public class Application extends JFrame implements KeyListener {
             }
             Scene scene = scenes.get(name);
             try {
+                scene.prepare();
                 sceneReady = scene.create(this);
                 this.activeScene = scene;
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                System.out.println("ERR: Unable to initialize the Scene " + name + " => " + e.getLocalizedMessage());
             }
         } else {
             System.out.print("ERR: Unable to load unknown scene " + name);
@@ -1622,6 +2098,16 @@ public class Application extends JFrame implements KeyListener {
         boolean status = !this.keys[keyCode] && prevKeys[keyCode];
         prevKeys[keyCode] = false;
         return status;
+    }
+
+
+    /**
+     * Retrieve the internal entity Index current value.
+     *
+     * @return
+     */
+    public static long getEntityIndex() {
+        return entityIndex;
     }
 
     public static void main(String[] args) {

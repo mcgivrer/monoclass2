@@ -3,18 +3,18 @@ package com.demoing.app.scenes;
 import com.demoing.app.core.Application;
 import com.demoing.app.core.Application.*;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.List;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.demoing.app.core.Application.EntityType.*;
 import static com.demoing.app.core.Application.PhysicType.STATIC;
 import static com.demoing.app.core.Application.TextAlign.CENTER;
-import static com.demoing.app.core.Application.TextAlign.LEFT;
 
 public class DemoScene implements Scene {
     private final String name;
@@ -22,19 +22,29 @@ public class DemoScene implements Scene {
     Font wlcFont;
 
     private Map<String, Behavior> behaviors = new ConcurrentHashMap<>();
+    private boolean gameOver;
+    BufferedImage[] figs;
 
     public DemoScene(String name) {
         this.name = name;
     }
 
+    public void prepare() {
+        // prepare the Figures for score rendering
+        prepareFigures("/images/tiles01.png");
+    }
+
     @Override
     public boolean create(Application app) throws IOException, FontFormatException {
+
+        gameOver = false;
         // define default world friction (air resistance ?)
         app.world.setFriction(0.98);
         // define Game global variables
         app.setAttribute("life", 5);
         app.setAttribute("score", 0);
         app.setAttribute("time", (long) (180 * 1000));
+
 
         Entity floor = new Entity("floor")
                 .setType(RECTANGLE)
@@ -52,8 +62,8 @@ public class DemoScene implements Scene {
                 .setType(RECTANGLE)
                 .setPhysicType(STATIC)
                 .setColor(Color.RED)
-                .setPosition(app.world.area.getWidth() - 32, app.world.area.getHeight() - 8)
-                .setSize(32, 8)
+                .setPosition(app.world.area.getWidth() - 48, app.world.area.getHeight() - 8)
+                .setSize(48, 8)
                 .setCollisionBox(0, 0, 0, 0)
                 .setElasticity(0.1)
                 .setFriction(0.70)
@@ -66,7 +76,7 @@ public class DemoScene implements Scene {
                 .setPhysicType(STATIC)
                 .setColor(Color.RED)
                 .setPosition(0, app.world.area.getHeight() - 8)
-                .setSize(32, 8)
+                .setSize(48, 8)
                 .setCollisionBox(0, 0, 0, 0)
                 .setElasticity(0.1)
                 .setFriction(0.70)
@@ -93,32 +103,28 @@ public class DemoScene implements Scene {
                 .addAnimation("idle",
                         0, 0,
                         32, 32,
-                        13,
-                        "/images/sprites01.png")
-                .setFrameDuration("idle", 200)
+                        new int[]{450, 60, 60, 250, 60, 60, 60, 450, 60, 60, 60, 250, 60},
+                        "/images/sprites01.png", -1)
                 .addAnimation("walk",
                         0, 32,
                         32, 32,
-                        8,
-                        "/images/sprites01.png")
-                .setFrameDuration("walk", 60)
+                        new int[]{60, 60, 60, 150, 60, 60, 60, 150},
+                        "/images/sprites01.png", -1)
                 .addAnimation("jump",
                         0, 5 * 32,
                         32, 32,
-                        6,
-                        "/images/sprites01.png")
-                .setFrameDuration("jump", 60)
+                        new int[]{60, 60, 250, 250, 60, 60},
+                        "/images/sprites01.png", -1)
                 .addAnimation("dead",
                         0, 7 * 32,
                         32, 32,
-                        7,
-                        "/images/sprites01.png")
-                .setFrameDuration("dead", 60)
+                        new int[]{160, 160, 160, 160, 160, 160, 500},
+                        "/images/sprites01.png", 0)
                 .activateAnimation("idle")
                 .addBehavior(new Behavior() {
 
                     @Override
-                    public String getEvent() {
+                    public String filterOnEvent() {
                         return onCollision;
                     }
 
@@ -146,45 +152,39 @@ public class DemoScene implements Scene {
                 .setTweenFactor(0.005);
         app.render.addCamera(cam);
 
-        generateEntity(app, "ball_", 30, 2.5);
+        generateEntity(app, "ball_", 10, 2.5);
 
-        wlcFont = Font.createFont(
-                        Font.PLAIN,
-                        Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
+        wlcFont = Resources.loadFont("/fonts/FreePixel.ttf")
                 .deriveFont(12.0f);
 
         // Score Display
         int score = (int) app.getAttribute("score", 0);
-        Font scoreFont = wlcFont.deriveFont(16.0f);
-        String scoreTxt = String.format("%06d", score);
-        TextEntity scoreTxtE = (TextEntity) new TextEntity("score")
-                .setText(scoreTxt)
-                .setAlign(LEFT)
-                .setFont(scoreFont)
-                .setPosition(20, 30)
-                .setColor(Color.WHITE)
+
+        ValueEntity scoreEntity = (ValueEntity) new ValueEntity("score")
+                .setValue(score)
+                .setFormat("%06d")
+                .setFigures(figs)
+                .setPosition(20, 20)
+                .setSize(6*8,16)
                 .setStickToCamera(true);
-        app.addEntity(scoreTxtE);
+        app.addEntity(scoreEntity);
 
         long time = (long) app.getAttribute("time", 0);
         Font timeFont = wlcFont.deriveFont(16.0f);
-        String timeTxt = String.format("%02d:%02d", (int) (time / 60 * 1000), (int) (time % 60 * 1000));
-        TextEntity timeTxtE = (TextEntity) new TextEntity("time")
-                .setText(timeTxt)
-                .setAlign(CENTER)
-                .setFont(scoreFont)
-                .setPosition(app.config.screenWidth / 2, 30)
-                .setColor(Color.WHITE)
+        ValueEntity timeTxtE = (ValueEntity) new ValueEntity("time")
+                .setFormat("%3d")
+                .setValue((int) (time / 1000))
+                .setFigures(figs)
+                .setSize(3*8,16)
+                .setPosition(app.config.screenWidth / 2, 20)
                 .setStickToCamera(true);
         app.addEntity(timeTxtE);
 
-        Font lifeFont = new Font("Arial", Font.PLAIN, 16);
-        TextEntity lifeTxt = (TextEntity) new TextEntity("life")
-                .setText("5")
-                .setAlign(LEFT)
-                .setFont(lifeFont)
-                .setPosition(app.config.screenWidth - 40, 30)
-                .setColor(Color.RED)
+        ValueEntity lifeTxt = (ValueEntity) new ValueEntity("life")
+                .setValue(5)
+                .setFigures(figs)
+                .setSize(8,16)
+                .setPosition(app.config.screenWidth - 40, 20)
                 .setPriority(10)
                 .setStickToCamera(true);
         app.addEntity(lifeTxt);
@@ -196,7 +196,7 @@ public class DemoScene implements Scene {
                 .setColor(Color.RED)
                 .setSize(32, 6)
                 .setPriority(10)
-                .setPosition(app.config.screenWidth - 40 - 4 - 32, 25);
+                .setPosition(app.config.screenWidth - 40 - 4 - 32, 30);
         app.addEntity(energyGauge);
 
         GaugeEntity manaGauge = (GaugeEntity) new GaugeEntity("mana")
@@ -204,9 +204,10 @@ public class DemoScene implements Scene {
                 .setMin(0.0)
                 .setValue((int) player.getAttribute("mana", 100.0))
                 .setColor(Color.BLUE)
+                .setShadow(Color.BLACK)
                 .setSize(32, 6)
                 .setPriority(10)
-                .setPosition(app.config.screenWidth - 40 - 4 - 32, 15);
+                .setPosition(app.config.screenWidth - 40 - 4 - 32, 20);
         app.addEntity(manaGauge);
 
         // A welcome Text
@@ -220,6 +221,16 @@ public class DemoScene implements Scene {
                 .setPriority(20)
                 .setStickToCamera(true);
         app.addEntity(welcomeMsg);
+
+        app.addEntity(new TextEntity("YouAreDead")
+                .setText(I18n.get("app.player.dead"))
+                .setAlign(CENTER)
+                .setFont(wlcFont)
+                .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
+                .setColor(Color.WHITE)
+                .setInitialDuration(0)
+                .setPriority(20)
+                .setStickToCamera(true));
 
         // mapping of keys actions:
 
@@ -238,7 +249,13 @@ public class DemoScene implements Scene {
                 KeyEvent.VK_ESCAPE, o -> {
                     app.requestExit();
                     return this;
-                });
+                },
+                KeyEvent.VK_K, o -> {
+                    Entity p = app.entities.get("player");
+                    p.setAttribute("energy", 0);
+                    return this;
+                }
+        );
         return true;
     }
 
@@ -321,32 +338,22 @@ public class DemoScene implements Scene {
             app.setAttribute("time", time);
 
             // display timer
-            TextEntity timeTxt = (TextEntity) app.getEntity("time");
-            String timeStr = String.format("%02d:%02d", (int) (time / (60 * 1000)), (int) ((time % (60 * 1000)) / 1000));
-            timeTxt.setText(timeStr);
+            ValueEntity timeTxt = (ValueEntity) app.getEntity("time");
+            timeTxt.setValue((int) (time /1000));
 
             // if time=0 => game over !
-            if (time == 0) {
-                player.activateAnimation("dead");
-                app.addEntity(new TextEntity("YouAreDead")
-                        .setText(I18n.get("app.player.dead"))
-                        .setAlign(CENTER)
-                        .setFont(wlcFont)
-                        .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
-                        .setColor(Color.WHITE)
-                        .setInitialDuration(-1)
-                        .setPriority(20)
-                        .setStickToCamera(true));
+            if (time == 0 && !gameOver) {
+                gameOver(app, player);
             }
 
             // update score
             int score = (int) app.getAttribute("score", 0);
-            TextEntity scoreEntity = (TextEntity) app.getEntity("score");
-            scoreEntity.setText(String.format("%06d", score));
+            ValueEntity scoreEntity = (ValueEntity) app.getEntity("score");
+            scoreEntity.setValue(score);
 
             int life = (int) app.getAttribute("life", 0);
-            TextEntity lifeEntity = (TextEntity) app.getEntity("life");
-            lifeEntity.setText(String.format("%d", life));
+            ValueEntity lifeEntity = (ValueEntity) app.getEntity("life");
+            lifeEntity.setValue(life);
 
 
             int energy = (int) player.getAttribute("energy", 0);
@@ -357,19 +364,17 @@ public class DemoScene implements Scene {
             GaugeEntity manaEntity = (GaugeEntity) app.getEntity("mana");
             manaEntity.setValue(mana);
 
-            if (energy <= 0 && life <= 0) {
-                player.activateAnimation("dead");
-                app.addEntity(new TextEntity("YouAreDead")
-                        .setText(I18n.get("app.player.dead"))
-                        .setAlign(CENTER)
-                        .setFont(wlcFont)
-                        .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
-                        .setColor(Color.WHITE)
-                        .setInitialDuration(-1)
-                        .setPriority(20)
-                        .setStickToCamera(true));
+            if (energy <= 0 && life <= 0 && !gameOver) {
+                gameOver(app, player);
             }
         }
+    }
+
+    private void gameOver(Application app, Entity player) {
+        player.activateAnimation("dead");
+        TextEntity youAreDead = (TextEntity) app.entities.get("YouAreDead");
+        youAreDead.setInitialDuration(-1);
+        gameOver = true;
     }
 
     @Override
@@ -447,8 +452,8 @@ public class DemoScene implements Scene {
                     .setAttribute("points", (int) (10 + (Math.random() * 4)) * 10)
                     .addBehavior(new Behavior() {
                         @Override
-                        public String getEvent() {
-                            return "onCollision";
+                        public String filterOnEvent() {
+                            return Behavior.onCollision;
                         }
 
                         @Override
@@ -474,4 +479,11 @@ public class DemoScene implements Scene {
         }
     }
 
+    private void prepareFigures(String pathToImage) {
+        BufferedImage figuresImage = Resources.loadImage(pathToImage);
+        figs = new BufferedImage[10];
+        for (int i = 0; i < 10; i++) {
+            figs[i] = figuresImage.getSubimage(i * 8, 3 * 16, 8, 16);
+        }
+    }
 }
