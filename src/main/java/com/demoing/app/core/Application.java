@@ -667,7 +667,7 @@ public class Application extends JFrame implements KeyListener {
 
         private void drawGauge(Graphics2D g, GaugeEntity ge) {
             g.setColor(ge.shadow);
-            g.fillRect((int) ge.pos.x-1, (int) ge.pos.y-1, (int) ge.width+2, (int) ge.height+2);
+            g.fillRect((int) ge.pos.x - 1, (int) ge.pos.y - 1, (int) ge.width + 2, (int) ge.height + 2);
             g.setColor(ge.border);
             g.fillRect((int) ge.pos.x, (int) ge.pos.y, (int) ge.width, (int) ge.height);
             int value = (int) ((ge.value / ge.maxValue) * ge.width - 2);
@@ -1101,8 +1101,17 @@ public class Application extends JFrame implements KeyListener {
      * A Resource manager to load and buffered all necessary resources.
      */
     public static class Resources {
+        /**
+         * THe internal buffer for resources
+         */
         static Map<String, Object> resources = new ConcurrentHashMap<>();
 
+        /**
+         * Load an image and store it into buffer.
+         *
+         * @param path path of the image
+         * @return the loaded image.
+         */
         public static BufferedImage loadImage(String path) {
             BufferedImage img = null;
             if (resources.containsKey(path)) {
@@ -1118,6 +1127,12 @@ public class Application extends JFrame implements KeyListener {
             return img;
         }
 
+        /**
+         * Load a Font and store it into buffer.
+         *
+         * @param path path of the Font (True Type Font)
+         * @return the loaded Font
+         */
         public static Font loadFont(String path) {
             Font f = null;
             if (resources.containsKey(path)) {
@@ -1134,6 +1149,9 @@ public class Application extends JFrame implements KeyListener {
             return f;
         }
 
+        /**
+         * Free all loaded resources.
+         */
         public static void dispose() {
             resources.clear();
         }
@@ -1739,11 +1757,9 @@ public class Application extends JFrame implements KeyListener {
     }
 
     public interface Scene {
-
         void prepare();
 
         boolean create(Application app) throws Exception;
-
 
         void update(Application app, double elapsed);
 
