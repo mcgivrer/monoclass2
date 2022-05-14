@@ -138,7 +138,7 @@ computation.
 
 _figure $fig+ - a Gravity effect !_
 
-## JDK 17-18 advantages
+## Render and JDK 17-18 advantages
 
 Mosty in all services and processing class, I'll be using the latest Lambdas possibilities and the JEP-420 preview from
 JDK17 and 18, the Pattern Matching Switch Capability, For rendering purpose, adapting the `Render#draw` method the the
