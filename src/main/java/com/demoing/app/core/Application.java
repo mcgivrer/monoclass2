@@ -754,8 +754,8 @@ public class Application extends JFrame implements KeyListener {
          * @param se ValueEntity object
          */
         private void drawValue(Graphics2D g, ValueEntity se) {
-            byte c[] = se.scoreTxt.getBytes(StandardCharsets.US_ASCII);
-            for (int pos = 0; pos < se.scoreTxt.length(); pos++) {
+            byte c[] = se.valueTxt.getBytes(StandardCharsets.US_ASCII);
+            for (int pos = 0; pos < se.valueTxt.length(); pos++) {
                 int v = c[pos];
                 drawFig(g, se, v - 48, se.pos.x + (pos * 8), se.pos.y);
             }
@@ -1693,7 +1693,7 @@ public class Application extends JFrame implements KeyListener {
 
     public static class ValueEntity extends Entity {
         int value;
-        String scoreTxt;
+        String valueTxt;
         private BufferedImage[] figs;
         private String format = "%d";
 
@@ -1705,7 +1705,7 @@ public class Application extends JFrame implements KeyListener {
         @Override
         public void update(double elapsed) {
             super.update(elapsed);
-            scoreTxt = String.format(format, value);
+            valueTxt = String.format(format, value);
         }
 
         public ValueEntity setValue(int value) {

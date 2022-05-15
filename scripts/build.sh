@@ -3,7 +3,7 @@
 # Copyright 2020 Frederic Delorme (McGivrer) fredericDOTdelormeATgmailDOTcom
 # Your program build definition
 export PROGRAM_NAME=monoclass2
-export PROGRAM_VERSION=1.0.3
+export PROGRAM_VERSION=1.0.4
 export PROGRAM_TITLE=MonoClass2
 export AUTHOR_NAME='Frédéric Delorme'
 export VENDOR_NAME=frederic.delorme@gmail.com

@@ -1,6 +1,10 @@
 ---
-title: MonoClass2, a JDK fun sample usage author: Frédéric Delorme description: A bunch of discovery on the Java JDK \
-latest release into a fun and entertaining sample of code. created: 2022-04-29 tags: java,jdk17,jdk18,sample,game,jep420
+title: MonoClass2, a JDK fun sample usage 
+author: Frédéric Delorme 
+description: A bunch of discovery on the Java JDK \
+latest release into a fun and entertaining sample of code. 
+created: 2022-04-29 
+tags: java,jdk17,jdk18,sample,game,jep420
 ---
 
 ## Introduction
@@ -206,7 +210,7 @@ will do the job.
 > **NOTE**
 > _As a sample graphics, we will use a sprites image board from [Elthen adventurer sprites](https://elthen.itch.io/pixel-art-adventurer-sprites) thanks to his [fair licensing](https://www.patreon.com/posts/27430241)._
 
-![Sprites sheet from Elthen](../src/main/resources/images/sprites01.png)
+![Sprites sheet from Elthen](./images/illustration-sprites.png)
 
 _figure $fig+ - The sprites resources used as animation sample._
 
