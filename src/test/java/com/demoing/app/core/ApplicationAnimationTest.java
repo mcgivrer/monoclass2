@@ -7,7 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 
-public class AnimationTest {
+public class ApplicationAnimationTest {
     public Animation anim;
 
     @BeforeEach
