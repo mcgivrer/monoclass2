@@ -10,11 +10,6 @@ the magic of a bash script (Back to Roots !).
 
 And a last constrain is to reduce as much as possible the number of LoC, using enhancement from latest JDK.
 
-Below a draft timeline of the project from creation to today. To be Continued !
-
-![DaGame timeline 20220513](https://user-images.githubusercontent.com/216852/168395299-b67bab0a-5160-44c7-8991-bf8a467abf4e.png "Timeline built with GitKraken timeline")
-
-
 Have fun discover this beast of code, to learn and take benefits of some latest JDK features (like
 the [pattern matching for switch](https://openjdk.java.net/jeps/406 "ssee the official specification")), and moreover,
 overuse of lambda and stream each time this was possible.
@@ -64,7 +59,6 @@ $> java --enable-preview -jar target/monoclass2-1.0.3.jar
 You will get the following window
 
 ![DaGame pre-release preparing the v1.0.3 with Behavior and gameplay](docs/images/behaviors-and-gameplay.png "DaGame pre-release preparing the v1.0.3 with Behavior and gameplay")
-
 
 _figure 1 - DaGame pre-release preparing the v1.0.3 with Behavior and gameplay_
 
