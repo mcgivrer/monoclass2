@@ -95,6 +95,28 @@ You can configure dynamically some of the internal parameters:
 | `scene`                 | defaultScene      | the default scene to be activated (must be listed in the `app.scenes` in the `app.properties` file) | N/A       |
 | `l`, `language`, `lang` | defaultLanguage   | select the preferred language  (existing values are en_EN, fr_FR, es_ES or de_DE).                  | en_EN     |
 
+
+### Usage example
+
+1. Change the size of the opened window :
+
+```shell
+$ java ---enable-preview -jar target/monoclass2-x.y.z.jar w=600 h=400
+```
+
+2. set the preferred language to English at start :
+
+```shell
+$ java ---enable-preview -jar target/monoclass2-x.y.z.jar language=en_EN
+```
+
+3. set the preferred language to French and change the pixel scale :
+
+```shell
+$ java ---enable-preview -jar target/monoclass2-x.y.z.jar language=fr_FR s=2.0
+```
+
+
 ## Contribute
 
 Feel free to add/edit/modify for your own usage and learn. You can fork this small project to play with.
