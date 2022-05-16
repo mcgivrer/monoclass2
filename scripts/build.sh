@@ -87,13 +87,14 @@ function executeTests(){
   mkdir -p $TARGET/test-classes
   rm -Rf $TARGET/test-classes/*
   echo "copy test resources"
+  cp -r ./src/main/resources/* $TARGET/test-classes
   cp -r ./src/test/resources/* $TARGET/test-classes
   echo "compile test classes"
   #list test sources
   find ./src/test -name '*.java' >$TARGET/test-sources.lst
-  javac -source 17 -encoding $SRC_ENCODING $COMPILATION_OPTS -cp "$LIB_TEST;$CLASSES;." -d $TARGET/test-classes @$TARGET/test-sources.lst
+  javac -source 17 -encoding $SRC_ENCODING $COMPILATION_OPTS -cp $TARGET:$LIB_TEST -d $TARGET/test-classes @$TARGET/sources.lst @$TARGET/test-sources.lst
   echo "execute tests through JUnit"
-  java $JAR_OPTS -jar "$LIB_TEST" --class-path "$CLASSES;$TARGET/test-classes;$SRC/test/resources;" --scan-class-path
+  java $JAR_OPTS -jar $LIB_TEST --class-path "$CLASSES;$TARGET/test-classes;$SRC/test/resources;" --scan-class-path
   echo "done."
 }
 #
