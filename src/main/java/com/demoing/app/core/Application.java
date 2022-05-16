@@ -1612,7 +1612,7 @@ public class Application extends JFrame implements KeyListener {
             internalAnimationTime += elapsedTime;
             AnimationSet aSet = animationSet.get(currentAnimationSet);
             currentFrame = aSet.durations.length > currentFrame ? currentFrame : 0;
-            if (internalAnimationTime > aSet.durations[currentFrame]) {
+            if (aSet.durations[currentFrame] <= internalAnimationTime) {
                 internalAnimationTime = 0;
                 if (currentFrame + 1 < aSet.frames.length) {
                     currentFrame = currentFrame + 1;
