@@ -8,6 +8,8 @@ deliver maximum feature in a minimum number lines of code, and WITHOUT dependenc
 A second challenge is in the no use for a build tool (maven or gradle) but nothing else than the JDK compiler tool and
 the magic of a bash script (Back to Roots !).
 
+![2022 Gitkraken Project Timeline](docs/images/project-timeline-2022.png "2022 Gitkraken Project Timeline")
+
 And a last constrain is to reduce as much as possible the number of LoC, using enhancement from latest JDK.
 
 Have fun discover this beast of code, to learn and take benefits of some latest JDK features (like

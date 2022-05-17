@@ -9,11 +9,15 @@ import java.awt.event.KeyListener;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
@@ -220,9 +224,9 @@ public class Application extends JFrame implements KeyListener {
                 ObjectName objectName = new ObjectName("com.demoing.app:name=" + programName);
                 platformMBeanServer.registerMBean(this, objectName);
             } catch (InstanceAlreadyExistsException
-                     | MBeanRegistrationException
-                     | NotCompliantMBeanException
-                     | MalformedObjectNameException e) {
+                    | MBeanRegistrationException
+                    | NotCompliantMBeanException
+                    | MalformedObjectNameException e) {
                 e.printStackTrace();
             }
         }
@@ -553,6 +557,10 @@ public class Application extends JFrame implements KeyListener {
          * The current active camera to draw all the scene entities from this point of view.
          */
         Camera activeCamera;
+        /**
+         * Internal Counter for screenshots
+         */
+        private static int screenShotIndex;
 
         /**
          * Initialize the Render service with the parent Application, the current Configuration, and its World object.
@@ -883,8 +891,36 @@ public class Application extends JFrame implements KeyListener {
         public void remove(Entity e) {
             gPipeline.remove(e);
         }
+
+        /**
+         * Write out to the class root path ./screenshots directory a new screenshot from the current displayed buffer.
+         */
+        public void saveScreenshot() {
+            String path = this.getClass().getResource("/").getFile();
+            if (System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows")) {
+                path = path.substring(1);
+            }
+            Path targetDir = Paths.get(path + "/screenshots");
+            int i = screenShotIndex++;
+            String filename = String.format("%sscreenshots/%s-%d.png", path, java.lang.System.nanoTime(), i);
+
+            try {
+                if (!Files.exists(targetDir)) {
+                    Files.createDirectory(targetDir);
+                }
+                File out = new File(filename);
+                ImageIO.write(buffer, "PNG", out);
+
+                System.out.printf("INFO: Write screenshot to %s\n", filename);
+            } catch (IOException e) {
+                System.out.printf("Unable to write screenshot to %s: %s", filename, e.getMessage());
+            }
+        }
     }
 
+    /**
+     * {@link Utils} is an utilities class to provide some basic Math operation
+     */
     public static class Utils {
 
         /**
@@ -1157,12 +1193,33 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    /**
+     * A brand-new service to manage action on KeyEvent.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.3
+     */
     public static class ActionHandler implements KeyListener {
         private final boolean[] prevKeys = new boolean[65536];
         private final boolean[] keys = new boolean[65536];
+        private final Application app;
         private boolean anyKeyPressed;
 
         public Map<Integer, Function> actionMapping = new HashMap<>();
+
+        /**
+         * Initialize the service with ots parent {@link Application}.
+         *
+         * @param a THe parent application to link the ActionHandler to.
+         */
+        public ActionHandler(Application a) {
+            this.app = a;
+            this.actionMapping.put(KeyEvent.VK_F3, (e) -> {
+                app.render.saveScreenshot();
+                return this;
+            });
+        }
+
 
         @Override
         public void keyTyped(KeyEvent e) {
@@ -1854,7 +1911,7 @@ public class Application extends JFrame implements KeyListener {
         render = new Render(this, config, world);
         physicEngine = new PhysicEngine(this, config, world);
         collisionDetect = new CollisionDetector(this, config, world);
-        actionHandler = new ActionHandler();
+        actionHandler = new ActionHandler(this);
     }
 
     private boolean loadScenes() {
@@ -1868,7 +1925,7 @@ public class Application extends JFrame implements KeyListener {
                 scenes.put(sceneStr[0], s);
                 activateScene(config.defaultScene);
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                     InvocationTargetException e) {
+                    InvocationTargetException e) {
                 System.out.println("ERR: Unable to load scene from configuration file:"
                         + e.getLocalizedMessage()
                         + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
