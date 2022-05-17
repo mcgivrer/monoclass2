@@ -14,10 +14,12 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.CodeSource;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
@@ -896,13 +898,10 @@ public class Application extends JFrame implements KeyListener {
          * Write out to the class root path ./screenshots directory a new screenshot from the current displayed buffer.
          */
         public void saveScreenshot() {
-            String path = this.getClass().getResource("/").getFile();
-            if (System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows")) {
-                path = path.substring(1);
-            }
+            String path = Utils.getJarPath();
             Path targetDir = Paths.get(path + "/screenshots");
             int i = screenShotIndex++;
-            String filename = String.format("%sscreenshots/%s-%d.png", path, java.lang.System.nanoTime(), i);
+            String filename = String.format("%s/screenshots/%s-%d.png", path, java.lang.System.nanoTime(), i);
 
             try {
                 if (!Files.exists(targetDir)) {
@@ -919,7 +918,10 @@ public class Application extends JFrame implements KeyListener {
     }
 
     /**
-     * {@link Utils} is an utilities class to provide some basic Math operation
+     * {@link Utils} is an utilities class to provide some basic operations
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.4
      */
     public static class Utils {
 
@@ -945,20 +947,58 @@ public class Application extends JFrame implements KeyListener {
         public static double ceilMinMaxValue(double x, double min, double max) {
             return ceilValue(Math.copySign((Math.abs(x) > max ? max : x), x), min);
         }
+
+        /**
+         * Retrieve the root path for the current .class or .jar.
+         *
+         * @return a String path for the current .class or JAR file.
+         */
+        public static String getJarPath() {
+            String jarDir = null;
+            CodeSource codeSource = Application.class.getProtectionDomain().getCodeSource();
+            try {
+                File jarFile = new File(codeSource.getLocation().toURI().getPath());
+                jarDir = jarFile.getParentFile().getPath();
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+            }
+            return jarDir;
+        }
     }
 
+    /**
+     * A Physic computation engine to process Object moves according to their resulting process acceleration and speed
+     * from the applied forces to each Entity.
+     *
+     * @Author Frédéric Delorme
+     * @since 1.0.2
+     */
     public static class PhysicEngine {
         private final Application app;
         private final World world;
         private final Configuration config;
         public long updateTime;
 
+        /**
+         * Initialize the Physic Engine for the parent Application a, with the Configuration c
+         * and in a World w.
+         *
+         * @param a the parent Application
+         * @param c the Configuration where to find Physic Engine initialization parameters
+         * @param w the World where the Entities will evolve in.
+         */
         public PhysicEngine(Application a, Configuration c, World w) {
             this.app = a;
             this.config = c;
             this.world = w;
         }
 
+        /**
+         * Update and process physics attributes the Entity (acceleration, speed and position) from the
+         * <code>app.entities map</code>, with  the elapsed time since previous call.
+         *
+         * @param elapsed
+         */
         public synchronized void update(double elapsed) {
             long start = System.nanoTime();
             // update entities
@@ -986,11 +1026,23 @@ public class Application extends JFrame implements KeyListener {
             updateTime = System.nanoTime() - start;
         }
 
+        /**
+         * Update one Entity
+         *
+         * @param e       The Entity to be updated.
+         * @param elapsed the elapsed time since previous call.
+         */
         private void updateEntity(Entity e, double elapsed) {
             applyPhysicRuleToEntity(e, elapsed);
             constrainsEntity(e);
         }
 
+        /**
+         * Apply Physic computation on the Entity e for the elapsed time.
+         *
+         * @param e       the Entity to compute Physic for.
+         * @param elapsed the elapsed tile since previous call.
+         */
         private void applyPhysicRuleToEntity(Entity e, double elapsed) {
             e.oldPos.x = e.pos.x;
             e.oldPos.y = e.pos.y;
@@ -1011,16 +1063,33 @@ public class Application extends JFrame implements KeyListener {
             e.forces.clear();
         }
 
+        /**
+         * Apply a lower threshold on the double value
+         *
+         * @param value          the value to be zero-ified
+         * @param valueThreshold the Threshold value below we consider value as 0.
+         * @return the threshold value.
+         */
         private double threshold(double value, double valueThreshold) {
             return (value < valueThreshold) ? 0.0 : value;
         }
 
+        /**
+         * Apply the constraints to the Entity.
+         *
+         * @param e the Entity to be constrained.
+         */
         private void constrainsEntity(Entity e) {
             if (e.isAlive() || e.isPersistent()) {
                 constrainToWorld(e, world);
             }
         }
 
+        /**
+         * Apply the World limitations to the Entity.
+         *
+         * @param e the Entity to be world constrained.
+         */
         private void constrainToWorld(Entity e, World world) {
             if (e.cbox.getBounds().getX() < 0.0) {
                 e.pos.x = 0.0;
@@ -1049,6 +1118,12 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    /**
+     * Collision Detector Service.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.3
+     */
     public static class CollisionDetector {
         private final Configuration config;
         private final Application app;
@@ -1240,26 +1315,56 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    /**
+     * A Translating service to adapt user graphics text to tits preferred language
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.2
+     */
     public static class I18n {
         private static ResourceBundle messages = ResourceBundle.getBundle("i18n.messages");
 
         private I18n() {
         }
 
+        /**
+         * Set the preferred language to the default one from the configuration object..
+         *
+         * @param config the parent configuration.
+         */
         public static void setLanguage(Configuration config) {
             String[] langCountry = config.defaultLanguage.split("_");
             messages = ResourceBundle.getBundle("i18n.messages", new Locale(langCountry[0], langCountry[1]));
         }
 
+        /**
+         * Return the translated message for key.
+         *
+         * @param key the  key of the message to retrieved
+         * @return the translated value for the key message.
+         */
         public static String get(String key) {
             return messages.getString(key);
         }
 
+        /**
+         * Return the translated parametric message for key.
+         *
+         * @param key  the key of the message to retrieved
+         * @param args the list of parameters to be applied to the translated message.
+         * @return the translated value for the key message.
+         */
         public static String get(String key, Object... args) {
             return String.format(messages.getString(key), args);
         }
     }
 
+    /**
+     * A 2D math Vector model class.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.3
+     */
     public static class Vec2d {
         public double x;
         public double y;
@@ -1328,6 +1433,9 @@ public class Application extends JFrame implements KeyListener {
 
     }
 
+    /**
+     * The World object to define game play area limits and a default gravity and friction. May more to comes in the next release.
+     */
     public static class World {
         public double friction = 1.0;
         public Rectangle2D area;
@@ -1353,6 +1461,17 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    /**
+     * Definition for all {@link Entity} managed by the small game framework.
+     * A lot of attributes and <a href="https://en.wikipedia.org/wiki/Fluent_interface#Java">Fluent API</a> methods
+     * to ease the Entity initialization.
+     * <p>
+     * Support some {@link PhysicEngine}, {@link Render}, {@link Animation}, and {@link CollisionDetector} information,
+     * mandatory attributes for multiple services.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.0
+     */
     public static class Entity {
 
         public boolean collide;
@@ -1597,6 +1716,17 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+
+    /**
+     * {@link AnimationSet} defining a series of Frames and their duration for a specific animation name.
+     * This animationSet object is used in the {@link Animation#animationSet} attributes, to defined all the possible
+     * animation into an Entity (see {@link Entity#animations}.
+     * <p>
+     * Here is a Fluent API to ease the Animation set definition.
+     *
+     * @author Frédéric Delorme
+     * @Since 1.0.3
+     */
     public static class AnimationSet {
         String name;
         BufferedImage[] frames;
@@ -1627,6 +1757,17 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    /**
+     * {@link Animation} is the animations manager for an {@link Entity}.
+     * A simple Fluent APi is provided to declare animationSet and to activate one of those set.
+     * <p>
+     * the {@link Animation#update(long)} process will refresh the and compute the frame according to the elapsed
+     * time since previous call, while the {@link Animation#getFrame()} will return the current active frame
+     * ({@link BufferedImage}) for the current active AnimationSet.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.3
+     */
     public static class Animation {
         Map<String, AnimationSet> animationSet = new HashMap<>();
         public String currentAnimationSet;
