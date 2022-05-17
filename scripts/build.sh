@@ -18,7 +18,7 @@ export JAVA_BUILD=$(java --version | head -1 | cut -f2 -d' ')
 # Paths
 export SRC=src
 export LIBS=lib
-export LIB_TEST="./lib/test/junit-platform-console-standalone-1.8.2.jar"
+export LIB_TEST=lib/test/junit-platform-console-standalone-1.8.2.jar
 export TARGET=./target
 export BUILD=$TARGET/build
 export CLASSES=$TARGET/classes
@@ -74,7 +74,7 @@ echo "generate Javadoc "
   #java -jar ./lib/tools/markdown2html-0.3.1.jar <README.md >$TARGET/javadoc/overview.html
   javadoc $JAR_OPTS -source $SOURCE_VERSION \
   #  -overview $TARGET/javadoc/overview.html \
-    -quiet -author -use -version \
+    -author -use -version \
     -doctitle "<h1>$PROGRAM_TITLE</h1>" \
     -d $TARGET/javadoc \
     -sourcepath $SRC/main/java $JAVADOC_CLASSPATH  >> target/build.log
@@ -94,7 +94,7 @@ function executeTests(){
   #list test sources
   find $SRC/main -name '*.java' >$TARGET/sources.lst
   find $SRC/test -name '*.java' >$TARGET/test-sources.lst
-  javac -source $SOURCE_VERSION -encoding $SOURCE_ENCODING $COMPILATION_OPTS -cp target:$LIB_TEST -d $TESTCLASSES @$TARGET/sources.lst @$TARGET/test-sources.lst
+  javac -source $SOURCE_VERSION -encoding $SOURCE_ENCODING $COMPILATION_OPTS -cp ".;$LIB_TEST" -d $TESTCLASSES @$TARGET/sources.lst @$TARGET/test-sources.lst
   echo "execute tests through JUnit"
   java $JAR_OPTS -jar $LIB_TEST --class-path "$CLASSES;$TESTCLASSES;." --scan-class-path
   echo "done."
