@@ -81,6 +81,7 @@ Here are all the keys and their corresponding action
 | <kbd>Z</kbd>       | reset current scene |
 | <kbd>ESC</kbd>     | Exit the demo       |
 | <kbd>K</kbd>       | Empty energy        |
+| <kbd>D</kbd>       | Switch visual debug level from 0 to 5 |
 
 ### CLI arguments
 
