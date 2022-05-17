@@ -165,7 +165,7 @@ public class DemoScene implements Scene {
                 .setFormat("%06d")
                 .setFigures(figs)
                 .setPosition(20, 20)
-                .setSize(6*8,16)
+                .setSize(6 * 8, 16)
                 .setStickToCamera(true);
         app.addEntity(scoreEntity);
 
@@ -175,7 +175,7 @@ public class DemoScene implements Scene {
                 .setFormat("%3d")
                 .setValue((int) (time / 1000))
                 .setFigures(figs)
-                .setSize(3*8,16)
+                .setSize(3 * 8, 16)
                 .setPosition(app.config.screenWidth / 2, 20)
                 .setStickToCamera(true);
         app.addEntity(timeTxtE);
@@ -183,7 +183,7 @@ public class DemoScene implements Scene {
         ValueEntity lifeTxt = (ValueEntity) new ValueEntity("life")
                 .setValue(5)
                 .setFigures(figs)
-                .setSize(8,16)
+                .setSize(8, 16)
                 .setPosition(app.config.screenWidth - 40, 20)
                 .setPriority(10)
                 .setStickToCamera(true);
@@ -234,7 +234,7 @@ public class DemoScene implements Scene {
 
         // mapping of keys actions:
 
-        app.actionHandler.actionMapping = Map.of(
+        app.actionHandler.actionMapping.putAll(Map.of(
                 // reset the scene
                 KeyEvent.VK_Z, o -> {
                     app.reset();
@@ -255,7 +255,7 @@ public class DemoScene implements Scene {
                     p.setAttribute("energy", 0);
                     return this;
                 }
-        );
+        ));
         return true;
     }
 
@@ -339,7 +339,7 @@ public class DemoScene implements Scene {
 
             // display timer
             ValueEntity timeTxt = (ValueEntity) app.getEntity("time");
-            timeTxt.setValue((int) (time /1000));
+            timeTxt.setValue((int) (time / 1000));
 
             // if time=0 => game over !
             if (time == 0 && !gameOver) {

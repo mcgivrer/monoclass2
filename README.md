@@ -8,6 +8,8 @@ deliver maximum feature in a minimum number lines of code, and WITHOUT dependenc
 A second challenge is in the no use for a build tool (maven or gradle) but nothing else than the JDK compiler tool and
 the magic of a bash script (Back to Roots !).
 
+![2022 Gitkraken Project Timeline](docs/images/project-timeline-2022.png "2022 Gitkraken Project Timeline")
+
 And a last constrain is to reduce as much as possible the number of LoC, using enhancement from latest JDK.
 
 Have fun discover this beast of code, to learn and take benefits of some latest JDK features (like
@@ -64,6 +66,22 @@ _figure 1 - DaGame pre-release preparing the v1.0.3 with Behavior and gameplay_
 
 > :blue_book: _**NOTE**_
 > _You can notice the new Time display, limiting the time play._
+
+### Keyboard
+
+Here are all the keys and their corresponding action 
+
+| Key                | Action              |
+|:-------------------|:--------------------|
+| <kbd>Up</kbd>      | Jump / Move up      |
+| <kbd>Down</kbd>    | Move down           |
+| <kbd>Left</kbd>    | Move left           |
+| <kbd>Right</kbd>   | Move right          |
+| <kbd>F3</kbd>      | take screenshot     |
+| <kbd>Z</kbd>       | reset current scene |
+| <kbd>ESC</kbd>     | Exit the demo       |
+| <kbd>K</kbd>       | Empty energy        |
+| <kbd>D</kbd>       | Switch visual debug level from 0 to 5 |
 
 ### CLI arguments
 
