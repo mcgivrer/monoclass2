@@ -67,6 +67,21 @@ _figure 1 - DaGame pre-release preparing the v1.0.3 with Behavior and gameplay_
 > :blue_book: _**NOTE**_
 > _You can notice the new Time display, limiting the time play._
 
+### Keyboard
+
+Here are all the keys and their corresponding action 
+
+| Key                | Action              |
+|:-------------------|:--------------------|
+| <kbd>Up</kbd>      | Jump / Move up      |
+| <kbd>Down</kbd>    | Move down           |
+| <kbd>Left</kbd>    | Move left           |
+| <kbd>Right</kbd>   | Move right          |
+| <kbd>F3</kbd>      | take screenshot     |
+| <kbd>Z</kbd>       | reset current scene |
+| <kbd>ESC</kbd>     | Exit the demo       |
+| <kbd>K</kbd>       | Empty energy        |
+
 ### CLI arguments
 
 You can configure dynamically some of the internal parameters:
