@@ -24,7 +24,7 @@ page from Oracle, you will discover accross release from 9 to 18, the list of ne
 
 ## More Doc sir ?
 
-See the [/docs](docs/index.md) for details
+See the [/docs](docs/00-index.md) for details
 
 ## Build
 

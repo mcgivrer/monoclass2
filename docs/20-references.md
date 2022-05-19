@@ -1,14 +1,15 @@
-# Project 
+## References
 
-## File structure
+### Project File structure
 
-Here is the file structure of the all project:
+Here is the file structure fot the project, as a reference.
 
 ```text
 .
 ├── Dockerfile
 ├── docs
-│   ├── class-diagram.txt
+│   ├── diagrams
+│   │   └── class-diagram.txt
 │   ├── elk
 │   │   └── Docker-compose.yaml
 │   ├── images
@@ -22,9 +23,23 @@ Here is the file structure of the all project:
 │   │   ├── jconsole-mbean-dyn-value.png
 │   │   ├── jconsole-starting-connection.png
 │   │   └── physic-engine-with-gravity.png
-│   ├── index.md
 │   └── mission-control
 │       └── config.xml
+│   ├── 00-index.md
+│   ├── 01-introduction.md
+│   ├── 02-master_class.md
+│   ├── 03-delegation.md
+│   ├── 04-configuration.md
+│   ├── 05-render.md
+│   ├── 06-physic_engine.md
+│   ├── 07-animations.md
+│   ├── 08-collision_detection.md
+│   ├── 09-behaviors.md
+│   ├── 10-gameplay.md
+│   ├── 11-internationalization.md
+│   ├── 12-jmx_and_metrics.md
+│   ├── 13-monitoring.md
+│   ├── 100-index.md
 ├── lib
 │   ├── options.txt
 │   ├── stub.sh
@@ -68,6 +83,7 @@ Here is the file structure of the all project:
         │       └── demoing
         │           └── app
         │               ├── core
+        │               │   └── ApplicationAnimationTest.java
         │               │   └── ApplicationConfigurationTest.java
         │               └── tests
         │                   └── TestScene.java
@@ -82,3 +98,4 @@ Here is the file structure of the all project:
                 ├── messages_fr_FR.properties
                 └── messages.properties
 ```
+
