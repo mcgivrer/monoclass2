@@ -4,7 +4,7 @@ By Frédéric Delorme (c) 2022
 
 ---
 
-![A gameplay screenshot](images/behaviors-and-gameplay.png "Screenshot of the 1.0.3 release")
+![A gameplay screenshot](images/monoclass2-1.0.4-snapshot-screenshot.png "Screenshot of the 1.0.3 release")
 
 ## Summary
 
