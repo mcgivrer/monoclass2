@@ -4,6 +4,8 @@ By Frédéric Delorme (c) 2022
 
 ---
 
+![A gameplay screenshot](images/behaviors-and-gameplay.png "Screenshot of the 1.0.3 release")
+
 ## Summary
 
 1. [Introduction](01-introduction.md)
@@ -18,6 +20,6 @@ By Frédéric Delorme (c) 2022
 10. [From behavior to Game play](10-gameplay.md)
 11. [Moving international](11-internationalization.md)
 12. [Measure things](12-jmx_and_metrics.md)
-13. [Gather feedback](13-monitoring.md)
+13. [Gathering feedback](13-monitoring.md)
 ---
 14. [The To Dos](100-todo.md)
