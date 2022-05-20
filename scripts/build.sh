@@ -22,7 +22,7 @@ export SOURCE_ENCODING=UTF-8
 # ---- CheckStyle
 # Uncomment the one to be used
 export CHECKRULES=sun
-export CHECKRULES=google
+#export CHECKRULES=google
 
 # ---- JDK and sources versions (mainly for manifest generator)
 export JAVA_BUILD=$(java --version | head -1 | cut -f2 -d' ')
@@ -87,6 +87,7 @@ function checkCodeStyleQA() {
   find $SRC/main -name '*.java' >$TARGET/sources.lst
   java $JAR_OPTS -cp "$LIB_CHECKSTYLES:$CLASSES:." -jar $LIB_CHECKSTYLES -c $CHECK_RULES_FILE -f xml \
   -o $TARGET/checkstyle_errors.xml @$TARGET/sources.lst
+  echo "   done."
 }
 #
 function generatedoc() {
