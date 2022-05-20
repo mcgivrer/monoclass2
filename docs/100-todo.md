@@ -1,4 +1,4 @@
-## Enhancement to come
+# Enhancement to come
 
 1. ~~Add default language configuration,~~
 2. ~~Enhance the Animation to propose more features like loop condition, and a list of frameDuration instead of only one

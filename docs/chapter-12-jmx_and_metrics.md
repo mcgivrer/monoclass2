@@ -1,4 +1,4 @@
-## JMX metrics
+# JMX metrics
 
 It's easy to add remote readable metrics with the builtin Java feature JMX.
 
@@ -33,7 +33,7 @@ In this bean exists 3 types of metrics:
 
 - some metrics than can be interactively changed like `debugLevel` and `pauseStatus`,
 - some that are simple counters like `nbEntities` or `pipelineSize`,
-- and some that are time measures as `timeRendering` or `timeUpdate`  (in nanosecond/ns)
+- and some that are time measures as `timeRendering` or `timeUpdate` (in nanosecond/ns)
 
 In the Application class, we will have to add a new implementation of this MBean, it must have all the internal
 attributes to be exposed:
@@ -152,4 +152,3 @@ And finally the created metrics in the MBean tab:
 And the debug attribute value can be dynamically changed :
 
 ![The Debug Level parameter can be changed during execution](images/jconsole-mbean-dyn-value.png)
-

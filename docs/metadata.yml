@@ -1,5 +1,18 @@
-title: MonoClass2, a JDK fun sample usage
-author: Frédéric Delorme
+---
+title: MonoClass2
+subtitle: a JDK fun sample usage
+creator: Frédéric Delorme
+identifier:
+  - scheme: ISBN
+    text: ISBN:1234567890123
+publisher: SnapGames
+rights: © 2022 Frédéric Delorme, MIT
+version: 1.0.4
 description: A bunch of discovery on the Java JDK latest release into a fun and entertaining sample of code.
 created: 2022-04-29
 tags: java,jdk17,jdk18,sample,game,jep420
+css: styles/epub.css
+cover-image: docs/images/monoclass2-cover-en.png 
+lang: english
+---
+
