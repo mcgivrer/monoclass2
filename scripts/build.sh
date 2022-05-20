@@ -86,7 +86,7 @@ function checkCodeStyleQA() {
   echo "> explore sources at : $SRC"
   find $SRC/main -name '*.java' >$TARGET/sources.lst
   java $JAR_OPTS -cp "$LIB_CHECKSTYLES:$CLASSES:." -jar $LIB_CHECKSTYLES -c $CHECK_RULES_FILE -f xml \
-  -o $TARGET/checkstyle_errors.xml @$TARGET/sources.lst
+    -o $TARGET/checkstyle_errors.xml @$TARGET/sources.lst
   echo "   done."
 }
 #
@@ -101,14 +101,15 @@ function generatedoc() {
   echo "|_ 2-5. generate javadoc from '$JAVADOC_CLASSPATH' ..."
   #java -jar ./lib/tools/markdown2html-0.3.1.jar <README.md >$TARGET/javadoc/overview.html
   javadoc $JAR_OPTS -source $SOURCE_VERSION \
-  #  -overview $TARGET/javadoc/overview.html \
-  -author -use -version \
-  -doctitle "<h1>$PROGRAM_TITLE</h1>" \
-  -d $TARGET/javadoc \
-  -sourcepath $SRC/main/java $JAVADOC_CLASSPATH >>target/build.log
-  echo "   done."
+    \
+    -author -use -version \
+    -doctitle "<h1>$PROGRAM_TITLE</h1>" \
+    -d $TARGET/javadoc \
+    -sourcepath $SRC/main/java $JAVADOC_CLASSPATH \
+    echo "   done." >>target/build.log #  -overview $TARGET/javadoc/overview.html \
 
 }
+
 #
 function executeTests() {
   echo "execute tests"
@@ -163,8 +164,19 @@ function generateEpub() {
   cat docs/*.yml >$TARGET/book/book.mdo
   cat docs/chapter-*.md >>$TARGET/book/book.mdo
   mv $TARGET/book/book.mdo $TARGET/book/book.md
-  pandoc $TARGET/book/book.md --resource-path=./docs -o $TARGET/book/book-$PROGRAM_NAME-$PROGRAM_VERSION.epub
+  pandoc $TARGET/book/book.md --resource-path=./docs -t epub3 -o $TARGET/book/book-$PROGRAM_NAME-$PROGRAM_VERSION.epub
   echo "|_ 6. generate ebook to $TARGET/book/book-$PROGRAM_NAME-$PROGRAM_VERSION.epub"
+}
+# TODO https://www.toptal.com/docker/pandoc-docker-publication-chain
+function generatePDF() {
+  rm -Rf $TARGET/book/
+  mkdir $TARGET/book
+  cat docs/*.yml >$TARGET/book/book.mdo
+  cat docs/chapter-*.md >>$TARGET/book/book.mdo
+  mv $TARGET/book/book.mdo $TARGET/book/book.md
+  # see https://stackoverflow.com/questions/29240290/pandoc-for-windows-pdflatex-not-found
+  pandoc $TARGET/book/book.md --resource-path=./docs --pdf-engine=xelatex -o $TARGET/book/book-$PROGRAM_NAME-$PROGRAM_VERSION.pdf
+  echo "|_ 6. generate pdf book to $TARGET/book/book-$PROGRAM_NAME-$PROGRAM_VERSION.pdf"
 }
 #
 function sign() {
@@ -180,11 +192,12 @@ function help() {
   echo " - a|A|all     : perform all following operations"
   echo " - c|C|compile : compile all sources project"
   echo " - d|D|doc     : generate javadoc for project"
-  echo " - e|E|epub    : generate epub as docs for project"
+  echo " - e|E|epub    : generate *.epub file as docs for project (require pandoc : https://pandoc.org )"
   echo " - k|K|check   : check code source quality againt rules set (sun or google: see in build.sh for details)"
   echo " - t|T|test    : execute JUnit tests"
   echo " - j|J|jar     : build JAR with all resources"
   echo " - w|W|wrap    : Build and wrap jar as a shell script"
+  echo " - p|P|pdf     : generate *.pdf file as docs for project (require pandoc: https://pandoc.org and miktex: https://miktex.org/download)"
   echo " - s|S|sign    : Build and wrap signed jar as a shell script"
   echo " - r|R|run     : execute (and build if needed) the created JAR"
   echo ""
@@ -230,11 +243,14 @@ function run() {
   w | W | wrap)
     wrapJar
     ;;
-  s | S | sign)
-    sign $2
+  p | P | pdf)
+    generatePDF
     ;;
   r | R | run)
     executeJar
+    ;;
+  s | S | sign)
+    sign $2
     ;;
   h | H | ? | *)
     help
