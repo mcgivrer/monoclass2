@@ -1,24 +1,38 @@
 #!/bin/bash
 # more info at https://gist.github.com/mcgivrer/a31510019029eba73edf5721a93c3dec
 # Copyright 2020 Frederic Delorme (McGivrer) fredericDOTdelormeATgmailDOTcom
-# Your program build definition
+
+# ---- Project definition (Manifest entries)
 export PROGRAM_NAME=monoclass2
 export PROGRAM_VERSION=1.0.4
 export PROGRAM_TITLE=MonoClass2
+# Entry point for your program (used to create mainClass manifest entry)
+export MAIN_CLASS=com.demoing.app.core.Application
+# A dirty list of package to be build (TODO add automation on package detection)
+export JAVADOC_CLASSPATH="com.demoing.app.core com.demoing.app.scenes"
+
+# ---- Author
 export AUTHOR_NAME='Frédéric Delorme'
 export VENDOR_NAME=frederic.delorme@gmail.com
-export MAIN_CLASS=com.demoing.app.core.Application
-export JAVADOC_CLASSPATH="com.demoing.app.core com.demoing.app.scenes"
+
+# ---- Java JDK version and file encoding
 export SOURCE_VERSION=17
 export SOURCE_ENCODING=UTF-8
-# the tools and sources versions
-export GIT_COMMIT_ID=$(git rev-parse HEAD)
+
+# ---- CheckStyle
+# Uncomment the one to be used
+export CHECKRULES=sun
+export CHECKRULES=google
+
+# ---- JDK and sources versions (mainly for manifest generator)
 export JAVA_BUILD=$(java --version | head -1 | cut -f2 -d' ')
+export GIT_COMMIT_ID=$(git rev-parse HEAD)
 #
 # Paths
 export SRC=src
 export LIBS=lib
-export LIB_TEST=lib/test/junit-platform-console-standalone-1.8.2.jar
+export LIB_TEST=$LIBS/test/junit-platform-console-standalone-1.8.2.jar
+export LIB_CHECKSTYLES=$LIBS/tools/checkstyle-10.2-all.jar
 export TARGET=./target
 export BUILD=$TARGET/build
 export CLASSES=$TARGET/classes
@@ -26,10 +40,16 @@ export TESTCLASSES=$TARGET/test-classes
 export RESOURCES=$SRC/main/resources
 export TESTRESOURCES=$SRC/test/resources
 export JAR_NAME=$PROGRAM_NAME-$PROGRAM_VERSION.jar
+# ---- to enforce preview compatibility use the --enable-preview mode,
+# ---- for more information, see https://docs.oracle.com/en/java/javase/18/language/preview-language-and-vm-features.html
 export COMPILATION_OPTS="--enable-preview"
-# -Xlint:preview"
-# -Xlint:unchecked -Xlint:preview"
+#export COMPILATION_OPTS="--enable-preview -Xlint:preview"
+#export COMPILATION_OPTS="--enable-preview -Xlint:unchecked -Xlint:preview"
+# ---- to execute JAR one JDK preview, add the same attribute on JAR execution command line
 export JAR_OPTS=--enable-preview
+# ---- define the checkstyle rule set file
+export CHECK_RULES_FILE=$LIBS/tools/rules/${CHECKRULES}_checks.xml
+
 #
 function manifest() {
   mkdir $TARGET
@@ -61,9 +81,16 @@ function compile() {
   javac $COMPILATION_OPTS @$LIBS/options.txt @$TARGET/sources.lst -cp $CLASSES
   echo "   done."
 }
+function checkCodeStyleQA() {
+  echo "check code quality against rules $CHECK_RULES"
+  echo "> explore sources at : $SRC"
+  find $SRC/main -name '*.java' >$TARGET/sources.lst
+  java $JAR_OPTS -cp "$LIB_CHECKSTYLES:$CLASSES:." -jar $LIB_CHECKSTYLES -c $CHECK_RULES_FILE -f xml \
+  -o $TARGET/checkstyle_errors.xml @$TARGET/sources.lst
+}
 #
-function generatedoc(){
-echo "generate Javadoc "
+function generatedoc() {
+  echo "generate Javadoc "
   echo "> from : $SRC"
   echo "> to   : $TARGET/javadoc"
   # prepare target
@@ -74,15 +101,15 @@ echo "generate Javadoc "
   #java -jar ./lib/tools/markdown2html-0.3.1.jar <README.md >$TARGET/javadoc/overview.html
   javadoc $JAR_OPTS -source $SOURCE_VERSION \
   #  -overview $TARGET/javadoc/overview.html \
-    -author -use -version \
-    -doctitle "<h1>$PROGRAM_TITLE</h1>" \
-    -d $TARGET/javadoc \
-    -sourcepath $SRC/main/java $JAVADOC_CLASSPATH  >> target/build.log
+  -author -use -version \
+  -doctitle "<h1>$PROGRAM_TITLE</h1>" \
+  -d $TARGET/javadoc \
+  -sourcepath $SRC/main/java $JAVADOC_CLASSPATH >>target/build.log
   echo "   done."
 
 }
 #
-function executeTests(){
+function executeTests() {
   echo "execute tests"
   echo "> from : $SRC/test"
   echo "> to   : $TARGET/test-classes"
@@ -128,11 +155,12 @@ function executeJar() {
   echo "|_ 5.Execute just created JAR $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar"
   java $JAR_OPTS -jar $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar "$@"
 }
-function generateEpub(){
+#
+function generateEpub() {
   rm -Rf $TARGET/book/
   mkdir $TARGET/book
-  cat docs/*.yml > $TARGET/book/book.mdo
-  cat docs/chapter-*.md >> $TARGET/book/book.mdo
+  cat docs/*.yml >$TARGET/book/book.mdo
+  cat docs/chapter-*.md >>$TARGET/book/book.mdo
   mv $TARGET/book/book.mdo $TARGET/book/book.md
   pandoc $TARGET/book/book.md --resource-path=./docs -o $TARGET/book/book-$PROGRAM_NAME-$PROGRAM_VERSION.epub
   echo "|_ 6. generate ebook to $TARGET/book/book-$PROGRAM_NAME-$PROGRAM_VERSION.epub"
@@ -144,14 +172,15 @@ function sign() {
 }
 #
 function help() {
-  echo "build2 command line usage :"
+  echo "$0 command line usage :"
   echo "---------------------------"
-  echo "$> build2 [options]"
+  echo "> $0 [options]"
   echo "where:"
   echo " - a|A|all     : perform all following operations"
   echo " - c|C|compile : compile all sources project"
   echo " - d|D|doc     : generate javadoc for project"
   echo " - e|E|epub    : generate epub as docs for project"
+  echo " - k|K|check   : check code source quality againt rules set (sun or google: see in build.sh for details)"
   echo " - t|T|test    : execute JUnit tests"
   echo " - j|J|jar     : build JAR with all resources"
   echo " - w|W|wrap    : Build and wrap jar as a shell script"
@@ -186,13 +215,16 @@ function run() {
   e | E | epub)
     generateEpub
     ;;
+  k | K | check)
+    checkCodeStyleQA
+    ;;
+  j | J | jar)
+    createJar
+    ;;
   t | T | test)
     manifest
     compile
     executeTests
-    ;;
-  j | J | jar)
-    createJar
     ;;
   w | W | wrap)
     wrapJar
