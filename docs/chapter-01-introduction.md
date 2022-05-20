@@ -1,10 +1,10 @@
-## Introduction
+# Introduction
 
 A bunch of discovery on the Java JDK latest release into a fun and entertaining sample of code. Let's discover the
 JEP420 Pattern Matching `switch`, `@FunctionalInterface` and some enhancement on the
 `[List/Map].of()` constructors.
 
-## The project
+# The project
 
 The [`Application`](https://github.com/mcgivrer/monoclass2/blob/feature/add-camera-entity/src/main/java/com/demoing/app/Application.java#L17)
 class (we can not talk about a project for a 1500 LoCs class) is composed of some attribtues and methods (sic) and a
@@ -33,7 +33,7 @@ subclasses_ _[edit](https://github.com/mcgivrer/monoclass2/blob/feature/add-came
 So, [`I18n`](https://github.com/mcgivrer/monoclass2/blob/feature/add-camera-entity/src/main/java/com/demoing/app/Application.java#L69)
 , `Entity`, `TextEntity` and `Camera` are subclasses of `Application` master class, if you does not understand :P.
 
-### Project organization & structure
+## Project organization & structure
 
 We are going to organize our project like the standard maven one, but without the `pom.xml`.
 
@@ -50,7 +50,7 @@ Project
 |  |_ test            # test source code
 |    |_ java             # java test implementation
 |    |_ resources        # Mandatory resources for test execution
-|_ target             # where all the compilation phases will output things   
+|_ target             # where all the compilation phases will output things
 |_ .gitignore         # the mandatory git ignore file to not track unnecessary ones
 |_ CODE_OF_CONDUCT.md # the way we work on  this project
 |_ CONTRIBUTING.md    # some rules to follow to contribute to the effort
@@ -58,14 +58,15 @@ Project
 |_ LICENSE            # my MIT license letting you using this piece of software
 ```
 
-### Some mandatory requirements
+## Some mandatory requirements
 
 1. Only one player can interact with the application at the same time,
 2. The application will manage some entities which are internal objects and graphical elements,
 3. Each of these entities can be the player, or any other part/element interacting in the game play,
-4. The input interface is the keyboard: 
-   1. the player will moves according to directional keys strokes, 
-   (<kbd>UP</kbd>,<kbd>DOWN</kbd>,<kbd>LEFT</kbd>,<kbd>RIGHT</kbd>)
+4. The input interface is the keyboard:
+
+   1. the player will moves according to directional keys strokes,
+      (<kbd>UP</kbd>,<kbd>DOWN</kbd>,<kbd>LEFT</kbd>,<kbd>RIGHT</kbd>)
 
    2. some other keys (<kbd>P</kbd>,<kbd>PAUSE</kbd>) to switch game to pause mode,
 
@@ -87,7 +88,7 @@ Project
 
 9. Rendering some text to screen will be achieved by using standard TTF fonts.
 
-10. Some graphical entities must stick to the view to show score, energy, mana, life, gameplay messages, etc... This is commonly named the [Head-Up-Display](https://en.wikipedia.org/wiki/HUD_(video_gaming) "let's see what Wikipedia knows about HUD") (HUD).
+10. Some graphical entities must stick to the view to show score, energy, mana, life, gameplay messages, etc... This is commonly named the [Head-Up-Display](<https://en.wikipedia.org/wiki/HUD_(video_gaming)> "let's see what Wikipedia knows about HUD") (HUD).
 
 11. The rendering process must support a 60 FPS[^1] rate without diminishing performance in a normal mode (not while debug display mode is activated),
 

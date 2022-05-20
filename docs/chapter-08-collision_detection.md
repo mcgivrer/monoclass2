@@ -1,4 +1,4 @@
-## Collision Detection
+# Collision Detection
 
 Collision Detection has 2 possibilities : 2 dynamic object are colliding, or a dynamic and sa static object are
 colliding. These are the 2 cases we will process in our `CollisionDetector` service.
@@ -20,7 +20,7 @@ public enum PhysicType {
 }
 ```
 
-### Updating Entity
+## Updating Entity
 
 The Entity already take benefits of this type for the physicEngine computation. Now we will reuse it into the collision
 detection and resolution.
@@ -71,7 +71,7 @@ public static class Entity {
 }
 ```
 
-### Collision Detector
+## Collision Detector
 
 Ok, now the fun part with the collision detection :
 
@@ -155,8 +155,7 @@ then, we detect is we are in front of (1) DYNAMIC vs. DYNAMIC collision or a (2)
 
 1. The first case is the more tricky and require more mathematics. I won't go in details, because this not my special
    skills. please, go and visit the very good post on [the Spicy Yoghurt](https://spicyyoghurt.com/) :
-   ['Collision Detection Physic'](https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
-   "Go and visit the really good article about javascript game development"), all is really crystal clear.
+   ['Collision Detection Physic'](https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics "Go and visit the really good article about javascript game development"), all is really crystal clear.
 
 ```java
 public static class CollisionDetector {
@@ -192,7 +191,7 @@ public static class CollisionDetector {
 public static class CollisionDetector {
     //...
     public void resolve(Entity e1, Entity e2) {
-        //...    
+        //...
         // Static case
         if (e1.y + e1.height > e2.y && vp.y > 0) {
             e1.y = e2.y - e1.height;
@@ -206,7 +205,7 @@ public static class CollisionDetector {
 }
 ```
 
-### Configuration
+## Configuration
 
 You may have noticed the new configuration attributes:
 
@@ -243,4 +242,3 @@ Here is a screen capture from the new CollisionDetector with platforms implement
 ![Collision Detecion and platforms](images/collision-detection-and-platform.png "Collision detection and platforms")
 
 _figure $fig+ - Collision detection and platforms_
-

@@ -1,4 +1,4 @@
-## I18n and default Language
+# I18n and default Language
 
 If no configuration is set, the System language will be set. But if the configuration key `app.language.default` is
 provided, the value will be applied to the I18n service:
@@ -10,11 +10,11 @@ public static class I18n {
         String[] langCountry = config.defaultLanguage.split("_");
         messages = ResourceBundle
                 .getBundle(
-                        "i18n.messages", 
+                        "i18n.messages",
                         new Locale(langCountry[0], langCountry[1]));
     }
     //...
-} 
+}
 ```
 
 And, necessary need the new defaultLanguage attribute in the Configuration:
@@ -58,4 +58,3 @@ The current supported values in this demo are:
 - `en_EN` for English language,
 - `es_ES` for Spanish language,
 - `de_DE` for gGerman language.
-

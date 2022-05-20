@@ -1,4 +1,4 @@
-## Behavior's
+# Behavior's
 
 One way to implement quickly some enhancement in a game is to provide the opportunity to add dynamically some new
 behaviors to some game component. The solution is `Behavior`.
@@ -69,7 +69,7 @@ public static class CollisionDetector {
 }
 ```
 
-THe at entity creation, you can add dynamically a new behavior:
+The at entity creation, you can add dynamically a new behavior:
 
 ```java
 public static class DemoScene {
@@ -142,6 +142,4 @@ public static class DemoScene {
 Some internal mechanism for score, life and energy won't be detailed here, but just parsing the code will let you
 discover it.
 
-> _**NOTE**_
-> _You must notice that score an,d life are Application attributes, and energy is player's Entity attribute._
-
+> _**NOTE**_ > _You must notice that score an,d life are Application attributes, and energy is player's Entity attribute._

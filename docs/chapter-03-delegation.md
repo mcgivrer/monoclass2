@@ -1,4 +1,4 @@
-## Delegation pattern
+# Delegation pattern
 
 The application based on the one master class, have some sub objects as models, and some as services. To keep it simple
 and light, the `Application` class contains the main mechanic. `I18n` provide helpers for translation, while `Entity`,

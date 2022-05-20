@@ -1,4 +1,4 @@
-## A master Application
+# A master Application
 
 The main class (and the jar entrypoint) is composed of some feature centric attributes like:
 
@@ -34,4 +34,3 @@ TODO
 ### Camera
 
 TODO
-
