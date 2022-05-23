@@ -247,29 +247,6 @@ public class DemoScene implements Scene {
                 .setStickToCamera(true));
 
         // mapping of keys actions:
-
-        app.actionHandler.actionMapping.putAll(Map.of(
-                // reset the scene
-                KeyEvent.VK_Z, o -> {
-                    app.reset();
-                    return this;
-                },
-                // manage debug level
-                KeyEvent.VK_D, o -> {
-                    app.config.debug = app.config.debug + 1 < 5 ? app.config.debug + 1 : 0;
-                    return this;
-                },
-                // I quit !
-                KeyEvent.VK_ESCAPE, o -> {
-                    app.requestExit();
-                    return this;
-                },
-                KeyEvent.VK_K, o -> {
-                    Entity p = app.entities.get("player");
-                    p.setAttribute("energy", 0);
-                    return this;
-                }
-        ));
         return true;
     }
 
