@@ -128,6 +128,15 @@ function executeJar() {
   echo "|_ 5.Execute just created JAR $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar"
   java $JAR_OPTS -jar $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar "$@"
 }
+function generateEpub(){
+  rm -Rf $TARGET/book/
+  mkdir $TARGET/book
+  cat docs/*.yml > $TARGET/book/book.mdo
+  cat docs/chapter-*.md >> $TARGET/book/book.mdo
+  mv $TARGET/book/book.mdo $TARGET/book/book.md
+  pandoc $TARGET/book/book.md --resource-path=./docs -o $TARGET/book/book-$PROGRAM_NAME-$PROGRAM_VERSION.epub
+  echo "|_ 6. generate ebook to $TARGET/book/book-$PROGRAM_NAME-$PROGRAM_VERSION.epub"
+}
 #
 function sign() {
   # must see here: https://docs.oracle.com/javase/tutorial/security/toolsign/signer.html
@@ -142,6 +151,7 @@ function help() {
   echo " - a|A|all     : perform all following operations"
   echo " - c|C|compile : compile all sources project"
   echo " - d|D|doc     : generate javadoc for project"
+  echo " - e|E|epub    : generate epub as docs for project"
   echo " - t|T|test    : execute JUnit tests"
   echo " - j|J|jar     : build JAR with all resources"
   echo " - w|W|wrap    : Build and wrap jar as a shell script"
@@ -172,6 +182,9 @@ function run() {
     manifest
     compile
     generatedoc
+    ;;
+  e | E | epub)
+    generateEpub
     ;;
   t | T | test)
     manifest

@@ -1,4 +1,4 @@
-## Move to GamePLay
+# Move to GamePLay
 
 To go further in the demonstration, we need to offer the possibility to dynamically load scene to the core application.
 To let instantiate Scene dynamically we need to extract the DemoScene from Application to a outer class.
@@ -9,11 +9,11 @@ And the most important of this change is the way we are going to configure the s
 
 The new method loadScene() and a full reorganisation of the Application start will bring new flexibility:
 
-### Configuration
+## Configuration
 
 All start by some new configuration attributes:
 
-- `app.scenes` the list of scene with a  `[code]:[class],` list format,
+- `app.scenes` the list of scene with a `[code]:[class],` list format,
 - `app.scene.default` the default scene to be activated at game start.
 
 ```properties
@@ -22,7 +22,7 @@ app.scenes=demo:com.demoing.app.scenes.DemoScene
 app.scene.default=demo
 ```
 
-### Loading Scenes
+## Loading Scenes
 
 Loading the coma separated list of scene classes from `app.scenes` with their own activation key code, we provision the
 list of Scene ready to be used, and use the `app.scene.default` scene at start.
@@ -54,7 +54,7 @@ public class Application {
 }
 ```
 
-### Activating a scene
+## Activating a scene
 
 The scene activation will do 3 things:
 
@@ -88,7 +88,7 @@ public class Application {
 }
 ```
 
-### Application start modification
+## Application start modification
 
 The initialization is now really simplified and only read some configuration.
 
@@ -152,4 +152,3 @@ public class Application {
     //...
 }
 ```
-

@@ -1,4 +1,4 @@
-## PhysicEngine
+# PhysicEngine
 
 The `Application` entities must be updated according to some physic computation formula. This is a job for
 the `PhysicEngine`. Some basic physic attributes like elasticity, friction factor are used to compute acceleration,
@@ -11,7 +11,7 @@ computation.
 
 _figure $fig+ - a Gravity effect !_
 
-### A Vec2d object for 2D Vector
+## A Vec2d object for 2D Vector
 
 To gain ease of computation on forces, acceleration and speed, we will use a Vector on 2 dimension object to process
 physical move math. see the `Animation.Vec2d` class for implementation details and its API.
@@ -33,7 +33,7 @@ class Vec2d{
 }
 ```
 
-### The Physic Entity
+## The Physic Entity
 
 The `Entity` will have 3 attributes for Newtons physics:
 
@@ -61,7 +61,6 @@ And as we were talking about the Newton physic computation, we need the mass of 
 
 - `mass` the mandatory mass to compute weight with gravity.
 
-
 ```plantuml
 class Entity{
  - pos:Vec2d
@@ -79,10 +78,9 @@ class Entity{
 }
 ```
 
-> _**NOTE**_<br/>
-> _a fluent API is provided to set all the attribute's values._
+> _**NOTE**_<br/> > _a fluent API is provided to set all the attribute's values._
 
-### The World object
+## The World object
 
 We've just introduced the gravity parameter in our physic equation. So a new object, directly linked to the world here
 our entities will move in must provide some context parameters; the `World` object.

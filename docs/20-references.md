@@ -1,6 +1,6 @@
-## References
+# References
 
-### Project File structure
+## Project File structure
 
 Here is the file structure fot the project, as a reference.
 
@@ -98,4 +98,3 @@ Here is the file structure fot the project, as a reference.
                 ├── messages_fr_FR.properties
                 └── messages.properties
 ```
-

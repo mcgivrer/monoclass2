@@ -1,4 +1,4 @@
-## Using ELK to monitor throughJMX
+# Using ELK to monitor throughJMX
 
 _TODO_
 
@@ -28,4 +28,3 @@ As soon as the docker image is built, you can execute it :
 ```shell
 docker run --rm -it monoclass2:latest
 ```
-

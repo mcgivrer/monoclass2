@@ -1,4 +1,4 @@
-## Bring Animation
+# Bring Animation
 
 To product beautiful sprite, we need a Animation engine, let's have an Animation class, attribute for Entity, and adapt
 the Render and entity update to process animations set and display a moving Sprite !
@@ -6,8 +6,7 @@ the Render and entity update to process animations set and display a moving Spri
 Animation is map of set of frames, each set of frame must ave a an easy way to define/identify it, a simple String key
 will do the job.
 
-> **NOTE**
-> _As a sample graphics, we will use a sprites image board from [Elthen adventurer sprites](https://elthen.itch.io/pixel-art-adventurer-sprites) thanks to his [fair licensing](https://www.patreon.com/posts/27430241)._
+> **NOTE** > _As a sample graphics, we will use a sprites image board from [Elthen adventurer sprites](https://elthen.itch.io/pixel-art-adventurer-sprites) thanks to his [fair licensing](https://www.patreon.com/posts/27430241)._
 
 ![Sprites sheet from Elthen](./images/illustration-sprites.png)
 
@@ -34,7 +33,7 @@ Entity --> Animation:animations
 
 _figure $fig+ - Class diagram for Animation as animations Entity attribute_
 
-### Animation class
+## Animation class
 
 The sub-class Animation will support all animation definition and operations:
 
@@ -119,7 +118,7 @@ public static class Entity {
         }
     }
     //...
-} 
+}
 ```
 
 And a set of helpers are added to directly manage animation from Entity fluent API :
@@ -184,14 +183,13 @@ size of `(32x32)` and having `13` frames in the set.
 
 You can add any number of frames set with differente name to the Entity.
 
-> **IMPORTANT**
-> _Don't forget to set the Entity Size corresponding to the size of your animation set frame size._
+> **IMPORTANT** > _Don't forget to set the Entity Size corresponding to the size of your animation set frame size._
 
 ![Animation of sprites and red life bar are some of useful things](images/animation-lifebar.png "Animation of sprites and red life bar are some of useful things")
 
 _figure $fig+ - Animation of sprites and red life bar are some of useful things_
 
-### Animation Refactoring to add new attributes
+## Animation Refactoring to add new attributes
 
 NOW we have a smooth animation mechanism, we can enhance it by adding new feature, bringing more thin control over
 animations frames and a loop capability with a max number of repetition (or infinite one).
@@ -279,8 +277,8 @@ public static class Animation {
         AnimationSet aSet = animationSet.get(currentAnimationSet);
         if (internalAnimationTime > aSet.durations[currentFrame]) {
             internalAnimationTime = 0;
-            currentFrame = currentFrame + 1 < aSet.frames.length 
-                    ? currentFrame + 1 
+            currentFrame = currentFrame + 1 < aSet.frames.length
+                    ? currentFrame + 1
                     : (aSet.loop == -1 || currentFrame < aSet.loop ? 0 : currentFrame);
         }
     }
