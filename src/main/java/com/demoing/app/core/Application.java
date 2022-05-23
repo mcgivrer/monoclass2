@@ -754,7 +754,7 @@ public class Application extends JPanel implements KeyListener {
                 }
                 if (config.debug > 1) {
                     // display colliding box
-                    g.setColor(e.collide ? new Color(1.0f, 0.0f, 0.0f, 0.3f) : new Color(0.0f, 0.0f, 1.0f, 0.3f));
+                    g.setColor(e.collide ? new Color(1.0f, 0.0f, 0.0f, 0.7f) : new Color(0.0f, 0.0f, 1.0f, 0.3f));
                     g.fill(e.cbox);
                     if (config.debug > 2) {
                         // display 2D parameters
@@ -853,24 +853,34 @@ public class Application extends JPanel implements KeyListener {
          * @param realFps the measured frame rate per seconds
          */
         public void renderToScreen(long realFps) {
-            Graphics2D g2 = (Graphics2D) app.getGraphics();
+            if (app.frame.getBufferStrategy() == null) {
+                app.frame.createBufferStrategy(2);
+            }
+            Graphics2D g2 = (Graphics2D) app.frame.getBufferStrategy().getDrawGraphics();
             g2.drawImage(
                     buffer,
                     0, 0, (int) app.getBounds().getWidth(), (int) app.getBounds().getHeight(),
                     0, 0, (int) config.screenWidth, (int) config.screenHeight,
                     null);
+            drawDebugString(g2, realFps);
+            g2.dispose();
+            app.frame.getBufferStrategy().show();
+        }
+
+        public void drawDebugString(Graphics2D g, double realFps) {
             if (config.debug > 0) {
-                g2.setFont(debugFont.deriveFont(16.0f));
-                g2.setColor(Color.WHITE);
-                g2.drawString(String.format("[ dbg: %d| fps:%d | obj:%d | g:%f ]",
+                g.setFont(debugFont.deriveFont(16.0f));
+                g.setColor(Color.WHITE);
+                g.drawString(String.format("[ dbg: %d | fps:%3.0f | obj:%d | {g:%1.03f, a(%3.0fx%3.0f) }]",
                                 config.debug,
                                 realFps,
                                 gPipeline.size(),
-                                world.gravity),
+                                world.gravity * 1000.0,
+                                world.area.getWidth(), world.area.getHeight()),
 
-                        20, app.getHeight() - 30);
+                        20, (int) app.getHeight() - 20);
             }
-            g2.dispose();
+
         }
 
         /**
@@ -2248,7 +2258,7 @@ public class Application extends JPanel implements KeyListener {
         frame.setContentPane(this);
 
         displayMode = fullScreenMode ? DisplayModeEnum.DISPLAY_MODE_FULLSCREEN : DisplayModeEnum.DISPLAY_MODE_WINDOWED;
-        
+
         if (displayMode.equals(DisplayModeEnum.DISPLAY_MODE_FULLSCREEN)) {
             device.setFullScreenWindow(frame);
         } else {

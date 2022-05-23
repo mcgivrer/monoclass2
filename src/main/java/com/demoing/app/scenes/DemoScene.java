@@ -217,6 +217,7 @@ public class DemoScene implements Scene {
                                 "ball_", Color.RED,
                                 "player", Color.BLUE,
                                 "pf_", Color.LIGHT_GRAY,
+                                "floor", Color.GRAY,
                                 "outPlatform", Color.YELLOW))
                 .setRefEntities(app.entities.values().stream().toList())
                 .setWorld(app.world)
