@@ -46,7 +46,7 @@ import static com.demoing.app.core.Application.EntityType.*;
  * @author Frédéric Delorme
  * @since 1.0.0
  */
-public class Application extends JFrame implements KeyListener {
+public class Application extends JPanel implements KeyListener {
 
     /**
      * The Frame per Second rendering rate default value
@@ -66,6 +66,19 @@ public class Application extends JFrame implements KeyListener {
      */
     private boolean sceneReady;
 
+    /**
+     * Display MOde for the application window.
+     */
+    private DisplayModeEnum displayMode;
+
+    /**
+     * The possible display mode for the {@link Application} window.
+     */
+    public enum DisplayModeEnum {
+        DISPLAY_MODE_FULLSCREEN,
+        DISPLAY_MODE_WINDOWED,
+
+    }
 
     /**
      * The {@link EntityType} define the type of rendered entity, a RECTANGLE, an ELLIPSE or an IMAGE (see {@link BufferedImage}.
@@ -843,7 +856,7 @@ public class Application extends JFrame implements KeyListener {
             Graphics2D g2 = (Graphics2D) app.getGraphics();
             g2.drawImage(
                     buffer,
-                    0, 0, app.getWidth(), app.getHeight(),
+                    0, 0, (int) app.getBounds().getWidth(), (int) app.getBounds().getHeight(),
                     0, 0, (int) config.screenWidth, (int) config.screenHeight,
                     null);
             if (config.debug > 0) {
@@ -2070,6 +2083,7 @@ public class Application extends JFrame implements KeyListener {
     public Map<String, Object> attributes = new HashMap<>();
 
     public World world;
+    private JFrame frame;
 
     public Application(String[] args) {
         NumberFormat.getInstance(Locale.ROOT);
@@ -2096,7 +2110,8 @@ public class Application extends JFrame implements KeyListener {
             initializeServices();
             createWindow();
             if (loadScenes()) {
-                // prepapre services
+                initDefaultActions();
+                // prepare services
                 createJMXStatus(this);
                 System.out.printf("INFO: scene %s activated and created.\n", activeScene.getName());
             }
@@ -2105,6 +2120,36 @@ public class Application extends JFrame implements KeyListener {
             return false;
         }
         return true;
+    }
+
+    private void initDefaultActions() {
+        actionHandler.actionMapping.putAll(Map.of(
+                // reset the scene
+                KeyEvent.VK_Z, o -> {
+                    reset();
+                    return this;
+                },
+                // manage debug level
+                KeyEvent.VK_D, o -> {
+                    config.debug = config.debug + 1 < 5 ? config.debug + 1 : 0;
+                    return this;
+                },
+                // I quit !
+                KeyEvent.VK_ESCAPE, o -> {
+                    requestExit();
+                    return this;
+                },
+                KeyEvent.VK_K, o -> {
+                    Entity p = entities.get("player");
+                    p.setAttribute("energy", 0);
+                    return this;
+                },
+                KeyEvent.VK_F11, o -> {
+                    setWindowMode(!config.fullScreen);
+
+                    return this;
+                }
+        ));
     }
 
     private void initializeServices() {
@@ -2174,30 +2219,56 @@ public class Application extends JFrame implements KeyListener {
     }
 
     private void createWindow() {
-        setTitle(I18n.get("app.title"));
+        setWindowMode(config.fullScreen);
+    }
 
-        setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/sg-logo-image.png")));
+    /**
+     * Create the JFrame window in fullscreen or windowed mode (according to fullScreenMode boolean value).
+     *
+     * @param fullScreenMode the display mode to be set:
+     *                       <ul>
+     *                       <li>true = DISPLAY_MODE_FULLSCREEN,</li>
+     *                       <li>false = DISPLAY_MODE_WINDOWED</li>
+     *                       </ul>
+     */
+    private void setWindowMode(boolean fullScreenMode) {
+        GraphicsEnvironment graphics =
+                GraphicsEnvironment.getLocalGraphicsEnvironment();
 
-        Dimension dim = new Dimension((int) (config.screenWidth * config.displayScale),
-                (int) (config.screenHeight * config.displayScale));
+        GraphicsDevice device = graphics.getDefaultScreenDevice();
 
-        setSize(dim);
-        setPreferredSize(dim);
-        setMaximumSize(dim);
-        if (config.fullScreen) {
-            setExtendedState(JFrame.MAXIMIZED_BOTH);
-            setUndecorated(true);
+
+        if (Optional.ofNullable(frame).isPresent() && frame.isVisible()) {
+            frame.setVisible(false);
+            frame.dispose();
         }
 
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame = new JFrame(I18n.get("app.title"));
+        frame.setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/sg-logo-image.png")));
+        frame.setContentPane(this);
 
-        setFocusTraversalKeysEnabled(true);
+        displayMode = fullScreenMode ? DisplayModeEnum.DISPLAY_MODE_FULLSCREEN : DisplayModeEnum.DISPLAY_MODE_WINDOWED;
+        
+        if (displayMode.equals(DisplayModeEnum.DISPLAY_MODE_FULLSCREEN)) {
+            device.setFullScreenWindow(frame);
+        } else {
 
-        setLocationRelativeTo(null);
-        addKeyListener(this);
-        addKeyListener(actionHandler);
-        pack();
-        setVisible(true);
+            Dimension dim = new Dimension((int) (config.screenWidth * config.displayScale),
+                    (int) (config.screenHeight * config.displayScale));
+            frame.setSize(dim);
+            frame.setPreferredSize(dim);
+            frame.setMaximumSize(dim);
+            device.setFullScreenWindow(null);
+            frame.setLocationRelativeTo(null);
+        }
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setFocusTraversalKeysEnabled(true);
+
+        frame.addKeyListener(this);
+        frame.addKeyListener(actionHandler);
+
+        frame.pack();
+        frame.setVisible(true);
     }
 
     public void requestExit() {
@@ -2315,9 +2386,11 @@ public class Application extends JFrame implements KeyListener {
         render.draw(realFps);
     }
 
-    @Override
     public void dispose() {
-        super.dispose();
+        frame.dispose();
+    }
+
+    public void quit() {
         render.dispose();
         physicEngine.dispose();
     }
