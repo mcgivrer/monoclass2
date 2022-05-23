@@ -628,6 +628,9 @@ public class Application extends JFrame implements KeyListener {
                             case ValueEntity se -> {
                                 drawValue(g, se);
                             }
+                            case MapEntity me -> {
+                                drawMapEntity(g, me);
+                            }
                             // This is a basic entity
                             case Entity ee -> {
                                 drawEntity(g, ee);
@@ -641,6 +644,27 @@ public class Application extends JFrame implements KeyListener {
             g.dispose();
             renderToScreen(realFps);
             renderingTime = System.nanoTime() - startTime;
+        }
+
+        private void drawMapEntity(Graphics2D g, MapEntity me) {
+            g.setColor(me.color);
+            g.drawRect((int) me.pos.x, (int) me.pos.y, (int) me.width, (int) me.height);
+            g.setColor(me.backgroundColor);
+            g.fillRect((int) me.pos.x, (int) me.pos.y, (int) me.width, (int) me.height);
+            me.entitiesRef.stream()
+                    .filter(e -> (e.isAlive() || e.isPersistent()))
+                    .forEach(e -> {
+                        me.colorEntityMapping.entrySet().forEach(cm -> {
+                            if (e.name.contains(cm.getKey())) {
+                                g.setColor(cm.getValue());
+                                int px = (int) (me.pos.x + (me.width * (e.pos.x / me.world.area.getWidth())));
+                                int py = (int) (me.pos.y + me.height * (e.pos.y / me.world.area.getHeight()));
+                                int pw = (int) (me.width * (e.width / me.world.area.getWidth()));
+                                int ph = (int) (me.height * (e.height / me.world.area.getHeight()));
+                                g.drawRect(px, py, pw, ph);
+                            }
+                        });
+                    });
         }
 
         private void drawEntity(Graphics2D g, Entity ee) {
@@ -1918,6 +1942,41 @@ public class Application extends JFrame implements KeyListener {
 
         public ValueEntity setFormat(String f) {
             this.format = f;
+            return this;
+        }
+    }
+
+    /**
+     * MapEntity is a displayed map of the all Scene existing active objects.
+     * The Render will display all object according to a defined color code.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.4
+     */
+    public static class MapEntity extends Entity {
+        List<Entity> entitiesRef = new ArrayList<>();
+        Map<String, Color> colorEntityMapping = new HashMap<>();
+        Color backgroundColor = new Color(0.1f, 0.1f, 0.1f, 0.4f);
+        private World world;
+
+        public MapEntity(String name) {
+            super(name);
+            setPhysicType(PhysicType.STATIC);
+            setStickToCamera(true);
+        }
+
+        public MapEntity setWorld(World w) {
+            this.world = w;
+            return this;
+        }
+
+        public MapEntity setColorMapping(Map<String, Color> mp) {
+            this.colorEntityMapping = mp;
+            return this;
+        }
+
+        public MapEntity setRefEntities(List<Entity> le) {
+            this.entitiesRef = le;
             return this;
         }
     }

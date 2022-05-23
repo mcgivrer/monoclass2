@@ -61,7 +61,7 @@ public class DemoScene implements Scene {
         Entity opf1 = new Entity("outPlatform_1")
                 .setType(RECTANGLE)
                 .setPhysicType(STATIC)
-                .setColor(Color.RED)
+                .setColor(Color.YELLOW)
                 .setPosition(app.world.area.getWidth() - 48, app.world.area.getHeight() - 8)
                 .setSize(48, 8)
                 .setCollisionBox(0, 0, 0, 0)
@@ -74,7 +74,7 @@ public class DemoScene implements Scene {
         Entity opf2 = new Entity("outPlatform_2")
                 .setType(RECTANGLE)
                 .setPhysicType(STATIC)
-                .setColor(Color.RED)
+                .setColor(Color.YELLOW)
                 .setPosition(0, app.world.area.getHeight() - 8)
                 .setSize(48, 8)
                 .setCollisionBox(0, 0, 0, 0)
@@ -209,6 +209,20 @@ public class DemoScene implements Scene {
                 .setPriority(10)
                 .setPosition(app.config.screenWidth - 40 - 4 - 32, 20);
         app.addEntity(manaGauge);
+
+        // Add a Map display
+        MapEntity mapEntity = (MapEntity) new MapEntity("map")
+                .setColorMapping(
+                        Map.of(
+                                "ball_", Color.RED,
+                                "player", Color.BLUE,
+                                "pf_", Color.LIGHT_GRAY,
+                                "outPlatform", Color.YELLOW))
+                .setRefEntities(app.entities.values().stream().toList())
+                .setWorld(app.world)
+                .setSize(48, 32)
+                .setPosition(10, app.config.screenHeight - 48);
+        app.addEntity(mapEntity);
 
         // A welcome Text
         TextEntity welcomeMsg = (TextEntity) new TextEntity("welcome")
