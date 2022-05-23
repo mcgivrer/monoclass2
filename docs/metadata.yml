@@ -11,7 +11,7 @@ version: 1.0.4
 description: A bunch of discovery on the Java JDK latest release into a fun and entertaining sample of code.
 created: 2022-04-29
 tags: java,jdk17,jdk18,sample,game,jep420
-css: styles/epub.css
+css: docs/styles/epub.css
 cover-image: docs/images/monoclass2-cover-en.png 
 lang: english
 ---
