@@ -9,6 +9,7 @@ import java.awt.event.KeyListener;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
+import java.awt.image.RescaleOp;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -381,6 +382,8 @@ public class Application extends JPanel implements KeyListener {
          */
         public boolean fullScreen = false;
 
+        public int numberOfBuffer = 2;
+
         /**
          * Default minimum speed for PhysicEngine. under this value, considere 0.
          */
@@ -446,6 +449,8 @@ public class Application extends JPanel implements KeyListener {
             screenWidth = parseDouble(appProps.getProperty("app.screen.width", "320.0"));
             screenHeight = parseDouble(appProps.getProperty("app.screen.height", "200.0"));
             displayScale = parseDouble(appProps.getProperty("app.screen.scale", "2.0"));
+            numberOfBuffer = parseInt(appProps.getProperty("app.render.buffers", "2"));
+
             worldWidth = parseDouble(appProps.getProperty("app.world.area.width", "640.0"));
             worldHeight = parseDouble(appProps.getProperty("app.world.area.height", "400.0"));
             worldGravity = parseDouble(appProps.getProperty("app.world.gravity", "400.0"));
@@ -461,7 +466,7 @@ public class Application extends JPanel implements KeyListener {
             fps = parseInt(appProps.getProperty("app.screen.fps", "" + FPS_DEFAULT));
             frameTime = (long) (1000 / fps);
             debug = parseInt(appProps.getProperty("app.debug.level", "0"));
-            convertStringToBoolean(appProps.getProperty("app.screen.full", "false"));
+            convertStringToBoolean(appProps.getProperty("app.window.mode.fullscreen", "false"));
 
             scenes = appProps.getProperty("app.scenes");
             defaultScene = appProps.getProperty("app.scene.default");
@@ -504,6 +509,7 @@ public class Application extends JPanel implements KeyListener {
                     case "w", "width" -> screenWidth = parseDouble(argSplit[1]);
                     case "h", "height" -> screenHeight = parseDouble(argSplit[1]);
                     case "s", "scale" -> displayScale = parseDouble(argSplit[1]);
+                    case "b", "buffers" -> numberOfBuffer = parseInt(argSplit[1]);
                     case "d", "debug" -> debug = parseInt(argSplit[1]);
                     case "ww", "worldwidth" -> worldWidth = parseDouble(argSplit[1]);
                     case "wh", "worldheight" -> worldHeight = parseDouble(argSplit[1]);
@@ -685,19 +691,35 @@ public class Application extends JPanel implements KeyListener {
                 case RECTANGLE -> g.fillRect((int) ee.pos.x, (int) ee.pos.y, (int) ee.width, (int) ee.height);
                 case ELLIPSE -> g.fillArc((int) ee.pos.x, (int) ee.pos.y, (int) ee.width, (int) ee.height, 0, 360);
                 case IMAGE -> {
-                    BufferedImage sprite = (BufferedImage) (ee.getAnimations()
-                            ? ee.animations.getFrame()
-                            : ee.image);
                     if (ee.getDirection() > 0) {
-                        g.drawImage(sprite, (int) ee.pos.x, (int) ee.pos.y, null);
+                        g.drawImage(
+                                ee.getImage(),
+                                (int) ee.pos.x, (int) ee.pos.y,
+                                null);
                     } else {
-                        g.drawImage(sprite,
+                        g.drawImage(
+                                ee.getImage(),
                                 (int) (ee.pos.x + ee.width), (int) ee.pos.y,
                                 (int) (-ee.width), (int) ee.height,
                                 null);
                     }
                 }
             }
+        }
+
+        public BufferedImage setAlpha(BufferedImage sprite, float alpha) {
+
+            BufferedImage drawImage = new BufferedImage(
+                    sprite.getWidth(), sprite.getHeight(),
+                    BufferedImage.TYPE_INT_ARGB);
+
+            float[] scales = {1f, 1f, 1f, alpha};
+            float[] offsets = {0f, 0f, 0f, 0f};
+
+            RescaleOp rop = new RescaleOp(scales, offsets, null);
+            rop.filter(sprite, drawImage);
+
+            return drawImage;
         }
 
         private void drawText(Graphics2D g, Entity e, TextEntity te) {
@@ -801,10 +823,11 @@ public class Application extends JPanel implements KeyListener {
          * @param se ValueEntity object
          */
         private void drawValue(Graphics2D g, ValueEntity se) {
-            byte c[] = se.valueTxt.getBytes(StandardCharsets.US_ASCII);
+            byte c[] = se.valueTxt.strip().getBytes(StandardCharsets.US_ASCII);
             for (int pos = 0; pos < se.valueTxt.length(); pos++) {
-                int v = c[pos];
-                drawFig(g, se, v - 48, se.pos.x + (pos * 8), se.pos.y);
+                //convert character ascii value to number from 0 to 9.
+                int v = c[pos] - 48;
+                drawFig(g, se, v, se.pos.x + (pos * 8), se.pos.y);
             }
         }
 
@@ -853,13 +876,12 @@ public class Application extends JPanel implements KeyListener {
          * @param realFps the measured frame rate per seconds
          */
         public void renderToScreen(long realFps) {
-            if (app.frame.getBufferStrategy() == null) {
-                app.frame.createBufferStrategy(2);
-            }
+
             Graphics2D g2 = (Graphics2D) app.frame.getBufferStrategy().getDrawGraphics();
+            //Graphics2D g2 = (Graphics2D) app.frame.getGraphics();
             g2.drawImage(
                     buffer,
-                    0, 0, (int) app.getBounds().getWidth(), (int) app.getBounds().getHeight(),
+                    0, 0, (int) app.frame.getWidth(), (int) app.frame.getHeight(),
                     0, 0, (int) config.screenWidth, (int) config.screenHeight,
                     null);
             drawDebugString(g2, realFps);
@@ -1727,6 +1749,12 @@ public class Application extends JPanel implements KeyListener {
             }
         }
 
+        public BufferedImage getImage() {
+            return (BufferedImage) (getAnimations()
+                    ? animations.getFrame()
+                    : image);
+        }
+
         public Entity addAnimation(String key, int x, int y, int tw, int th, int[] durations, String pathToImage, int loop) {
             if (Optional.ofNullable(this.animations).isEmpty()) {
                 this.animations = new Animation();
@@ -2247,7 +2275,6 @@ public class Application extends JPanel implements KeyListener {
 
         GraphicsDevice device = graphics.getDefaultScreenDevice();
 
-
         if (Optional.ofNullable(frame).isPresent() && frame.isVisible()) {
             frame.setVisible(false);
             frame.dispose();
@@ -2260,16 +2287,16 @@ public class Application extends JPanel implements KeyListener {
         displayMode = fullScreenMode ? DisplayModeEnum.DISPLAY_MODE_FULLSCREEN : DisplayModeEnum.DISPLAY_MODE_WINDOWED;
 
         if (displayMode.equals(DisplayModeEnum.DISPLAY_MODE_FULLSCREEN)) {
+            frame.setUndecorated(true);
             device.setFullScreenWindow(frame);
         } else {
-
             Dimension dim = new Dimension((int) (config.screenWidth * config.displayScale),
                     (int) (config.screenHeight * config.displayScale));
             frame.setSize(dim);
             frame.setPreferredSize(dim);
             frame.setMaximumSize(dim);
-            device.setFullScreenWindow(null);
             frame.setLocationRelativeTo(null);
+            frame.setUndecorated(false);
         }
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setFocusTraversalKeysEnabled(true);
@@ -2279,6 +2306,9 @@ public class Application extends JPanel implements KeyListener {
 
         frame.pack();
         frame.setVisible(true);
+        if (Optional.ofNullable(frame.getBufferStrategy()).isEmpty()) {
+            frame.createBufferStrategy(config.numberOfBuffer);
+        }
     }
 
     public void requestExit() {
