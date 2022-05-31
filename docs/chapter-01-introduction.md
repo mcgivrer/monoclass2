@@ -11,24 +11,35 @@ class (we can not talk about a project for a 1500 LoCs class) is composed of som
 limited number of subclasses.
 
 ```plantuml
-@startuml
+@startuml "docs/images/diagram-01-class_diagram.png"
 hide methods
 hide attributes
 
 class Application
 class Application::I18n
 class Application::Entity
-class Application::TextEntity extends Application::Entity
 class Application::Camera extends Application::Entity
+class Application::Configuration
+class Application::PhysicEngine
+class Application::CollisionDetector
+class Application::Render
+class Application::Resources
+class Application::ActionHandler
 
-Application --> Application::Camera:activeCamera
-Application --> Application::Entity:entities
-Application --> Application::I18n
+Application "1" --> "1" Application::Camera:activeCamera
+Application "1" --> "*" Application::Camera:cameras
+Application "1" --> "*" Application::Entity:entities
+Application "1" ---> "1" Application::I18n:i18n
+Application "1" ---> "1" Application::Resources:resources
+Application "1" ----> "1" Application::ActionHandler:ah
+Application "1" ---> "1" Application::Configuration:config
+Application "1" ----> "1" Application::PhysicEngine:pe
+Application "1" ----> "1" Application::CollisionDetector:cd
+Application "1" ----> "1" Application::Render:render
 @enduml
 ```
 
-_figure $fig+ - Class Diagram for Application and its
-subclasses_ _[edit](https://github.com/mcgivrer/monoclass2/blob/feature/add-camera-entity/docs/class-diagram.txt)_
+_figure $fig+ - Class Diagram for Application and its subclasses_ <kbd>[edit](https://github.com/mcgivrer/monoclass2/blob/feature/add-camera-entity/docs/class-diagram.txt)</kbd>
 
 So, [`I18n`](https://github.com/mcgivrer/monoclass2/blob/feature/add-camera-entity/src/main/java/com/demoing/app/Application.java#L69)
 , `Entity`, `TextEntity` and `Camera` are subclasses of `Application` master class, if you does not understand :P.
@@ -98,6 +109,5 @@ Project
 
 14. An Entity must support the Sprite animation principle to display dynamic and animated graphics.
 
----
 
 [^1]: Frame Per Second: the number of images computed during one second of time
