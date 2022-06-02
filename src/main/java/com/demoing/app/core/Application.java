@@ -1740,6 +1740,31 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+	/**
+	 * The Light is a new Object to simulate a light display into the game.
+	 * 2 things wll be generated, the Light source and a the area having light effect.
+	 *
+	 * @author Frédéric Delorme
+	 * @since 1.04
+	 */ 
+	public static Light extends Entity{
+		public double energy;
+		public BBox area;
+		public Light(String name){
+			super(name);
+		}
+
+		public Light setEnergy(double e){
+			this.energy = e;
+			return this;
+		}
+
+		public Light setArea(BBox a){
+			this.area = a;
+			return this;
+		}
+		
+	}
 
     /**
      * {@link AnimationSet} defining a series of Frames and their duration for a specific animation name.
