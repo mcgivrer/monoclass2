@@ -2064,6 +2064,84 @@ public class Application extends JPanel implements KeyListener {
         }
     }
 
+    /**
+     * The list of light type.
+     */
+    public enum LightType {
+        AMBIANT,
+        SPOT,
+        SPHERICAL
+    }
+
+    /**
+     * A Light class to simulate lights in a scene.
+     * It can be a SPOT, an AMBIANT or a SPHERICAL one.
+     * It will have an energy, and specific rotation
+     * angle (only for SPOT) and a glitter effect, to simulate neon light.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.5
+     */
+    public static class Light extends Entity {
+        private double energy;
+        private LightType lightType;
+        private double rotation;
+        private double glitterEffect;
+
+        /**
+         * Create a new Light with a name
+         *
+         * @param name the name of this new light in the Scene.
+         */
+        public Light(String name) {
+            super(name);
+        }
+
+        /**
+         * Set the light type;
+         *
+         * @param lt the LightType to be assigned to this light.
+         * @return the updated Light entity.
+         */
+        public Light setLightType(LightType lt) {
+            this.lightType = lt;
+            return this;
+        }
+
+        /**
+         * Define the energy for this Light.
+         *
+         * @param e the value of energy from 0 to 1.0.
+         * @return the updated Light entity.
+         */
+        public Light setEnergy(double e) {
+            this.energy = e;
+            return this;
+        }
+
+        /**
+         * Define the light spot direction (only for {@link LightType#SPOT}
+         *
+         * @param r the rotation angle in radian.
+         * @return the updated Light entity.
+         */
+        public Light setRotation(double r) {
+            this.rotation = r;
+            return this;
+        }
+
+        /**
+         * The glitterEffect factor, adding an offset to the light center to create aglitter effect.
+         *
+         * @param ge the Glitter factor from 0 to 1.0
+         * @return the updated Light entity.
+         */
+        public Light setGlitterEffect(double ge) {
+            this.glitterEffect = ge;
+            return this;
+        }
+    }
+
     public interface Scene {
         void prepare();
 
