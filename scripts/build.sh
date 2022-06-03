@@ -19,6 +19,7 @@ export JAVA_BUILD=$(java --version | head -1 | cut -f2 -d' ')
 export SRC=src
 export LIBS=lib
 export LIB_TEST=lib/test/junit-platform-console-standalone-1.8.2.jar
+export LIB_DEP="$LIBS/dependencies/jinput-2.0.9.jar $LIBS/dependencies/jinput-2.0.9-natives-all.jar"
 export TARGET=./target
 export BUILD=$TARGET/build
 export CLASSES=$TARGET/classes

@@ -3,4 +3,4 @@
 -sourcepath src/main/java/;src/main/resources
 -source 17
 -target 17
--classpath target/classes
+-classpath target/classes $LIB_DEPS
