@@ -10,6 +10,7 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.demoing.app.core.Application.EntityType.*;
@@ -24,6 +25,10 @@ public class DemoScene implements Scene {
     private Map<String, Behavior> behaviors = new ConcurrentHashMap<>();
     private boolean gameOver;
     BufferedImage[] figs;
+    /**
+     * The list of Light manage by this scene
+     */
+    private List<Light> lights;
 
     public DemoScene(String name) {
         this.name = name;
@@ -418,6 +423,11 @@ public class DemoScene implements Scene {
     @Override
     public Map<String, Application.Behavior> getBehaviors() {
         return behaviors;
+    }
+
+    @Override
+    public List<Light> getLights() {
+        return lights;
     }
 
     @Override
