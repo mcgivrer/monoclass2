@@ -241,9 +241,9 @@ public class Application extends JPanel implements KeyListener {
                 ObjectName objectName = new ObjectName("com.demoing.app:name=" + programName);
                 platformMBeanServer.registerMBean(this, objectName);
             } catch (InstanceAlreadyExistsException
-                    | MBeanRegistrationException
-                    | NotCompliantMBeanException
-                    | MalformedObjectNameException e) {
+                     | MBeanRegistrationException
+                     | NotCompliantMBeanException
+                     | MalformedObjectNameException e) {
                 e.printStackTrace();
             }
         }
@@ -439,7 +439,7 @@ public class Application extends JPanel implements KeyListener {
                 appProps.load(this.getClass().getClassLoader().getResourceAsStream(fileName));
                 loadConfig();
             } catch (IOException e) {
-                e.printStackTrace();
+                System.err.println("ERR: Unable to read the configuration file :" + e.getLocalizedMessage());
             }
         }
 
@@ -684,7 +684,7 @@ public class Application extends JPanel implements KeyListener {
             final Area ambientArea = new Area(new Rectangle2D.Double(cam.pos.x, cam.pos.y, conf.screenWidth, conf.screenHeight));
             g.setColor(l.color);
             Composite c = g.getComposite();
-            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float)l.energy));
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) l.energy));
             g.fill(ambientArea);
             g.setComposite(c);
         }
@@ -701,13 +701,14 @@ public class Application extends JPanel implements KeyListener {
             l.rgp = new RadialGradientPaint(new Point((int) (l.pos.x + (10 * Math.random() * l.glitterEffect)),
                     (int) (l.pos.y + (10 * Math.random() * l.glitterEffect))), (int) l.width, l.dist, l.colors);
             g.setPaint(l.rgp);
-            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float)l.energy));
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) l.energy));
             g.fill(new Ellipse2D.Double(l.pos.x - l.width, l.pos.y - l.width, l.width * 2, l.width * 2));
         }
 
         private void drawSpotLight(Graphics2D g, Light l) {
 
         }
+
         /**
          * Make a color brighten.
          *
@@ -727,6 +728,7 @@ public class Application extends JPanel implements KeyListener {
             return new Color(red, green, blue, alpha);
 
         }
+
         private void drawMapEntity(Graphics2D g, MapEntity me) {
             g.setColor(me.color);
             g.drawRect((int) me.pos.x, (int) me.pos.y, (int) me.width, (int) me.height);
@@ -2381,7 +2383,7 @@ public class Application extends JPanel implements KeyListener {
                 scenes.put(sceneStr[0], s);
                 activateScene(config.defaultScene);
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                    InvocationTargetException e) {
+                     InvocationTargetException e) {
                 System.out.println("ERR: Unable to load scene from configuration file:"
                         + e.getLocalizedMessage()
                         + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
