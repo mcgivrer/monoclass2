@@ -1,9 +1,9 @@
 package com.demoing.app.scenes;
 
+import com.demoing.app.core.AbstractScene;
 import com.demoing.app.core.Application;
 import com.demoing.app.core.Application.*;
 
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.geom.Rectangle2D;
@@ -11,29 +11,23 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static com.demoing.app.core.Application.EntityType.*;
 import static com.demoing.app.core.Application.PhysicType.STATIC;
 import static com.demoing.app.core.Application.TextAlign.CENTER;
 
-public class DemoScene implements Scene {
-    private final String name;
+public class DemoScene extends AbstractScene {
 
     Font wlcFont;
 
-    private Map<String, Behavior> behaviors = new ConcurrentHashMap<>();
     private boolean gameOver;
     BufferedImage[] figs;
-    /**
-     * The list of Light manage by this scene
-     */
-    private List<Light> lights;
 
     public DemoScene(String name) {
-        this.name = name;
+        super(name);
     }
 
+    @Override
     public void prepare() {
         // prepare the Figures for score rendering
         prepareFigures("/images/tiles01.png");
@@ -90,6 +84,14 @@ public class DemoScene implements Scene {
         app.addEntity(opf2);
 
         generatePlatforms(app, 15);
+
+        // add a light
+
+        Light l01 = (Light) new Light("ambiantlight")
+                .setLightType(LightType.AMBIANT)
+                .setEnergy(1.0)
+                .setColor(new Color(0.5f, 0.0f, 0.0f, 0.9f));
+        app.addEntity(l01);
 
         // A main player Entity.
         Entity player = new Entity("player")
@@ -162,6 +164,8 @@ public class DemoScene implements Scene {
         wlcFont = Resources.loadFont("/fonts/FreePixel.ttf")
                 .deriveFont(12.0f);
 
+        //---- Everything about HUD -----
+
         // Score Display
         int score = (int) app.getAttribute("score", 0);
 
@@ -229,6 +233,8 @@ public class DemoScene implements Scene {
                 .setSize(48, 32)
                 .setPosition(10, app.config.screenHeight - 48);
         app.addEntity(mapEntity);
+
+        // ---- Everything about Messages ----
 
         // A welcome Text
         TextEntity welcomeMsg = (TextEntity) new TextEntity("welcome")

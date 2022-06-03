@@ -6,6 +6,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.geom.Area;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
@@ -240,9 +241,9 @@ public class Application extends JPanel implements KeyListener {
                 ObjectName objectName = new ObjectName("com.demoing.app:name=" + programName);
                 platformMBeanServer.registerMBean(this, objectName);
             } catch (InstanceAlreadyExistsException
-                     | MBeanRegistrationException
-                     | NotCompliantMBeanException
-                     | MalformedObjectNameException e) {
+                    | MBeanRegistrationException
+                    | NotCompliantMBeanException
+                    | MalformedObjectNameException e) {
                 e.printStackTrace();
             }
         }
@@ -435,7 +436,7 @@ public class Application extends JPanel implements KeyListener {
          */
         public Configuration(String fileName) {
             try {
-                appProps.load(this.getClass().getResourceAsStream(fileName));
+                appProps.load(this.getClass().getClassLoader().getResourceAsStream(fileName));
                 loadConfig();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -563,10 +564,6 @@ public class Application extends JPanel implements KeyListener {
          */
         BufferedImage buffer;
         /**
-         * The internal rendering light buffer.
-         */
-        BufferedImage lightBuffer;
-        /**
          * The debug font to be used to display debug level information.
          */
         private Font debugFont;
@@ -600,8 +597,6 @@ public class Application extends JPanel implements KeyListener {
             this.world = w;
             buffer = new BufferedImage((int) config.screenWidth, (int) config.screenHeight,
                     BufferedImage.TYPE_INT_ARGB);
-            lightBuffer = new BufferedImage((int) config.screenWidth, (int) config.screenHeight,
-                    BufferedImage.TYPE_INT_ARGB);
             Graphics2D g = buffer.createGraphics();
             try {
                 debugFont = Font.createFont(
@@ -633,7 +628,7 @@ public class Application extends JPanel implements KeyListener {
             moveCamera(g, activeCamera, -1);
             drawGrid(g, world, 16, 16);
             moveCamera(g, activeCamera, 1);
-            gPipeline.stream().filter(e -> e.isAlive() || e.isPersistent())
+            gPipeline.stream().filter(e -> !(e instanceof Light) && e.isAlive() || e.isPersistent())
                     .forEach(e -> {
                         if (e.isNotStickToCamera()) {
                             moveCamera(g, activeCamera, -1);
@@ -666,8 +661,8 @@ public class Application extends JPanel implements KeyListener {
                             moveCamera(g, activeCamera, 1);
                         }
                     });
-            gPipeline.stream().filter(e-> e instanceof Light).forEach(l -> {
-                drawLight(g,(Light)l);
+            gPipeline.stream().filter(e -> e instanceof Light).forEach(l -> {
+                drawLight(g, (Light) l);
             });
             g.dispose();
             renderToScreen(realFps);
@@ -675,25 +670,63 @@ public class Application extends JPanel implements KeyListener {
         }
 
         private void drawLight(Graphics2D g, Light l) {
-            switch(l.lightType){
-                case SPOT -> drawSpotLight(g,l);
-                case SPHERICAL -> drawSphericalLight(g,l);
-                case AMBIANT -> drawAmbiantLight(g,l);
+            switch (l.lightType) {
+                case SPOT -> drawSpotLight(g, l);
+                case SPHERICAL -> drawSphericalLight(g, l);
+                case AMBIANT -> drawAmbiantLight(g, l);
             }
         }
 
         private void drawAmbiantLight(Graphics2D g, Light l) {
+            Camera cam = app.render.activeCamera;
+            Configuration conf = app.config;
 
+            final Area ambientArea = new Area(new Rectangle2D.Double(cam.pos.x, cam.pos.y, conf.screenWidth, conf.screenHeight));
+            g.setColor(l.color);
+            Composite c = g.getComposite();
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float)l.energy));
+            g.fill(ambientArea);
+            g.setComposite(c);
         }
 
         private void drawSphericalLight(Graphics2D g, Light l) {
+            l.color = brighten(l.color, l.energy);
+            Color medColor = brighten(l.color, l.energy * 0.5);
+            Color endColor = new Color(0.0f, 0.0f, 0.0f, 0.2f);
 
+            l.colors = new Color[]{l.color,
+                    medColor,
+                    endColor};
+            l.dist = new float[]{0.0f, 0.1f, 1.0f};
+            l.rgp = new RadialGradientPaint(new Point((int) (l.pos.x + (10 * Math.random() * l.glitterEffect)),
+                    (int) (l.pos.y + (10 * Math.random() * l.glitterEffect))), (int) l.width, l.dist, l.colors);
+            g.setPaint(l.rgp);
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float)l.energy));
+            g.fill(new Ellipse2D.Double(l.pos.x - l.width, l.pos.y - l.width, l.width * 2, l.width * 2));
         }
 
         private void drawSpotLight(Graphics2D g, Light l) {
 
         }
+        /**
+         * Make a color brighten.
+         *
+         * @param color    Color to make brighten.
+         * @param fraction Darkness fraction.
+         * @return Lighter color.
+         * @link https://stackoverflow.com/questions/18648142/creating-brighter-color-java
+         */
+        public static Color brighten(Color color, double fraction) {
 
+            int red = (int) Math.round(Math.min(255, color.getRed() + 255 * fraction));
+            int green = (int) Math.round(Math.min(255, color.getGreen() + 255 * fraction));
+            int blue = (int) Math.round(Math.min(255, color.getBlue() + 255 * fraction));
+
+            int alpha = color.getAlpha();
+
+            return new Color(red, green, blue, alpha);
+
+        }
         private void drawMapEntity(Graphics2D g, MapEntity me) {
             g.setColor(me.color);
             g.drawRect((int) me.pos.x, (int) me.pos.y, (int) me.width, (int) me.height);
@@ -1820,32 +1853,6 @@ public class Application extends JPanel implements KeyListener {
         }
     }
 
-	/**
-	 * The Light is a new Object to simulate a light display into the game.
-	 * 2 things wll be generated, the Light source and a the area having light effect.
-	 *
-	 * @author Frédéric Delorme
-	 * @since 1.04
-	 */ 
-	public static Light extends Entity{
-		public double energy;
-		public BBox area;
-		public Light(String name){
-			super(name);
-		}
-
-		public Light setEnergy(double e){
-			this.energy = e;
-			return this;
-		}
-
-		public Light setArea(BBox a){
-			this.area = a;
-			return this;
-		}
-		
-	}
-
     /**
      * {@link AnimationSet} defining a series of Frames and their duration for a specific animation name.
      * This animationSet object is used in the {@link Animation#animationSet} attributes, to defined all the possible
@@ -2120,6 +2127,9 @@ public class Application extends JPanel implements KeyListener {
 
     /**
      * The list of light type.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.5
      */
     public enum LightType {
         AMBIANT,
@@ -2137,6 +2147,9 @@ public class Application extends JPanel implements KeyListener {
      * @since 1.0.5
      */
     public static class Light extends Entity {
+        public Color[] colors;
+        public float[] dist;
+        public RadialGradientPaint rgp;
         private double energy;
         private LightType lightType;
         private double rotation;
@@ -2368,7 +2381,7 @@ public class Application extends JPanel implements KeyListener {
                 scenes.put(sceneStr[0], s);
                 activateScene(config.defaultScene);
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                     InvocationTargetException e) {
+                    InvocationTargetException e) {
                 System.out.println("ERR: Unable to load scene from configuration file:"
                         + e.getLocalizedMessage()
                         + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
@@ -2629,7 +2642,6 @@ public class Application extends JPanel implements KeyListener {
         prevKeys[keyCode] = false;
         return status;
     }
-
 
     /**
      * Retrieve the internal entity Index current value.
