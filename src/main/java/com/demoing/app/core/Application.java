@@ -240,9 +240,9 @@ public class Application extends JPanel implements KeyListener {
                 ObjectName objectName = new ObjectName("com.demoing.app:name=" + programName);
                 platformMBeanServer.registerMBean(this, objectName);
             } catch (InstanceAlreadyExistsException
-                    | MBeanRegistrationException
-                    | NotCompliantMBeanException
-                    | MalformedObjectNameException e) {
+                     | MBeanRegistrationException
+                     | NotCompliantMBeanException
+                     | MalformedObjectNameException e) {
                 e.printStackTrace();
             }
         }
@@ -563,6 +563,10 @@ public class Application extends JPanel implements KeyListener {
          */
         BufferedImage buffer;
         /**
+         * The internal rendering light buffer.
+         */
+        BufferedImage lightBuffer;
+        /**
          * The debug font to be used to display debug level information.
          */
         private Font debugFont;
@@ -595,6 +599,8 @@ public class Application extends JPanel implements KeyListener {
             this.config = c;
             this.world = w;
             buffer = new BufferedImage((int) config.screenWidth, (int) config.screenHeight,
+                    BufferedImage.TYPE_INT_ARGB);
+            lightBuffer = new BufferedImage((int) config.screenWidth, (int) config.screenHeight,
                     BufferedImage.TYPE_INT_ARGB);
             Graphics2D g = buffer.createGraphics();
             try {
@@ -660,9 +666,32 @@ public class Application extends JPanel implements KeyListener {
                             moveCamera(g, activeCamera, 1);
                         }
                     });
+            gPipeline.stream().filter(e-> e instanceof Light).forEach(l -> {
+                drawLight(g,(Light)l);
+            });
             g.dispose();
             renderToScreen(realFps);
             renderingTime = System.nanoTime() - startTime;
+        }
+
+        private void drawLight(Graphics2D g, Light l) {
+            switch(l.lightType){
+                case SPOT -> drawSpotLight(g,l);
+                case SPHERICAL -> drawSphericalLight(g,l);
+                case AMBIANT -> drawAmbiantLight(g,l);
+            }
+        }
+
+        private void drawAmbiantLight(Graphics2D g, Light l) {
+
+        }
+
+        private void drawSphericalLight(Graphics2D g, Light l) {
+
+        }
+
+        private void drawSpotLight(Graphics2D g, Light l) {
+
         }
 
         private void drawMapEntity(Graphics2D g, MapEntity me) {
@@ -2314,7 +2343,7 @@ public class Application extends JPanel implements KeyListener {
                 scenes.put(sceneStr[0], s);
                 activateScene(config.defaultScene);
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                    InvocationTargetException e) {
+                     InvocationTargetException e) {
                 System.out.println("ERR: Unable to load scene from configuration file:"
                         + e.getLocalizedMessage()
                         + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
