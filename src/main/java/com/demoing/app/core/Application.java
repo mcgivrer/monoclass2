@@ -13,6 +13,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.RescaleOp;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -241,9 +242,9 @@ public class Application extends JPanel implements KeyListener {
                 ObjectName objectName = new ObjectName("com.demoing.app:name=" + programName);
                 platformMBeanServer.registerMBean(this, objectName);
             } catch (InstanceAlreadyExistsException
-                     | MBeanRegistrationException
-                     | NotCompliantMBeanException
-                     | MalformedObjectNameException e) {
+                    | MBeanRegistrationException
+                    | NotCompliantMBeanException
+                    | MalformedObjectNameException e) {
                 e.printStackTrace();
             }
         }
@@ -436,10 +437,11 @@ public class Application extends JPanel implements KeyListener {
          */
         public Configuration(String fileName) {
             try {
-                appProps.load(this.getClass().getClassLoader().getResourceAsStream(fileName));
+                InputStream is = this.getClass().getResourceAsStream(fileName);
+                appProps.load(is);
                 loadConfig();
-            } catch (IOException e) {
-                System.err.println("ERR: Unable to read the configuration file :" + e.getLocalizedMessage());
+            } catch (Exception e) {
+                System.err.printf("ERR: Unable to read the configuration file %s : %s\n", fileName, e.getLocalizedMessage());
             }
         }
 
@@ -662,7 +664,13 @@ public class Application extends JPanel implements KeyListener {
                         }
                     });
             gPipeline.stream().filter(e -> e instanceof Light).forEach(l -> {
+                if (l.isNotStickToCamera()) {
+                    moveCamera(g, activeCamera, -1);
+                }
                 drawLight(g, (Light) l);
+                if (l.isNotStickToCamera()) {
+                    moveCamera(g, activeCamera, 1);
+                }
             });
             g.dispose();
             renderToScreen(realFps);
@@ -942,7 +950,6 @@ public class Application extends JPanel implements KeyListener {
         public void renderToScreen(long realFps) {
 
             Graphics2D g2 = (Graphics2D) app.frame.getBufferStrategy().getDrawGraphics();
-            //Graphics2D g2 = (Graphics2D) app.frame.getGraphics();
             g2.drawImage(
                     buffer,
                     0, 0, (int) app.frame.getWidth(), (int) app.frame.getHeight(),
@@ -2164,6 +2171,8 @@ public class Application extends JPanel implements KeyListener {
          */
         public Light(String name) {
             super(name);
+            setPhysicType(PhysicType.STATIC);
+            setStickToCamera(true);
         }
 
         /**
@@ -2383,7 +2392,7 @@ public class Application extends JPanel implements KeyListener {
                 scenes.put(sceneStr[0], s);
                 activateScene(config.defaultScene);
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                     InvocationTargetException e) {
+                    InvocationTargetException e) {
                 System.out.println("ERR: Unable to load scene from configuration file:"
                         + e.getLocalizedMessage()
                         + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
