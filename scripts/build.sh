@@ -10,7 +10,7 @@ export PROGRAM_TITLE=MonoClass2
 export MAIN_CLASS=com.demoing.app.core.Application
 # A dirty list of package to be build (TODO add automation on package detection)
 export JAVADOC_CLASSPATH="com.demoing.app.core com.demoing.app.scenes"
-
+export JAVADOC_GROUPS="-group \"Core package\" com.demoing.app.core -group \"Demo\" com.demoing.app.demo"
 # ---- Author
 export AUTHOR_NAME='Frédéric Delorme'
 export VENDOR_NAME=frederic.delorme@gmail.com
@@ -32,7 +32,7 @@ export GIT_COMMIT_ID=$(git rev-parse HEAD)
 export SRC=src
 export LIBS=lib
 export LIB_TEST=$LIBS/test/junit-platform-console-standalone-1.8.2.jar
-export LIB_CHECKSTYLES=$LIBS/tools/checkstyle-10.2-all.jar
+export LIB_CHECKSTYLES=$LIBS/tools/checkstyle-10.3-all.jar
 export TARGET=./target
 export BUILD=$TARGET/build
 export CLASSES=$TARGET/classes
@@ -78,15 +78,25 @@ function compile() {
   rm -Rf $CLASSES/*
   echo "|_ 2. compile sources from '$SRC/main' ..."
   find $SRC/main -name '*.java' >$TARGET/sources.lst
-  javac $COMPILATION_OPTS @$LIBS/options.txt @$TARGET/sources.lst -cp $CLASSES
+  # Compilation via JavaC with some debug options to add source, lines and vars in the compiled classes.
+  javac $COMPILATION_OPTS \
+   -d $CLASSES \
+   -g:source,lines,vars \
+   -source $SOURCE_VERSION \
+   -target $SOURCE_VERSION \
+   -classpath $CLASSES @$TARGET/sources.lst -cp $CLASSES
   echo "   done."
 }
 function checkCodeStyleQA() {
   echo "check code quality against rules $CHECK_RULES"
   echo "> explore sources at : $SRC"
   find $SRC/main -name '*.java' >$TARGET/sources.lst
-  java $JAR_OPTS -cp "$LIB_CHECKSTYLES:$CLASSES:." -jar $LIB_CHECKSTYLES -c $CHECK_RULES_FILE -f xml \
-    -o $TARGET/checkstyle_errors.xml @$TARGET/sources.lst
+  java $JAR_OPTS -cp "$LIB_CHECKSTYLES:$CLASSES:." \
+   -jar $LIB_CHECKSTYLES \
+   -c $CHECK_RULES_FILE \
+   -f xml \
+   -o $TARGET/checkstyle_errors.xml \
+   @$TARGET/sources.lst
   echo "   done."
 }
 #
@@ -99,14 +109,15 @@ function generatedoc() {
   # Compile class files
   rm -Rf $TARGET/javadoc/*
   echo "|_ 2-5. generate javadoc from '$JAVADOC_CLASSPATH' ..."
-  #java -jar ./lib/tools/markdown2html-0.3.1.jar <README.md >$TARGET/javadoc/overview.html
+  java -jar ./lib/tools/markdown2html-0.3.1.jar <README.md >$TARGET/javadoc/overview.html
   javadoc $JAR_OPTS -source $SOURCE_VERSION \
-    \
     -author -use -version \
     -doctitle "<h1>$PROGRAM_TITLE</h1>" \
     -d $TARGET/javadoc \
     -sourcepath $SRC/main/java $JAVADOC_CLASSPATH \
-    echo "   done." >>target/build.log #  -overview $TARGET/javadoc/overview.html \
+    -overview $TARGET/javadoc/overview.html \
+    $JAVADOC_GROUPS
+  echo "   done." >>target/build.log
 
 }
 
@@ -212,6 +223,7 @@ function run() {
   a | A | all)
     manifest
     compile
+    checkCodeStyleQA
     executeTests
     generatedoc
     createJar

@@ -1,6 +1,0 @@
--d target/classes
--g:source,lines,vars
--sourcepath src/main/java/;src/main/resources
--source 18
--target 18
--classpath target/classes
