@@ -6,11 +6,14 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.geom.Area;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
+import java.awt.image.RescaleOp;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -46,7 +49,7 @@ import static com.demoing.app.core.Application.EntityType.*;
  * @author Frédéric Delorme
  * @since 1.0.0
  */
-public class Application extends JFrame implements KeyListener {
+public class Application extends JPanel implements KeyListener {
 
     /**
      * The Frame per Second rendering rate default value
@@ -66,6 +69,19 @@ public class Application extends JFrame implements KeyListener {
      */
     private boolean sceneReady;
 
+    /**
+     * Display MOde for the application window.
+     */
+    private DisplayModeEnum displayMode;
+
+    /**
+     * The possible display mode for the {@link Application} window.
+     */
+    public enum DisplayModeEnum {
+        DISPLAY_MODE_FULLSCREEN,
+        DISPLAY_MODE_WINDOWED,
+
+    }
 
     /**
      * The {@link EntityType} define the type of rendered entity, a RECTANGLE, an ELLIPSE or an IMAGE (see {@link BufferedImage}.
@@ -368,6 +384,8 @@ public class Application extends JFrame implements KeyListener {
          */
         public boolean fullScreen = false;
 
+        public int numberOfBuffer = 2;
+
         /**
          * Default minimum speed for PhysicEngine. under this value, considere 0.
          */
@@ -419,10 +437,11 @@ public class Application extends JFrame implements KeyListener {
          */
         public Configuration(String fileName) {
             try {
-                appProps.load(this.getClass().getResourceAsStream(fileName));
+                InputStream is = this.getClass().getResourceAsStream(fileName);
+                appProps.load(is);
                 loadConfig();
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                System.err.printf("ERR: Unable to read the configuration file %s : %s\n", fileName, e.getLocalizedMessage());
             }
         }
 
@@ -433,6 +452,8 @@ public class Application extends JFrame implements KeyListener {
             screenWidth = parseDouble(appProps.getProperty("app.screen.width", "320.0"));
             screenHeight = parseDouble(appProps.getProperty("app.screen.height", "200.0"));
             displayScale = parseDouble(appProps.getProperty("app.screen.scale", "2.0"));
+            numberOfBuffer = parseInt(appProps.getProperty("app.render.buffers", "2"));
+
             worldWidth = parseDouble(appProps.getProperty("app.world.area.width", "640.0"));
             worldHeight = parseDouble(appProps.getProperty("app.world.area.height", "400.0"));
             worldGravity = parseDouble(appProps.getProperty("app.world.gravity", "400.0"));
@@ -448,7 +469,7 @@ public class Application extends JFrame implements KeyListener {
             fps = parseInt(appProps.getProperty("app.screen.fps", "" + FPS_DEFAULT));
             frameTime = (long) (1000 / fps);
             debug = parseInt(appProps.getProperty("app.debug.level", "0"));
-            convertStringToBoolean(appProps.getProperty("app.screen.full", "false"));
+            convertStringToBoolean(appProps.getProperty("app.window.mode.fullscreen", "false"));
 
             scenes = appProps.getProperty("app.scenes");
             defaultScene = appProps.getProperty("app.scene.default");
@@ -491,6 +512,7 @@ public class Application extends JFrame implements KeyListener {
                     case "w", "width" -> screenWidth = parseDouble(argSplit[1]);
                     case "h", "height" -> screenHeight = parseDouble(argSplit[1]);
                     case "s", "scale" -> displayScale = parseDouble(argSplit[1]);
+                    case "b", "buffers" -> numberOfBuffer = parseInt(argSplit[1]);
                     case "d", "debug" -> debug = parseInt(argSplit[1]);
                     case "ww", "worldwidth" -> worldWidth = parseDouble(argSplit[1]);
                     case "wh", "worldheight" -> worldHeight = parseDouble(argSplit[1]);
@@ -608,7 +630,7 @@ public class Application extends JFrame implements KeyListener {
             moveCamera(g, activeCamera, -1);
             drawGrid(g, world, 16, 16);
             moveCamera(g, activeCamera, 1);
-            gPipeline.stream().filter(e -> e.isAlive() || e.isPersistent())
+            gPipeline.stream().filter(e -> !(e instanceof Light) && e.isAlive() || e.isPersistent())
                     .forEach(e -> {
                         if (e.isNotStickToCamera()) {
                             moveCamera(g, activeCamera, -1);
@@ -641,9 +663,78 @@ public class Application extends JFrame implements KeyListener {
                             moveCamera(g, activeCamera, 1);
                         }
                     });
+            gPipeline.stream().filter(e -> e instanceof Light).forEach(l -> {
+                if (l.isNotStickToCamera()) {
+                    moveCamera(g, activeCamera, -1);
+                }
+                drawLight(g, (Light) l);
+                if (l.isNotStickToCamera()) {
+                    moveCamera(g, activeCamera, 1);
+                }
+            });
             g.dispose();
             renderToScreen(realFps);
             renderingTime = System.nanoTime() - startTime;
+        }
+
+        private void drawLight(Graphics2D g, Light l) {
+            switch (l.lightType) {
+                case SPOT -> drawSpotLight(g, l);
+                case SPHERICAL -> drawSphericalLight(g, l);
+                case AMBIANT -> drawAmbiantLight(g, l);
+            }
+        }
+
+        private void drawAmbiantLight(Graphics2D g, Light l) {
+            Camera cam = app.render.activeCamera;
+            Configuration conf = app.config;
+
+            final Area ambientArea = new Area(new Rectangle2D.Double(cam.pos.x, cam.pos.y, conf.screenWidth, conf.screenHeight));
+            g.setColor(l.color);
+            Composite c = g.getComposite();
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) l.energy));
+            g.fill(ambientArea);
+            g.setComposite(c);
+        }
+
+        private void drawSphericalLight(Graphics2D g, Light l) {
+            l.color = brighten(l.color, l.energy);
+            Color medColor = brighten(l.color, l.energy * 0.5);
+            Color endColor = new Color(0.0f, 0.0f, 0.0f, 0.2f);
+
+            l.colors = new Color[]{l.color,
+                    medColor,
+                    endColor};
+            l.dist = new float[]{0.0f, 0.1f, 1.0f};
+            l.rgp = new RadialGradientPaint(new Point((int) (l.pos.x + (10 * Math.random() * l.glitterEffect)),
+                    (int) (l.pos.y + (10 * Math.random() * l.glitterEffect))), (int) l.width, l.dist, l.colors);
+            g.setPaint(l.rgp);
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) l.energy));
+            g.fill(new Ellipse2D.Double(l.pos.x - l.width, l.pos.y - l.width, l.width * 2, l.width * 2));
+        }
+
+        private void drawSpotLight(Graphics2D g, Light l) {
+
+        }
+
+        /**
+         * Make a color brighten.
+         *
+         * @param color    Color to make brighten.
+         * @param fraction Darkness fraction.
+         * @return Lighter color.
+         * @link https://stackoverflow.com/questions/18648142/creating-brighter-color-java
+         */
+        public static Color brighten(Color color, double fraction) {
+
+            int red = (int) Math.round(Math.min(255, color.getRed() + 255 * fraction));
+            int green = (int) Math.round(Math.min(255, color.getGreen() + 255 * fraction));
+            int blue = (int) Math.round(Math.min(255, color.getBlue() + 255 * fraction));
+
+            int alpha = color.getAlpha();
+
+            return new Color(red, green, blue, alpha);
+
         }
 
         private void drawMapEntity(Graphics2D g, MapEntity me) {
@@ -672,19 +763,35 @@ public class Application extends JFrame implements KeyListener {
                 case RECTANGLE -> g.fillRect((int) ee.pos.x, (int) ee.pos.y, (int) ee.width, (int) ee.height);
                 case ELLIPSE -> g.fillArc((int) ee.pos.x, (int) ee.pos.y, (int) ee.width, (int) ee.height, 0, 360);
                 case IMAGE -> {
-                    BufferedImage sprite = (BufferedImage) (ee.getAnimations()
-                            ? ee.animations.getFrame()
-                            : ee.image);
                     if (ee.getDirection() > 0) {
-                        g.drawImage(sprite, (int) ee.pos.x, (int) ee.pos.y, null);
+                        g.drawImage(
+                                ee.getImage(),
+                                (int) ee.pos.x, (int) ee.pos.y,
+                                null);
                     } else {
-                        g.drawImage(sprite,
+                        g.drawImage(
+                                ee.getImage(),
                                 (int) (ee.pos.x + ee.width), (int) ee.pos.y,
                                 (int) (-ee.width), (int) ee.height,
                                 null);
                     }
                 }
             }
+        }
+
+        public BufferedImage setAlpha(BufferedImage sprite, float alpha) {
+
+            BufferedImage drawImage = new BufferedImage(
+                    sprite.getWidth(), sprite.getHeight(),
+                    BufferedImage.TYPE_INT_ARGB);
+
+            float[] scales = {1f, 1f, 1f, alpha};
+            float[] offsets = {0f, 0f, 0f, 0f};
+
+            RescaleOp rop = new RescaleOp(scales, offsets, null);
+            rop.filter(sprite, drawImage);
+
+            return drawImage;
         }
 
         private void drawText(Graphics2D g, Entity e, TextEntity te) {
@@ -741,7 +848,7 @@ public class Application extends JFrame implements KeyListener {
                 }
                 if (config.debug > 1) {
                     // display colliding box
-                    g.setColor(e.collide ? new Color(1.0f, 0.0f, 0.0f, 0.3f) : new Color(0.0f, 0.0f, 1.0f, 0.3f));
+                    g.setColor(e.collide ? new Color(1.0f, 0.0f, 0.0f, 0.7f) : new Color(0.0f, 0.0f, 1.0f, 0.3f));
                     g.fill(e.cbox);
                     if (config.debug > 2) {
                         // display 2D parameters
@@ -788,10 +895,11 @@ public class Application extends JFrame implements KeyListener {
          * @param se ValueEntity object
          */
         private void drawValue(Graphics2D g, ValueEntity se) {
-            byte c[] = se.valueTxt.getBytes(StandardCharsets.US_ASCII);
+            byte c[] = se.valueTxt.strip().getBytes(StandardCharsets.US_ASCII);
             for (int pos = 0; pos < se.valueTxt.length(); pos++) {
-                int v = c[pos];
-                drawFig(g, se, v - 48, se.pos.x + (pos * 8), se.pos.y);
+                //convert character ascii value to number from 0 to 9.
+                int v = c[pos] - 48;
+                drawFig(g, se, v, se.pos.x + (pos * 8), se.pos.y);
             }
         }
 
@@ -840,24 +948,32 @@ public class Application extends JFrame implements KeyListener {
          * @param realFps the measured frame rate per seconds
          */
         public void renderToScreen(long realFps) {
-            Graphics2D g2 = (Graphics2D) app.getGraphics();
+
+            Graphics2D g2 = (Graphics2D) app.frame.getBufferStrategy().getDrawGraphics();
             g2.drawImage(
                     buffer,
-                    0, 0, app.getWidth(), app.getHeight(),
+                    0, 0, (int) app.frame.getWidth(), (int) app.frame.getHeight(),
                     0, 0, (int) config.screenWidth, (int) config.screenHeight,
                     null);
+            drawDebugString(g2, realFps);
+            g2.dispose();
+            app.frame.getBufferStrategy().show();
+        }
+
+        public void drawDebugString(Graphics2D g, double realFps) {
             if (config.debug > 0) {
-                g2.setFont(debugFont.deriveFont(16.0f));
-                g2.setColor(Color.WHITE);
-                g2.drawString(String.format("[ dbg: %d| fps:%d | obj:%d | g:%f ]",
+                g.setFont(debugFont.deriveFont(16.0f));
+                g.setColor(Color.WHITE);
+                g.drawString(String.format("[ dbg: %d | fps:%3.0f | obj:%d | {g:%1.03f, a(%3.0fx%3.0f) }]",
                                 config.debug,
                                 realFps,
                                 gPipeline.size(),
-                                world.gravity),
+                                world.gravity * 1000.0,
+                                world.area.getWidth(), world.area.getHeight()),
 
-                        20, app.getHeight() - 30);
+                        20, (int) app.getHeight() - 20);
             }
-            g2.dispose();
+
         }
 
         /**
@@ -1704,6 +1820,12 @@ public class Application extends JFrame implements KeyListener {
             }
         }
 
+        public BufferedImage getImage() {
+            return (BufferedImage) (getAnimations()
+                    ? animations.getFrame()
+                    : image);
+        }
+
         public Entity addAnimation(String key, int x, int y, int tw, int th, int[] durations, String pathToImage, int loop) {
             if (Optional.ofNullable(this.animations).isEmpty()) {
                 this.animations = new Animation();
@@ -1739,7 +1861,6 @@ public class Application extends JFrame implements KeyListener {
             return this;
         }
     }
-
 
     /**
      * {@link AnimationSet} defining a series of Frames and their duration for a specific animation name.
@@ -2013,18 +2134,132 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    /**
+     * The list of light type.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.5
+     */
+    public enum LightType {
+        AMBIANT,
+        SPOT,
+        SPHERICAL
+    }
+
+    /**
+     * A Light class to simulate lights in a scene.
+     * It can be a SPOT, an AMBIANT or a SPHERICAL one.
+     * It will have an energy, and specific rotation
+     * angle (only for SPOT) and a glitter effect, to simulate neon light.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.5
+     */
+    public static class Light extends Entity {
+        public Color[] colors;
+        public float[] dist;
+        public RadialGradientPaint rgp;
+        private double energy;
+        private LightType lightType;
+        private double rotation;
+        private double glitterEffect;
+
+        /**
+         * Create a new Light with a name
+         *
+         * @param name the name of this new light in the Scene.
+         */
+        public Light(String name) {
+            super(name);
+            setPhysicType(PhysicType.STATIC);
+            setStickToCamera(true);
+        }
+
+        /**
+         * Set the light type;
+         *
+         * @param lt the LightType to be assigned to this light.
+         * @return the updated Light entity.
+         */
+        public Light setLightType(LightType lt) {
+            this.lightType = lt;
+            return this;
+        }
+
+        /**
+         * Define the energy for this Light.
+         *
+         * @param e the value of energy from 0 to 1.0.
+         * @return the updated Light entity.
+         */
+        public Light setEnergy(double e) {
+            this.energy = e;
+            return this;
+        }
+
+        /**
+         * Define the light spot direction (only for {@link LightType#SPOT}
+         *
+         * @param r the rotation angle in radian.
+         * @return the updated Light entity.
+         */
+        public Light setRotation(double r) {
+            this.rotation = r;
+            return this;
+        }
+
+        /**
+         * The glitterEffect factor, adding an offset to the light center to create aglitter effect.
+         *
+         * @param ge the Glitter factor from 0 to 1.0
+         * @return the updated Light entity.
+         */
+        public Light setGlitterEffect(double ge) {
+            this.glitterEffect = ge;
+            return this;
+        }
+    }
+
     public interface Scene {
         void prepare();
 
         boolean create(Application app) throws Exception;
 
+        /**
+         * Update phase for this Scene.
+         *
+         * @param app     the parent Application instance to access services
+         * @param elapsed the elapsed time since previous call.
+         */
         void update(Application app, double elapsed);
 
+        /**
+         * Manage and capture input at Scene level
+         *
+         * @param app
+         */
         void input(Application app);
 
+        /**
+         * Retrieve the name of the scene.
+         *
+         * @return
+         */
         String getName();
 
+        /**
+         * The map of behaviors attached to this Scene and executed during the update cycle.
+         *
+         * @return a Map of Behaviors implementations.
+         */
         Map<String, Behavior> getBehaviors();
+
+        /**
+         * Retrieve the list of Light manage by the scene.
+         *
+         * @return a list of Light
+         */
+        List<Light> getLights();
 
         void dispose();
     }
@@ -2070,6 +2305,7 @@ public class Application extends JFrame implements KeyListener {
     public Map<String, Object> attributes = new HashMap<>();
 
     public World world;
+    private JFrame frame;
 
     public Application(String[] args) {
         NumberFormat.getInstance(Locale.ROOT);
@@ -2096,7 +2332,8 @@ public class Application extends JFrame implements KeyListener {
             initializeServices();
             createWindow();
             if (loadScenes()) {
-                // prepapre services
+                initDefaultActions();
+                // prepare services
                 createJMXStatus(this);
                 System.out.printf("INFO: scene %s activated and created.\n", activeScene.getName());
             }
@@ -2105,6 +2342,36 @@ public class Application extends JFrame implements KeyListener {
             return false;
         }
         return true;
+    }
+
+    private void initDefaultActions() {
+        actionHandler.actionMapping.putAll(Map.of(
+                // reset the scene
+                KeyEvent.VK_Z, o -> {
+                    reset();
+                    return this;
+                },
+                // manage debug level
+                KeyEvent.VK_D, o -> {
+                    config.debug = config.debug + 1 < 5 ? config.debug + 1 : 0;
+                    return this;
+                },
+                // I quit !
+                KeyEvent.VK_ESCAPE, o -> {
+                    requestExit();
+                    return this;
+                },
+                KeyEvent.VK_K, o -> {
+                    Entity p = entities.get("player");
+                    p.setAttribute("energy", 0);
+                    return this;
+                },
+                KeyEvent.VK_F11, o -> {
+                    setWindowMode(!config.fullScreen);
+
+                    return this;
+                }
+        ));
     }
 
     private void initializeServices() {
@@ -2174,30 +2441,58 @@ public class Application extends JFrame implements KeyListener {
     }
 
     private void createWindow() {
-        setTitle(I18n.get("app.title"));
+        setWindowMode(config.fullScreen);
+    }
 
-        setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/sg-logo-image.png")));
+    /**
+     * Create the JFrame window in fullscreen or windowed mode (according to fullScreenMode boolean value).
+     *
+     * @param fullScreenMode the display mode to be set:
+     *                       <ul>
+     *                       <li>true = DISPLAY_MODE_FULLSCREEN,</li>
+     *                       <li>false = DISPLAY_MODE_WINDOWED</li>
+     *                       </ul>
+     */
+    private void setWindowMode(boolean fullScreenMode) {
+        GraphicsEnvironment graphics =
+                GraphicsEnvironment.getLocalGraphicsEnvironment();
 
-        Dimension dim = new Dimension((int) (config.screenWidth * config.displayScale),
-                (int) (config.screenHeight * config.displayScale));
+        GraphicsDevice device = graphics.getDefaultScreenDevice();
 
-        setSize(dim);
-        setPreferredSize(dim);
-        setMaximumSize(dim);
-        if (config.fullScreen) {
-            setExtendedState(JFrame.MAXIMIZED_BOTH);
-            setUndecorated(true);
+        if (Optional.ofNullable(frame).isPresent() && frame.isVisible()) {
+            frame.setVisible(false);
+            frame.dispose();
         }
 
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame = new JFrame(I18n.get("app.title"));
+        frame.setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/sg-logo-image.png")));
+        frame.setContentPane(this);
 
-        setFocusTraversalKeysEnabled(true);
+        displayMode = fullScreenMode ? DisplayModeEnum.DISPLAY_MODE_FULLSCREEN : DisplayModeEnum.DISPLAY_MODE_WINDOWED;
 
-        setLocationRelativeTo(null);
-        addKeyListener(this);
-        addKeyListener(actionHandler);
-        pack();
-        setVisible(true);
+        if (displayMode.equals(DisplayModeEnum.DISPLAY_MODE_FULLSCREEN)) {
+            frame.setUndecorated(true);
+            device.setFullScreenWindow(frame);
+        } else {
+            Dimension dim = new Dimension((int) (config.screenWidth * config.displayScale),
+                    (int) (config.screenHeight * config.displayScale));
+            frame.setSize(dim);
+            frame.setPreferredSize(dim);
+            frame.setMaximumSize(dim);
+            frame.setLocationRelativeTo(null);
+            frame.setUndecorated(false);
+        }
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setFocusTraversalKeysEnabled(true);
+
+        frame.addKeyListener(this);
+        frame.addKeyListener(actionHandler);
+
+        frame.pack();
+        frame.setVisible(true);
+        if (Optional.ofNullable(frame.getBufferStrategy()).isEmpty()) {
+            frame.createBufferStrategy(config.numberOfBuffer);
+        }
     }
 
     public void requestExit() {
@@ -2315,9 +2610,11 @@ public class Application extends JFrame implements KeyListener {
         render.draw(realFps);
     }
 
-    @Override
     public void dispose() {
-        super.dispose();
+        frame.dispose();
+    }
+
+    public void quit() {
         render.dispose();
         physicEngine.dispose();
     }
@@ -2356,7 +2653,6 @@ public class Application extends JFrame implements KeyListener {
         prevKeys[keyCode] = false;
         return status;
     }
-
 
     /**
      * Retrieve the internal entity Index current value.
