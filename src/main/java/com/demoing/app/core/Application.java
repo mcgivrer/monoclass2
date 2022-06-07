@@ -103,7 +103,11 @@ public class Application extends JPanel implements KeyListener {
         /**
          * An {@link Entity} having a {@link EntityType#IMAGE} type will be drawn as a {@link BufferedImage}.
          */
-        IMAGE
+        IMAGE,
+        /**
+         * for any Entity that are not visible.
+         */
+        NONE;
     }
 
     /**
@@ -118,7 +122,11 @@ public class Application extends JPanel implements KeyListener {
         /**
          * An {@link Entity} with a {@link PhysicType#STATIC} physic type will not be modified by the {@link PhysicEngine}.
          */
-        STATIC
+        STATIC,
+        /**
+         * An Entity with a {@link PhysicType#NONE} physic type will not be manage in any way by the physic engine.
+         */
+        NONE
     }
 
     /**
@@ -283,9 +291,9 @@ public class Application extends JPanel implements KeyListener {
                 ObjectName objectName = new ObjectName("com.demoing.app:name=" + programName);
                 platformMBeanServer.registerMBean(this, objectName);
             } catch (InstanceAlreadyExistsException
-                    | MBeanRegistrationException
-                    | NotCompliantMBeanException
-                    | MalformedObjectNameException e) {
+                     | MBeanRegistrationException
+                     | NotCompliantMBeanException
+                     | MalformedObjectNameException e) {
                 e.printStackTrace();
             }
         }
@@ -679,7 +687,6 @@ public class Application extends JPanel implements KeyListener {
                         }
                         g.setColor(e.color);
                         switch (e) {
-
                             // This is a TextEntity
                             case TextEntity te -> {
                                 drawText(g, e, te);
@@ -705,6 +712,7 @@ public class Application extends JPanel implements KeyListener {
                             moveCamera(g, activeCamera, 1);
                         }
                     });
+            // Draw all lights
             gPipeline.stream().filter(e -> e instanceof Light).forEach(l -> {
                 if (l.isNotStickToCamera()) {
                     moveCamera(g, activeCamera, -1);
@@ -721,9 +729,9 @@ public class Application extends JPanel implements KeyListener {
 
         private void drawLight(Graphics2D g, Light l) {
             switch (l.lightType) {
-                case SPOT -> drawSpotLight(g, l);
+                case SPOT      -> drawSpotLight(g, l);
                 case SPHERICAL -> drawSphericalLight(g, l);
-                case AMBIANT -> drawAmbiantLight(g, l);
+                case AMBIENT   -> drawAmbiantLight(g, l);
             }
         }
 
@@ -817,6 +825,8 @@ public class Application extends JPanel implements KeyListener {
                                 (int) (-ee.width), (int) ee.height,
                                 null);
                     }
+                }
+                case NONE -> {
                 }
             }
         }
@@ -912,8 +922,6 @@ public class Application extends JPanel implements KeyListener {
                             }
                         }
                     }
-
-
                 }
             }
         }
@@ -1194,7 +1202,6 @@ public class Application extends JPanel implements KeyListener {
                         .filter(b -> b.filterOnEvent().contains(Behavior.updateEntity))
                         .collect(Collectors.toList())
                         .forEach(b -> b.update(app, e, elapsed));
-
             });
             // TODO update Scene Behaviors
             app.activeScene.getBehaviors().values().stream()
@@ -2366,10 +2373,10 @@ public class Application extends JPanel implements KeyListener {
      */
     public enum LightType {
         /**
-         * An {@link LightType#AMBIANT} light will display a colored rectangle on all the viewport,
+         * An {@link LightType#AMBIENT} light will display a colored rectangle on all the viewport,
          * with a color corresponding to the defined {@link Light#color}.
          */
-        AMBIANT,
+        AMBIENT,
         /**
          * A {@link LightType#SPOT} light will display directional light of with {@link Light#color} at {@link Light#pos}.
          * The light direction and length is set by the {@link Light#rotation} and {@link Light#height} attributes.
@@ -2384,7 +2391,7 @@ public class Application extends JPanel implements KeyListener {
 
     /**
      * <p>A {@link Light} class to simulate lights in a {@link Scene}.</p>
-     * It can be a {@link LightType#SPOT}, an {@link LightType#AMBIANT} or a {@link LightType#SPHERICAL} one.
+     * It can be a {@link LightType#SPOT}, an {@link LightType#AMBIENT} or a {@link LightType#SPHERICAL} one.
      * It will have an {@link Light#energy}, and specific {@link Light#rotation}
      * angle and a {@link Light#height}  (for SPOT only), or a {@link Light#width} and {@link Light#height}
      * of the ellipse size(for SPHERICAL only) and a glitter effect (see {@link Light#glitterEffect},
@@ -2409,8 +2416,9 @@ public class Application extends JPanel implements KeyListener {
          */
         public Light(String name) {
             super(name);
-            setPhysicType(PhysicType.STATIC);
-            setStickToCamera(true);
+            setType(NONE);
+            setPhysicType(PhysicType.NONE);
+            setStickToCamera(false);
         }
 
         /**
@@ -2455,6 +2463,11 @@ public class Application extends JPanel implements KeyListener {
         public Light setGlitterEffect(double ge) {
             this.glitterEffect = ge;
             return this;
+        }
+
+        @Override
+        public void update(double elapsed) {
+            super.update(elapsed);
         }
     }
 
@@ -2630,7 +2643,7 @@ public class Application extends JPanel implements KeyListener {
                 scenes.put(sceneStr[0], s);
                 activateScene(config.defaultScene);
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                    InvocationTargetException e) {
+                     InvocationTargetException e) {
                 System.out.println("ERR: Unable to load scene from configuration file:"
                         + e.getLocalizedMessage()
                         + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
