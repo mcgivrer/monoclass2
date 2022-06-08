@@ -14,7 +14,7 @@ Lights.
 The `Render` must process those lights in a different rendering buffer to be able to apply color, lighten or darken
 effect over the already rendered entities. A dedicated Light buffer will be used.
 
-The `PhysicEngine` will process all the light like other  `Entity` according to the `Light` declared `PhysicType`.
+The `PhysicEngine` will process all the light like other `Entity` according to the `Light` declared `PhysicType`.
 
 ## Implementation proposition
 
@@ -56,30 +56,50 @@ public interface Scene {
 In the rendering pipeline, we need a new `BufferedImage`, to support drawing lights. This buffer is the applied through
 a Transparent transformation on the already existing rendering buffer.
 
+First, detect all Light in the pipeline, and draw those lights after other objects :
+
+```java
+public class Render {
+    public void draw(long realFps) {
+        //...
+        // render all objects but lights
+        gPipeline.stream()
+                .filter(e -> !(e instanceof Light) && e.isAlive() || e.isPersistent())
+                .forEach(e -> {
+                            //...
+        });
+        // Draw lights only
+        gPipeline.stream().filter(e -> e instanceof Light).forEach(l -> {
+            if (l.isNotStickToCamera()) {
+                moveCamera(g, activeCamera, -1);
+            }
+            drawLight(g, (Light) l);
+            if (l.isNotStickToCamera()) {
+                moveCamera(g, activeCamera, 1);
+            }
+        });
+    //...
+    }
+}
+```
+
+And now let's concentrate on the light drawing itself:
+
 ```java
 public class Render {
     //...
-    public void drawLight(Graphics2D g, Light l) {
-        switch (l.lightType) {
-            case SPHERICAL:
-                drawSphericalLight(g, l);
-                break;
-            case SPOT:
-                drawSpotLight(g, l);
-                break;
-            case AMBIANT:
-                drawAmbiantLight(g, l);
-                break;
-            default:
-                break;
+        private void drawLight(Graphics2D g, Light l) {
+            switch (l.lightType) {
+                case SPOT      -> drawSpotLight(g, l);
+                case SPHERICAL -> drawSphericalLight(g, l);
+                case AMBIENT   -> drawAmbiantLight(g, l);
+            }
         }
-        l.rendered = true;
-    }
     //...
 }
 ```
 
-And now a specialization to draw a SPOT light:
+We need some specialization, first to draw a SPOT light:
 
 ```java
 public class Render {
@@ -97,19 +117,27 @@ public class Render {
 }
 ```
 
-Another specialization to draw an AMBIANT Light:
+And another specialization to draw an AMBIANT Light:
 
 ```java
 public class Render {
     //...
     private void drawAmbiantLight(Graphics2D g, LightObject l) {
-        Camera cam = renderer.getGame().getSceneManager().getCurrent().getActiveCamera();
-        Configuration conf = renderer.getGame().getConfiguration();
+        Camera cam = app.render.activeCamera;
+        Configuration conf = app.config;
 
-        final Area ambientArea = new Area(new Rectangle2D.Double(cam.position.x, cam.position.y, conf.width, conf.height));
-        g.setColor(l.foregroundColor);
+        final Area ambientArea = new Area(
+            new Rectangle2D.Double(
+                cam.pos.x, 
+                cam.pos.y, 
+                conf.screenWidth, 
+                conf.screenHeight));
+        g.setColor(l.color);
         Composite c = g.getComposite();
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, l.intensity.floatValue()));
+        g.setComposite(
+            AlphaComposite.getInstance(
+                AlphaComposite.SRC_OVER, 
+                (float) l.energy));
         g.fill(ambientArea);
         g.setComposite(c);
     }
@@ -123,19 +151,32 @@ And finally a last specialization for a SPHERICAL light:
 public class Render {
     //...
     private void drawSphericalLight(Graphics2D g, LightObject l) {
-        l.color = brighten(l.foregroundColor, l.intensity);
-        Color medColor = brighten(l.foregroundColor, l.intensity / 1.6f);
-        Color endColor = new Color(0.0f, 0.0f, 0.0f, 0.01f);
+        l.color = brighten(l.color, l.energy);
+        Color medColor = brighten(l.color, l.energy * 0.5);
+        Color endColor = new Color(0.0f, 0.0f, 0.0f, 0.2f);
 
         l.colors = new Color[]{l.color,
                 medColor,
                 endColor};
-        l.dist = new float[]{0.01f, 0.2f, 0.5f};
-        l.rgp = new RadialGradientPaint(new Point((int) (l.position.x + (10 * Math.random() * l.glitterEffect)),
-                (int) (l.position.y - (10 * Math.random() * l.glitterEffect))), (int) l.width, l.dist, l.colors);
+        l.dist = new float[]{0.0f, 0.1f, 1.0f};
+        l.rgp = new RadialGradientPaint(
+            new Point(
+                (int) (l.pos.x + (10 * Math.random() * l.glitterEffect)),
+                (int) (l.pos.y + (10 * Math.random() * l.glitterEffect))), 
+                (int) l.width, 
+                l.dist, 
+                l.colors);
         g.setPaint(l.rgp);
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, l.intensity.floatValue()));
-        g.fill(new Ellipse2D.Double(l.position.x - l.width / 2, l.position.y - l.width / 2, l.width, l.width));
+        g.setComposite(
+            AlphaComposite.getInstance(
+                AlphaComposite.SRC_OVER, 
+                (float) l.energy));
+        g.fill(
+            new Ellipse2D.Double(
+                l.pos.x + (l.width * 0.5), 
+                l.pos.y + (l.width * 0.5), 
+                l.width * 0.5, 
+                l.width * 0.5));
     }
     //...
 }
