@@ -49,7 +49,7 @@ You can run it by executing the following command line :
 $> scripts/build.sh r
 ```
 
-(see [Build V3 README](https://gist.github.com/mcgivrer/a31510019029eba73edf5721a93c3dec#file-readme-md) for details on
+(see [Build README](https://gist.github.com/mcgivrer/a31510019029eba73edf5721a93c3dec#file-readme-md) for details on
 build script)
 
 Or if you build it with `scripts/build.sh a`, you will be able to run it with :
