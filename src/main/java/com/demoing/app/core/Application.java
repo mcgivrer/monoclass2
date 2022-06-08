@@ -964,8 +964,9 @@ public class Application extends JPanel implements KeyListener {
          * @param se ValueEntity object
          */
         private void drawValue(Graphics2D g, ValueEntity se) {
-            byte c[] = se.valueTxt.strip().getBytes(StandardCharsets.US_ASCII);
-            for (int pos = 0; pos < se.valueTxt.length(); pos++) {
+            String textValue = se.valueTxt.strip();
+            byte c[] = textValue.getBytes(StandardCharsets.US_ASCII);
+            for (int pos = 0; pos < textValue.length(); pos++) {
                 //convert character ascii value to number from 0 to 9.
                 int v = c[pos] - 48;
                 drawFig(g, se, v, se.pos.x + (pos * 8), se.pos.y);
@@ -1411,7 +1412,7 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
-     * Th {@link Influencer} extending {@link Entity} to provide environmental influencer to change {@link Entity}
+     * The {@link Influencer} extending {@link Entity} to provide environmental influencer to change {@link Entity}
      * behavior has soon the Entity is contained by the {@link Influencer}.
      * An influencer can change temporarily some {@link Entity} attribute's values.
      *
