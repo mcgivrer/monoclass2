@@ -118,7 +118,6 @@ function generatedoc() {
     -overview $TARGET/javadoc/overview.html \
     $JAVADOC_GROUPS
   echo "   done." >>target/build.log
-
 }
 
 #
