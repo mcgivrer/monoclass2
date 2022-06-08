@@ -291,9 +291,9 @@ public class Application extends JPanel implements KeyListener {
                 ObjectName objectName = new ObjectName("com.demoing.app:name=" + programName);
                 platformMBeanServer.registerMBean(this, objectName);
             } catch (InstanceAlreadyExistsException
-                     | MBeanRegistrationException
-                     | NotCompliantMBeanException
-                     | MalformedObjectNameException e) {
+                    | MBeanRegistrationException
+                    | NotCompliantMBeanException
+                    | MalformedObjectNameException e) {
                 e.printStackTrace();
             }
         }
@@ -729,10 +729,24 @@ public class Application extends JPanel implements KeyListener {
 
         private void drawLight(Graphics2D g, Light l) {
             switch (l.lightType) {
-                case SPOT      -> drawSpotLight(g, l);
+                case SPOT -> drawSpotLight(g, l);
                 case SPHERICAL -> drawSphericalLight(g, l);
-                case AMBIENT   -> drawAmbiantLight(g, l);
+                case AMBIENT -> drawAmbiantLight(g, l);
+                case AREA_RECTANGLE -> drawLightArea(g, l);
             }
+        }
+
+        private void drawLightArea(Graphics2D g, Light l) {
+
+            Camera cam = app.render.activeCamera;
+            Configuration conf = app.config;
+
+            final Area ambientArea = new Area(new Rectangle2D.Double(l.pos.x, l.pos.y, l.width, l.height));
+            g.setColor(l.color);
+            Composite c = g.getComposite();
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) l.energy));
+            g.fill(ambientArea);
+            g.setComposite(c);
         }
 
         private void drawAmbiantLight(Graphics2D g, Light l) {
@@ -755,12 +769,17 @@ public class Application extends JPanel implements KeyListener {
             l.colors = new Color[]{l.color,
                     medColor,
                     endColor};
-            l.dist = new float[]{0.0f, 0.1f, 1.0f};
-            l.rgp = new RadialGradientPaint(new Point((int) (l.pos.x + (10 * Math.random() * l.glitterEffect)),
-                    (int) (l.pos.y + (10 * Math.random() * l.glitterEffect))), (int) l.width, l.dist, l.colors);
+            l.dist = new float[]{0.0f, 0.05f, 0.5f};
+            l.rgp = new RadialGradientPaint(
+                    new Point(
+                            (int) (l.pos.x + (l.width * 0.5) + (10 * Math.random() * l.glitterEffect)),
+                            (int) (l.pos.y + (l.width * 0.5) + (10 * Math.random() * l.glitterEffect))),
+                    (int) (l.width),
+                    l.dist,
+                    l.colors);
             g.setPaint(l.rgp);
             g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) l.energy));
-            g.fill(new Ellipse2D.Double(l.pos.x - l.width, l.pos.y - l.width, l.width * 2, l.width * 2));
+            g.fill(new Ellipse2D.Double(l.pos.x, l.pos.y, l.width, l.width));
         }
 
         private void drawSpotLight(Graphics2D g, Light l) {
@@ -2382,6 +2401,7 @@ public class Application extends JPanel implements KeyListener {
          * The light direction and length is set by the {@link Light#rotation} and {@link Light#height} attributes.
          */
         SPOT,
+        AREA_RECTANGLE,
         /**
          * A {@link LightType#SPHERICAL} light will display an ellipse centered light of {@link Light#width} x {@link Light#height}
          * with {@link Light#color} at {@link Light#pos}.
@@ -2643,7 +2663,7 @@ public class Application extends JPanel implements KeyListener {
                 scenes.put(sceneStr[0], s);
                 activateScene(config.defaultScene);
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                     InvocationTargetException e) {
+                    InvocationTargetException e) {
                 System.out.println("ERR: Unable to load scene from configuration file:"
                         + e.getLocalizedMessage()
                         + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);

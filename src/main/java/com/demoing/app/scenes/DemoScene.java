@@ -86,12 +86,22 @@ public class DemoScene extends AbstractScene {
         generatePlatforms(app, 15);
 
         // Add some AMBIENT light
-        Light l01 = (Light) new Light("ambientLight")
+        Light la01 = (Light) new Light("ambientLight")
                 .setLightType(LightType.AMBIENT)
                 .setEnergy(0.1)
                 .setStickToCamera(false)
-                .setColor(new Color(1.0f, 0.0f, 0.0f, 0.9f));
-        app.addEntity(l01);
+                .setColor(new Color(0.3f, 1.0f, 0.3f, 0.9f));
+        app.addEntity(la01);
+
+        // Add some AMBIENT light
+        Light lar01 = (Light) new Light("areaLight")
+                .setLightType(LightType.AREA_RECTANGLE)
+                .setEnergy(0.5)
+                .setStickToCamera(false)
+                .setColor(new Color(0f, 0.0f, 1.0f, 0.9f))
+                .setPosition(0,app.world.area.getHeight()*0.75)
+                .setSize(app.world.area.getWidth(), app.world.area.getHeight()*0.25);
+        app.addEntity(lar01);
 
         // Add some SPHERICAL light
         for (int i = 0; i < 10; i++) {
