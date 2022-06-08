@@ -1,34 +1,33 @@
 package com.demoing.app.scenes;
 
+import com.demoing.app.core.AbstractScene;
 import com.demoing.app.core.Application;
 import com.demoing.app.core.Application.*;
 
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
 
 import static com.demoing.app.core.Application.EntityType.*;
 import static com.demoing.app.core.Application.PhysicType.STATIC;
 import static com.demoing.app.core.Application.TextAlign.CENTER;
 
-public class DemoScene implements Scene {
-    private final String name;
+public class DemoScene extends AbstractScene {
 
     Font wlcFont;
 
-    private Map<String, Behavior> behaviors = new ConcurrentHashMap<>();
     private boolean gameOver;
     BufferedImage[] figs;
 
     public DemoScene(String name) {
-        this.name = name;
+        super(name);
     }
 
+    @Override
     public void prepare() {
         // prepare the Figures for score rendering
         prepareFigures("/images/tiles01.png");
@@ -85,6 +84,14 @@ public class DemoScene implements Scene {
         app.addEntity(opf2);
 
         generatePlatforms(app, 15);
+
+        // add a light
+
+        Light l01 = (Light) new Light("ambiantlight")
+                .setLightType(LightType.AMBIANT)
+                .setEnergy(1.0)
+                .setColor(new Color(0.5f, 0.0f, 0.0f, 0.9f));
+        app.addEntity(l01);
 
         // A main player Entity.
         Entity player = new Entity("player")
@@ -157,6 +164,8 @@ public class DemoScene implements Scene {
         wlcFont = Resources.loadFont("/fonts/FreePixel.ttf")
                 .deriveFont(12.0f);
 
+        //---- Everything about HUD -----
+
         // Score Display
         int score = (int) app.getAttribute("score", 0);
 
@@ -217,12 +226,15 @@ public class DemoScene implements Scene {
                                 "ball_", Color.RED,
                                 "player", Color.BLUE,
                                 "pf_", Color.LIGHT_GRAY,
+                                "floor", Color.GRAY,
                                 "outPlatform", Color.YELLOW))
                 .setRefEntities(app.entities.values().stream().toList())
                 .setWorld(app.world)
                 .setSize(48, 32)
                 .setPosition(10, app.config.screenHeight - 48);
         app.addEntity(mapEntity);
+
+        // ---- Everything about Messages ----
 
         // A welcome Text
         TextEntity welcomeMsg = (TextEntity) new TextEntity("welcome")
@@ -247,29 +259,6 @@ public class DemoScene implements Scene {
                 .setStickToCamera(true));
 
         // mapping of keys actions:
-
-        app.actionHandler.actionMapping.putAll(Map.of(
-                // reset the scene
-                KeyEvent.VK_Z, o -> {
-                    app.reset();
-                    return this;
-                },
-                // manage debug level
-                KeyEvent.VK_D, o -> {
-                    app.config.debug = app.config.debug + 1 < 5 ? app.config.debug + 1 : 0;
-                    return this;
-                },
-                // I quit !
-                KeyEvent.VK_ESCAPE, o -> {
-                    app.requestExit();
-                    return this;
-                },
-                KeyEvent.VK_K, o -> {
-                    Entity p = app.entities.get("player");
-                    p.setAttribute("energy", 0);
-                    return this;
-                }
-        ));
         return true;
     }
 
@@ -440,6 +429,11 @@ public class DemoScene implements Scene {
     @Override
     public Map<String, Application.Behavior> getBehaviors() {
         return behaviors;
+    }
+
+    @Override
+    public List<Light> getLights() {
+        return lights;
     }
 
     @Override
