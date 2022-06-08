@@ -60,9 +60,9 @@ $> java --enable-preview -jar target/monoclass2-1.0.3.jar
 
 You will get the following window
 
-![DaGame pre-release preparing the v1.0.3 with Behavior and gameplay](docs/images/behaviors-and-gameplay.png "DaGame pre-release preparing the v1.0.3 with Behavior and gameplay")
+![LightAndShadow pre-release preparing the v1.0.5 with Light and Influences](docs/images/monoclass2-1.0.5-snapshot-screenshot.png.png "LightAndShadow pre-release preparing the v1.0.5 with Light and Influences")
 
-_figure 1 - DaGame pre-release preparing the v1.0.3 with Behavior and gameplay_
+_figure 1 - LightAndShadow pre-release preparing the v1.0.5 with Light and Influences_
 
 > :blue_book: _**NOTE**_
 > _You can notice the new Time display, limiting the time play._
