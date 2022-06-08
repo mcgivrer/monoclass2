@@ -9,7 +9,7 @@ export AUTHOR_NAME='Frédéric Delorme'
 export VENDOR_NAME=frederic.delorme@gmail.com
 export MAIN_CLASS=com.demoing.app.core.Application
 export JAVADOC_CLASSPATH="com.demoing.app.core com.demoing.app.scenes"
-export SOURCE_VERSION=17
+export SOURCE_VERSION=18
 export SOURCE_ENCODING=UTF-8
 # the tools and sources versions
 export GIT_COMMIT_ID=$(git rev-parse HEAD)
