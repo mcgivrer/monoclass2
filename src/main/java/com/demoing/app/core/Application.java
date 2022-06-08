@@ -291,9 +291,9 @@ public class Application extends JPanel implements KeyListener {
                 ObjectName objectName = new ObjectName("com.demoing.app:name=" + programName);
                 platformMBeanServer.registerMBean(this, objectName);
             } catch (InstanceAlreadyExistsException
-                    | MBeanRegistrationException
-                    | NotCompliantMBeanException
-                    | MalformedObjectNameException e) {
+                     | MBeanRegistrationException
+                     | NotCompliantMBeanException
+                     | MalformedObjectNameException e) {
                 e.printStackTrace();
             }
         }
@@ -1327,6 +1327,124 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
+     * The {@link World} object to define game play area limits and a default gravity and friction.
+     *
+     * <blockquote>May more to comes in the next release with some <code>Influencers</code> to
+     * dynamically modify entity display or physic attributes</blockquote>
+     */
+    public static class World {
+        /**
+         * {@link World} friction factor applied to ALL entities.
+         */
+        public double friction = 1.0;
+        /**
+         * Area for this {@link World} object.
+         */
+        public Rectangle2D area;
+        /**
+         * THe World default gravity is set to the Earth gravity value. it can be changed for your own usage.
+         */
+        public double gravity = 0.981;
+        /**
+         * The map of World {@link Influencer} to be applied to any {@link Entity} moving in this {@link World}.
+         */
+        private Map<String, Influencer> influencers = new ConcurrentHashMap<>();
+
+        /**
+         * Initialize the world with some default values with an area of 320.0 x 200.0.
+         */
+        public World() {
+            area = new Rectangle2D.Double(0.0, 0.0, 320.0, 200.0);
+        }
+
+        /**
+         * You can set your own {@link World} area dimension of width x height.
+         *
+         * @param width  the area width for this new {@link World}
+         * @param height the area Height for this new {@link World}.
+         * @return a World with ots new area of width x height.
+         */
+        public World setArea(double width, double height) {
+            area = new Rectangle2D.Double(0.0, 0.0, width, height);
+            return this;
+        }
+
+        /**
+         * Yot can also set the gravity for your {@link World}.
+         *
+         * @param g the new gravity for this World to be applied to all {@link Entity} in this {@link World}.
+         * @return the world updated with its new gravity.
+         */
+        public World setGravity(double g) {
+            this.gravity = g;
+            return this;
+        }
+
+        /**
+         * The {@link World} default friction can be changed to a new <code>f</code> value.
+         *
+         * @param f the value for the new friction applied to all {@link Entity} evolving in this {@link World}.
+         * @return the World updated with its new friction factor.
+         */
+        public World setFriction(double f) {
+            this.friction = f;
+            return this;
+        }
+
+        /**
+         * add an {@link Influencer} in the game {@link World}.
+         *
+         * @param i the new {@link Influencer} to be added to the {@link World} environment.
+         */
+        public void addInfluencer(Influencer i) {
+            influencers.put(i.name, i);
+        }
+
+        /**
+         * Retrieve all {@link Influencer} for this {@link World}.
+         *
+         * @return a Collection of {@link Influencer}.
+         */
+        public Collection<Influencer> getInfluencers() {
+            return influencers.values();
+        }
+    }
+
+    /**
+     * Th {@link Influencer} extending {@link Entity} to provide environmental influencer to change {@link Entity}
+     * behavior has soon the Entity is contained by the {@link Influencer}.
+     * An influencer can change temporarily some {@link Entity} attribute's values.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.5
+     */
+    public static class Influencer extends Entity {
+
+        public Influencer(String name) {
+            super(name);
+        }
+
+        public Influencer setGravity(Vec2d g) {
+            this.attributes.put("gravity", g);
+            return this;
+        }
+
+        public Influencer setForce(Vec2d f) {
+            this.attributes.put("force", f);
+            return this;
+        }
+
+        public Vec2d getGravtity() {
+            return (Vec2d) this.attributes.get("gravity");
+        }
+
+        public Vec2d getForce() {
+            return (Vec2d) this.attributes.get("force");
+        }
+
+    }
+
+    /**
      * Collision Detector Service.
      *
      * @author Frédéric Delorme
@@ -1639,68 +1757,6 @@ public class Application extends JPanel implements KeyListener {
             return String.format("(%4.2f,%4.2f)", x, y);
         }
 
-    }
-
-    /**
-     * The {@link World} object to define game play area limits and a default gravity and friction.
-     *
-     * <blockquote>May more to comes in the next release with some <code>Influencers</code> to
-     * dynamically modify entity display or physic attributes</blockquote>
-     */
-    public static class World {
-        /**
-         * {@link World} friction factor applied to ALL entities.
-         */
-        public double friction = 1.0;
-        /**
-         * Area for this {@link World} object.
-         */
-        public Rectangle2D area;
-        /**
-         * THe World default gravity is set to the Earth gravity value. it can be changed for your own usage.
-         */
-        public double gravity = 0.981;
-
-        /**
-         * Initialize the world with some default values with an area of 320.0 x 200.0.
-         */
-        public World() {
-            area = new Rectangle2D.Double(0.0, 0.0, 320.0, 200.0);
-        }
-
-        /**
-         * You can set your own {@link World} area dimension of width x height.
-         *
-         * @param width  the area width for this new {@link World}
-         * @param height the area Height for this new {@link World}.
-         * @return a World with ots new area of width x height.
-         */
-        public World setArea(double width, double height) {
-            area = new Rectangle2D.Double(0.0, 0.0, width, height);
-            return this;
-        }
-
-        /**
-         * Yot can also set the gravity for your {@link World}.
-         *
-         * @param g the new gravity for this World to be applied to all {@link Entity} in this {@link World}.
-         * @return the world updated with its new gravity.
-         */
-        public World setGravity(double g) {
-            this.gravity = g;
-            return this;
-        }
-
-        /**
-         * The {@link World} default friction can be changed to a new <code>f</code> value.
-         *
-         * @param f the value for the new friction applied to all {@link Entity} evolving in this {@link World}.
-         * @return the World updated with its new friction factor.
-         */
-        public World setFriction(double f) {
-            this.friction = f;
-            return this;
-        }
     }
 
     /**
@@ -2663,7 +2719,7 @@ public class Application extends JPanel implements KeyListener {
                 scenes.put(sceneStr[0], s);
                 activateScene(config.defaultScene);
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                    InvocationTargetException e) {
+                     InvocationTargetException e) {
                 System.out.println("ERR: Unable to load scene from configuration file:"
                         + e.getLocalizedMessage()
                         + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
