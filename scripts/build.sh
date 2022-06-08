@@ -73,7 +73,7 @@ echo "generate Javadoc "
   echo "|_ 2-5. generate javadoc from '$JAVADOC_CLASSPATH' ..."
   #java -jar ./lib/tools/markdown2html-0.3.1.jar <README.md >$TARGET/javadoc/overview.html
   javadoc $JAR_OPTS -source $SOURCE_VERSION \
-  #  -overview $TARGET/javadoc/overview.html \
+    -overview $TARGET/javadoc/overview.html \
     -author -use -version \
     -doctitle "<h1>$PROGRAM_TITLE</h1>" \
     -d $TARGET/javadoc \
