@@ -291,9 +291,9 @@ public class Application extends JPanel implements KeyListener {
                 ObjectName objectName = new ObjectName("com.demoing.app:name=" + programName);
                 platformMBeanServer.registerMBean(this, objectName);
             } catch (InstanceAlreadyExistsException
-                     | MBeanRegistrationException
-                     | NotCompliantMBeanException
-                     | MalformedObjectNameException e) {
+                    | MBeanRegistrationException
+                    | NotCompliantMBeanException
+                    | MalformedObjectNameException e) {
                 e.printStackTrace();
             }
         }
@@ -1425,22 +1425,87 @@ public class Application extends JPanel implements KeyListener {
             super(name);
         }
 
+        /**
+         * Define the {@link Influencer}'s gravity attribute, 0 means World's default gravity.
+         *
+         * @param g the new gravity for this {@link Influencer} zone
+         * @return the updated Influencer with its new gravity.
+         */
         public Influencer setGravity(Vec2d g) {
             this.attributes.put("gravity", g);
             return this;
         }
 
+        /**
+         * Define the {@link Influencer}'s attribute force to be applied to any {@link Entity}
+         * contained by this {@link Influencer}..
+         *
+         * @param f the force to be applied in this {@link Influencer} zone.
+         * @return the updated {@link Influencer} with its new force.
+         */
         public Influencer setForce(Vec2d f) {
             this.attributes.put("force", f);
             return this;
         }
 
+        /**
+         * Define the {@link Influencer}'s attribute elasticity to be applied to any {@link Entity}
+         * contained by this {@link Influencer}..
+         *
+         * @param e the elasticity to be applied in this {@link Influencer} zone.
+         * @return the updated {@link Influencer} with its new elasticity.
+         */
+        public Influencer setElasticity(double e) {
+            this.attributes.put("elasticity", e);
+            return this;
+        }
+
+        /**
+         * Define the {@link Influencer}'s attribute friction to be applied to any {@link Entity}
+         * contained by this {@link Influencer}..
+         *
+         * @param f the friction to be applied in this {@link Influencer} zone.
+         * @return the updated {@link Influencer} with its new friction.
+         */
+        public Influencer setFriction(double f) {
+            this.attributes.put("friction", f);
+            return this;
+        }
+
+        /**
+         * retrieve the current gravity attribute value for this {@link Influencer}
+         *
+         * @return value for this Influencer's gravity.
+         */
         public Vec2d getGravtity() {
             return (Vec2d) this.attributes.get("gravity");
         }
 
+        /**
+         * retrieve the current force attribute value for this {@link Influencer}
+         *
+         * @return value for this Influencer's force.
+         */
         public Vec2d getForce() {
             return (Vec2d) this.attributes.get("force");
+        }
+
+        /**
+         * retrieve the current elasticity attribute value for this {@link Influencer}
+         *
+         * @return value for this Influencer's elasticity.
+         */
+        public double getElasticity() {
+            return (double) this.attributes.get("elasticity");
+        }
+
+        /**
+         * retrieve the current friction attribute value for this {@link Influencer}
+         *
+         * @return value for this Influencer's friction.
+         */
+        public double getFriction() {
+            return (double) this.attributes.get("friction");
         }
 
     }
@@ -2720,7 +2785,7 @@ public class Application extends JPanel implements KeyListener {
                 scenes.put(sceneStr[0], s);
                 activateScene(config.defaultScene);
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                     InvocationTargetException e) {
+                    InvocationTargetException e) {
                 System.out.println("ERR: Unable to load scene from configuration file:"
                         + e.getLocalizedMessage()
                         + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
