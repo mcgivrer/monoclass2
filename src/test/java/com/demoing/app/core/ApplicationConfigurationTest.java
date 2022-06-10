@@ -4,9 +4,7 @@ package com.demoing.app.core;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class ApplicationConfigurationTest {
-
-    Application app;
+public class ApplicationConfigurationTest extends AbstractApplicationTest {
 
     @Test
     public void testRunApp() {

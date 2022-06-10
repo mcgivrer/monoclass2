@@ -1188,6 +1188,7 @@ public class Application extends JPanel implements KeyListener {
         private final World world;
         private final Configuration config;
         public long updateTime;
+        private Map<String, Influencer> influencers = new ConcurrentHashMap<>();
 
         /**
          * Initialize the Physic Engine for the parent Application a, with the Configuration c
@@ -1324,6 +1325,10 @@ public class Application extends JPanel implements KeyListener {
 
         public void dispose() {
 
+        }
+
+        public Collection<Influencer> getInfluencers() {
+            return influencers.values();
         }
     }
 
@@ -2767,7 +2772,14 @@ public class Application extends JPanel implements KeyListener {
         ));
     }
 
-    private void initializeServices() {
+    /**
+     * Initialize all Application services.
+     * <p>
+     * <blockquote><em>NOTE</em> This method is now public because of test requirements on services.</blockquote>
+     *
+     * @since 1.0.5
+     */
+    public void initializeServices() {
         render = new Render(this, config, world);
         physicEngine = new PhysicEngine(this, config, world);
         collisionDetect = new CollisionDetector(this, config, world);
@@ -3004,7 +3016,9 @@ public class Application extends JPanel implements KeyListener {
     }
 
     public void dispose() {
-        frame.dispose();
+        if (Optional.ofNullable(frame).isPresent()) {
+            frame.dispose();
+        }
     }
 
     public void quit() {
@@ -3054,6 +3068,22 @@ public class Application extends JPanel implements KeyListener {
      */
     public static long getEntityIndex() {
         return entityIndex;
+    }
+
+    public PhysicEngine getPhysicEngine() {
+        return physicEngine;
+    }
+
+    public Map<String, Entity> getEntities() {
+        return entities;
+    }
+
+    public World getWorld() {
+        return world;
+    }
+
+    public Render getRender() {
+        return render;
     }
 
     public static void main(String[] args) {
