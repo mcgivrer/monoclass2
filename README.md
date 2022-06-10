@@ -60,7 +60,7 @@ $> java --enable-preview -jar target/monoclass2-1.0.3.jar
 
 You will get the following window
 
-![LightAndShadow pre-release preparing the v1.0.5 with Light and Influences](docs/images/monoclass2-1.0.5-snapshot-screenshot.png.png "LightAndShadow pre-release preparing the v1.0.5 with Light and Influences")
+![LightAndShadow pre-release preparing the v1.0.5 with Light and Influences](docs/images/monoclass2-1.0.5-snapshot-screenshot.png "LightAndShadow pre-release preparing the v1.0.5 with Light and Influences")
 
 _figure 1 - LightAndShadow pre-release preparing the v1.0.5 with Light and Influences_
 
