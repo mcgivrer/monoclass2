@@ -59,3 +59,9 @@ public class Material {
     public double transparency;
 }
 ```
+
+## CollisionDetector update
+
+The CollisionDetector responsible for collision event and processing, will perform the Influencer vs. Entity collision
+detection. A Behavior is applied at Influence creation to proceed the collision event.
+

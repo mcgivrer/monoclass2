@@ -521,7 +521,7 @@ public class Application extends JPanel implements KeyListener {
             debug = parseInt(appProps.getProperty("app.debug.level", "0"));
             convertStringToBoolean(appProps.getProperty("app.window.mode.fullscreen", "false"));
 
-            scenes = appProps.getProperty("app.scenes");
+            scenes = appProps.getProperty("app.scene.list");
             defaultScene = appProps.getProperty("app.scene.default");
 
             defaultLanguage = appProps.getProperty("app.language.default", "en_EN");
@@ -555,31 +555,34 @@ public class Application extends JPanel implements KeyListener {
          * @return the updated Configuration object.
          */
         private Configuration parseArgs(String[] args) {
-            Arrays.asList(args).forEach(arg -> {
-                String[] argSplit = arg.split("=");
-                System.out.println("- arg:" + argSplit[0] + "=" + argSplit[1]);
-                switch (argSplit[0].toLowerCase()) {
-                    case "w", "width" -> screenWidth = parseDouble(argSplit[1]);
-                    case "h", "height" -> screenHeight = parseDouble(argSplit[1]);
-                    case "s", "scale" -> displayScale = parseDouble(argSplit[1]);
-                    case "b", "buffers" -> numberOfBuffer = parseInt(argSplit[1]);
-                    case "d", "debug" -> debug = parseInt(argSplit[1]);
-                    case "ww", "worldwidth" -> worldWidth = parseDouble(argSplit[1]);
-                    case "wh", "worldheight" -> worldHeight = parseDouble(argSplit[1]);
-                    case "wg", "worldgravity" -> worldGravity = parseDouble(argSplit[1]);
-                    case "spmin" -> speedMinValue = parseDouble(argSplit[1]);
-                    case "spmax" -> speedMaxValue = parseDouble(argSplit[1]);
-                    case "accmin" -> accMinValue = parseDouble(argSplit[1]);
-                    case "accmax" -> accMaxValue = parseDouble(argSplit[1]);
-                    case "cspmin" -> colSpeedMinValue = parseDouble(argSplit[1]);
-                    case "cspmax" -> colSpeedMaxValue = parseDouble(argSplit[1]);
-                    case "fps" -> fps = parseDouble(argSplit[1]);
-                    case "f", "fullScreen" -> convertStringToBoolean(argSplit[1]);
-                    case "scene" -> defaultScene = argSplit[1];
-                    case "l", "language", "lang" -> defaultLanguage = argSplit[1];
-                    default -> System.out.printf("\nERR : Unknown argument %s\n", arg);
-                }
-            });
+            // args not null and not empty ? parse it !
+            if (Optional.ofNullable((args)).isPresent() && args.length > 0) {
+                Arrays.asList(args).forEach(arg -> {
+                    String[] argSplit = arg.split("=");
+                    System.out.println("- arg:" + argSplit[0] + "=" + argSplit[1]);
+                    switch (argSplit[0].toLowerCase()) {
+                        case "w", "width" -> screenWidth = parseDouble(argSplit[1]);
+                        case "h", "height" -> screenHeight = parseDouble(argSplit[1]);
+                        case "s", "scale" -> displayScale = parseDouble(argSplit[1]);
+                        case "b", "buffers" -> numberOfBuffer = parseInt(argSplit[1]);
+                        case "d", "debug" -> debug = parseInt(argSplit[1]);
+                        case "ww", "worldwidth" -> worldWidth = parseDouble(argSplit[1]);
+                        case "wh", "worldheight" -> worldHeight = parseDouble(argSplit[1]);
+                        case "wg", "worldgravity" -> worldGravity = parseDouble(argSplit[1]);
+                        case "spmin" -> speedMinValue = parseDouble(argSplit[1]);
+                        case "spmax" -> speedMaxValue = parseDouble(argSplit[1]);
+                        case "accmin" -> accMinValue = parseDouble(argSplit[1]);
+                        case "accmax" -> accMaxValue = parseDouble(argSplit[1]);
+                        case "cspmin" -> colSpeedMinValue = parseDouble(argSplit[1]);
+                        case "cspmax" -> colSpeedMaxValue = parseDouble(argSplit[1]);
+                        case "fps" -> fps = parseDouble(argSplit[1]);
+                        case "f", "fullScreen" -> convertStringToBoolean(argSplit[1]);
+                        case "scene" -> defaultScene = argSplit[1];
+                        case "l", "language", "lang" -> defaultLanguage = argSplit[1];
+                        default -> System.out.printf("\nERR : Unknown argument %s\n", arg);
+                    }
+                });
+            }
             return this;
         }
 
@@ -1212,23 +1215,29 @@ public class Application extends JPanel implements KeyListener {
          */
         public synchronized void update(double elapsed) {
             long start = System.nanoTime();
+
             // update entities
             app.entities.values().forEach((e) -> {
                 if (e.physicType.equals(PhysicType.DYNAMIC)) {
                     updateEntity(e, elapsed);
                 }
                 e.update(elapsed);
+
                 // TODO update Entity Behavior
                 e.behaviors.values().stream()
-                        .filter(b -> b.filterOnEvent().contains(Behavior.updateEntity))
-                        .collect(Collectors.toList())
+                        .filter(b -> b.filterOnEvent()
+                        .contains(Behavior.updateEntity))
+                        .toList()
                         .forEach(b -> b.update(app, e, elapsed));
             });
+
             // TODO update Scene Behaviors
-            app.activeScene.getBehaviors().values().stream()
-                    .filter(b -> b.filterOnEvent().contains(Behavior.updateScene))
-                    .collect(Collectors.toList())
-                    .forEach(b -> b.update(app, elapsed));
+            if (Optional.ofNullable(app.activeScene.getBehaviors()).isPresent()) {
+                app.activeScene.getBehaviors().values().stream()
+                        .filter(b -> b.filterOnEvent().contains(Behavior.updateScene))
+                        .toList()
+                        .forEach(b -> b.update(app, elapsed));
+            }
             //  update active camera if presents.
             if (Optional.ofNullable(app.render.activeCamera).isPresent()) {
                 app.render.activeCamera.update(elapsed);
@@ -1243,8 +1252,23 @@ public class Application extends JPanel implements KeyListener {
          * @param elapsed the elapsed time since previous call.
          */
         private void updateEntity(Entity e, double elapsed) {
+            applyWorldInfluencers(e);
             applyPhysicRuleToEntity(e, elapsed);
             constrainsEntity(e);
+        }
+
+        private void applyWorldInfluencers(Entity e) {
+            getInfluencers().values()
+                    .stream()
+                    .filter(i -> i.box.contains(e.box))
+                    .forEach(i2 -> {
+                        if (Optional.ofNullable(i2.getGravtity()).isPresent()) {
+                            e.forces.add(i2.getGravtity());
+                        }
+                        if (Optional.ofNullable(i2.getForce()).isPresent()) {
+                            e.forces.add(i2.getForce());
+                        }
+                    });
         }
 
         /**
@@ -1327,8 +1351,13 @@ public class Application extends JPanel implements KeyListener {
 
         }
 
-        public Collection<Influencer> getInfluencers() {
-            return influencers.values();
+        public Map<String, Influencer> getInfluencers() {
+            return influencers;
+        }
+
+        public PhysicEngine addInfluencer(Influencer i) {
+            influencers.put(i.name, i);
+            return this;
         }
     }
 
@@ -1428,6 +1457,28 @@ public class Application extends JPanel implements KeyListener {
 
         public Influencer(String name) {
             super(name);
+            addBehavior(new Behavior() {
+                @Override
+                public String filterOnEvent() {
+                    return Behavior.onCollision;
+                }
+
+                @Override
+                public void update(Application a, Entity e, double elapsed) {
+
+                }
+
+                @Override
+                public void update(Application a, double elapsed) {
+
+                }
+
+                @Override
+                public void onCollide(Application a, Entity e1, Entity e2) {
+                    Influencer i1 = (Influencer) e1;
+                    e2.forces.add(i1.getForce());
+                }
+            });
         }
 
         /**
@@ -2674,6 +2725,7 @@ public class Application extends JPanel implements KeyListener {
         void update(Application a, double elapsed);
 
         void onCollide(Application a, Entity e1, Entity e2);
+
     }
 
     public boolean exit = false;
@@ -2710,6 +2762,17 @@ public class Application extends JPanel implements KeyListener {
         initialize(args);
     }
 
+    /**
+     * Constructor used mainly for test purpose.
+     *
+     * @param args                  the list of arguments to be parsed by the Configuration
+     * @param configurationFileName the configuration file path to be loaded by Configuration.
+     */
+    public Application(String[] args, String configurationFileName) {
+        NumberFormat.getInstance(Locale.ROOT);
+        initialize(args, configurationFileName);
+    }
+
     protected void run() {
         if (start()) {
             loop();
@@ -2717,8 +2780,27 @@ public class Application extends JPanel implements KeyListener {
         }
     }
 
-    private void initialize(String[] args) {
-        config = new Configuration("/app.properties").parseArgs(args);
+    /**
+     * Initialize the Application with the default configuration file (app.proprerties)
+     * and parse java CLI arguments.
+     *
+     * @param args the array of arguments from java CLI
+     * @see Application#initialize(String[], String)
+     */
+    public void initialize(String[] args) {
+        initialize(args, "/app.properties");
+    }
+
+    /**
+     * Initialize the application by setting Configuration instance by loading
+     * data from <code>configFileName</code>  and parsing java CLI arguments <code>args</code>.
+     *
+     * @param args           the CLI java arguments to be parsed (if provided)
+     * @param configFileName the name of the configuration file to be loaded.
+     * @see Configuration
+     */
+    public void initialize(String[] args, String configFileName) {
+        config = new Configuration(configFileName).parseArgs(args);
         I18n.setLanguage(config);
         world = new World()
                 .setArea(config.worldWidth, config.worldHeight)
@@ -2786,7 +2868,18 @@ public class Application extends JPanel implements KeyListener {
         actionHandler = new ActionHandler(this);
     }
 
-    private boolean loadScenes() {
+    /**
+     * Read Scenes and set the default scene according to {@link Configuration}.
+     * the concerned properties entries are:
+     * <ul>
+     *     <li><code>app.scene.list</code>is a list of Scene implementation classes comma separated,</li>
+     *     <li><code>app.scene.default</code> is the scene to be activated at start (by default).</li>
+     * </ul>
+     *
+     * @return true if Scene is correctly loaded, else false.
+     * @see Configuration
+     */
+    public boolean loadScenes() {
         String[] scenesList = config.scenes.split(",");
         for (String scene : scenesList) {
             String[] sceneStr = scene.split(":");
@@ -2801,6 +2894,7 @@ public class Application extends JPanel implements KeyListener {
                 System.out.println("ERR: Unable to load scene from configuration file:"
                         + e.getLocalizedMessage()
                         + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
+                e.printStackTrace(System.out);
                 return false;
             }
         }
@@ -2992,12 +3086,12 @@ public class Application extends JPanel implements KeyListener {
 
     private synchronized void update(double elapsed) {
         if (!pause) {
-            double maxElapsed = Math.min(elapsed, config.frameTime);
-            physicEngine.update(Math.min(elapsed, config.frameTime));
-            collisionDetect.update(maxElapsed);
-            //if (sceneReady) {
-            activeScene.update(this, elapsed);
-            //}
+            double maxElapsedTime = Math.min(elapsed, config.frameTime);
+            physicEngine.update(maxElapsedTime);
+            collisionDetect.update(maxElapsedTime);
+            if (sceneReady) {
+                activeScene.update(this, elapsed);
+            }
         }
     }
 
@@ -3073,6 +3167,11 @@ public class Application extends JPanel implements KeyListener {
     public PhysicEngine getPhysicEngine() {
         return physicEngine;
     }
+
+    public CollisionDetector getCollisionDetector() {
+        return collisionDetect;
+    }
+
 
     public Map<String, Entity> getEntities() {
         return entities;

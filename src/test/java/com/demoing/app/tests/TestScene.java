@@ -7,7 +7,11 @@ import java.util.List;
 import java.util.Map;
 
 public class TestScene implements Application.Scene {
+    private String name = "noname";
 
+    public TestScene(String name) {
+        this.name = name;
+    }
 
     @Override
     public void prepare() {
@@ -31,7 +35,7 @@ public class TestScene implements Application.Scene {
 
     @Override
     public String getName() {
-        return "test";
+        return this.name;
     }
 
     @Override
