@@ -1603,8 +1603,7 @@ public class Application extends JPanel implements KeyListener {
                     if (e1.id != e2.id && e1.cbox.getBounds().intersects(e2.cbox.getBounds())) {
                         resolve(e1, e2);
                         e1.behaviors.values().stream()
-                                .filter(b -> b.filterOnEvent().equals(Behavior.onCollision))
-                                .collect(Collectors.toList())
+                                .filter(b -> b.filterOnEvent().equals(Behavior.onCollision)).toList()
                                 .forEach(b -> b.onCollide(app, e1, e2));
                     }
                 }
@@ -1677,7 +1676,8 @@ public class Application extends JPanel implements KeyListener {
                 img = (BufferedImage) resources.get(path);
             } else {
                 try {
-                    img = ImageIO.read(Resources.class.getResourceAsStream(path));
+                    InputStream is = Resources.class.getResourceAsStream(path);
+                    img = ImageIO.read(Objects.requireNonNull(is));
                     resources.put(path, img);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
