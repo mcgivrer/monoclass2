@@ -683,7 +683,9 @@ public class Application extends JPanel implements KeyListener {
             moveCamera(g, activeCamera, -1);
             drawGrid(g, world, 16, 16);
             moveCamera(g, activeCamera, 1);
-            gPipeline.stream().filter(e -> !(e instanceof Light) && e.isAlive() || e.isPersistent())
+            gPipeline.stream()
+                    .filter(e -> !(e instanceof Light)
+                            && e.isAlive() || e.isPersistent())
                     .forEach(e -> {
                         if (e.isNotStickToCamera()) {
                             moveCamera(g, activeCamera, -1);
@@ -702,8 +704,13 @@ public class Application extends JPanel implements KeyListener {
                             case ValueEntity se -> {
                                 drawValue(g, se);
                             }
+                            // This is a MapEntity
                             case MapEntity me -> {
                                 drawMapEntity(g, me);
+                            }
+                            // This is an Influencer
+                            case Influencer ie -> {
+                                drawInfluencer(g, ie);
                             }
                             // This is a basic entity
                             case Entity ee -> {
@@ -728,6 +735,10 @@ public class Application extends JPanel implements KeyListener {
             g.dispose();
             renderToScreen(realFps);
             renderingTime = System.nanoTime() - startTime;
+        }
+
+        private void drawInfluencer(Graphics2D g, Influencer ie) {
+            drawEntity(g, ie);
         }
 
         private void drawLight(Graphics2D g, Light l) {
@@ -1226,7 +1237,7 @@ public class Application extends JPanel implements KeyListener {
                 // TODO update Entity Behavior
                 e.behaviors.values().stream()
                         .filter(b -> b.filterOnEvent()
-                        .contains(Behavior.updateEntity))
+                                .contains(Behavior.updateEntity))
                         .toList()
                         .forEach(b -> b.update(app, e, elapsed));
             });
@@ -1252,23 +1263,26 @@ public class Application extends JPanel implements KeyListener {
          * @param elapsed the elapsed time since previous call.
          */
         private void updateEntity(Entity e, double elapsed) {
-            applyWorldInfluencers(e);
             applyPhysicRuleToEntity(e, elapsed);
             constrainsEntity(e);
         }
 
         private void applyWorldInfluencers(Entity e) {
+            final Vec2d[] g = {new Vec2d(0, e.mass * -world.gravity)};
             getInfluencers().values()
                     .stream()
                     .filter(i -> i.box.contains(e.box))
                     .forEach(i2 -> {
                         if (Optional.ofNullable(i2.getGravtity()).isPresent()) {
-                            e.forces.add(i2.getGravtity());
+                            g[0] = new Vec2d(
+                                    i2.getGravtity().x,
+                                    e.mass * i2.getGravtity().y);
                         }
                         if (Optional.ofNullable(i2.getForce()).isPresent()) {
                             e.forces.add(i2.getForce());
                         }
                     });
+            e.forces.add(g[0]);
         }
 
         /**
@@ -1284,12 +1298,14 @@ public class Application extends JPanel implements KeyListener {
             // a small reduction of time
             elapsed *= 0.4;
 
-            e.forces.add(new Vec2d(0, e.mass * -world.gravity));
+            applyWorldInfluencers(e);
 
             e.acc = new Vec2d(0.0, 0.0);
             e.acc.add(e.forces);
 
-            e.vel.add(e.acc.minMax(config.accMinValue, config.accMaxValue).multiply(0.5 * elapsed * e.friction * world.friction));
+            e.vel.add(e.acc
+                    .minMax(config.accMinValue, config.accMaxValue)
+                    .multiply(0.5 * elapsed * e.friction * world.friction));
             e.vel.minMax(config.speedMinValue, config.speedMaxValue);
 
             e.pos.add(e.vel);
@@ -1352,12 +1368,10 @@ public class Application extends JPanel implements KeyListener {
         }
 
         public Map<String, Influencer> getInfluencers() {
-            return influencers;
-        }
-
-        public PhysicEngine addInfluencer(Influencer i) {
-            influencers.put(i.name, i);
-            return this;
+            return app.entities.values()
+                    .stream()
+                    .filter(e -> e instanceof Influencer)
+                    .collect(Collectors.toMap(e -> e.name, e -> (Influencer) e));
         }
     }
 
@@ -1380,10 +1394,6 @@ public class Application extends JPanel implements KeyListener {
          * THe World default gravity is set to the Earth gravity value. it can be changed for your own usage.
          */
         public double gravity = 0.981;
-        /**
-         * The map of World {@link Influencer} to be applied to any {@link Entity} moving in this {@link World}.
-         */
-        private Map<String, Influencer> influencers = new ConcurrentHashMap<>();
 
         /**
          * Initialize the world with some default values with an area of 320.0 x 200.0.
@@ -1424,24 +1434,6 @@ public class Application extends JPanel implements KeyListener {
         public World setFriction(double f) {
             this.friction = f;
             return this;
-        }
-
-        /**
-         * add an {@link Influencer} in the game {@link World}.
-         *
-         * @param i the new {@link Influencer} to be added to the {@link World} environment.
-         */
-        public void addInfluencer(Influencer i) {
-            influencers.put(i.name, i);
-        }
-
-        /**
-         * Retrieve all {@link Influencer} for this {@link World}.
-         *
-         * @return a Collection of {@link Influencer}.
-         */
-        public Collection<Influencer> getInfluencers() {
-            return influencers.values();
         }
     }
 

@@ -7,6 +7,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.awt.*;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
@@ -47,9 +49,11 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
         // Create an Influencer in the initialized app World
         Influencer i = (Influencer) new Influencer("influencer_1")
                 .setForce(new Vec2d(1.0, 0.0))
-                .setPosition(0, 0)
-                .setSize(200, 200);
-        app.getPhysicEngine().addInfluencer(i);
+                .setPosition(0.0, app.world.area.getHeight() - 200.0)
+                .setSize(app.world.area.getWidth(), 200.0)
+                .setPhysicType(Application.PhysicType.NONE)
+                .setColor(new Color(0.0f,0.0f,0.5f,.07f));
+        app.addEntity(i);
 
         // create a simple Rectangle entity to be influenced by the "influencer_1"
         Entity e1 = new Entity("entity_1")
