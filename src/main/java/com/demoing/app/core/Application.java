@@ -1048,13 +1048,14 @@ public class Application extends JPanel implements KeyListener {
             if (config.debug > 0) {
                 g.setFont(debugFont.deriveFont(16.0f));
                 g.setColor(Color.WHITE);
-                g.drawString(String.format("[ dbg: %d | fps:%3.0f | obj:%d | {g:%1.03f, a(%3.0fx%3.0f) }]",
+                g.drawString(
+                        String.format(
+                                "[ dbg: %d | fps:%3.0f | obj:%d | {g:%1.03f, a(%3.0fx%3.0f) }]",
                                 config.debug,
                                 realFps,
                                 gPipeline.size(),
-                                world.gravity * 1000.0,
+                                world.gravity.y * 1000.0,
                                 world.area.getWidth(), world.area.getHeight()),
-
                         20, (int) app.getHeight() - 20);
             }
 
@@ -1194,7 +1195,7 @@ public class Application extends JPanel implements KeyListener {
      * A Physic computation engine to process Object moves according to their resulting process acceleration and speed
      * from the applied forces to each Entity.
      *
-     * @Author Frédéric Delorme
+     * @author Frédéric Delorme
      * @since 1.0.2
      */
     public static class PhysicEngine {
@@ -1222,7 +1223,7 @@ public class Application extends JPanel implements KeyListener {
          * Update and process physics attributes the Entity (acceleration, speed and position) from the
          * <code>app.entities map</code>, with  the elapsed time since previous call.
          *
-         * @param elapsed
+         * @param elapsed the elapsed time since previous call.
          */
         public synchronized void update(double elapsed) {
             long start = System.nanoTime();
@@ -1268,15 +1269,15 @@ public class Application extends JPanel implements KeyListener {
         }
 
         private void applyWorldInfluencers(Entity e) {
-            final Vec2d[] g = {new Vec2d(0, e.mass * -world.gravity)};
+            final Vec2d[] g = {new Vec2d(world.gravity.x, e.mass * world.gravity.y)};
             getInfluencers().values()
                     .stream()
                     .filter(i -> i.box.contains(e.box))
                     .forEach(i2 -> {
-                        if (Optional.ofNullable(i2.getGravtity()).isPresent()) {
+                        if (Optional.ofNullable(i2.getGravity()).isPresent()) {
                             g[0] = new Vec2d(
-                                    i2.getGravtity().x,
-                                    e.mass * i2.getGravtity().y);
+                                    i2.getGravity().x,
+                                    e.mass * i2.getGravity().y);
                         }
                         if (Optional.ofNullable(i2.getForce()).isPresent()) {
                             e.forces.add(i2.getForce());
@@ -1305,7 +1306,8 @@ public class Application extends JPanel implements KeyListener {
 
             e.vel.add(e.acc
                     .minMax(config.accMinValue, config.accMaxValue)
-                    .multiply(0.5 * elapsed * e.friction * world.friction));
+                    .multiply(0.5 * elapsed * e.material.friction * world.getMaterial().friction));
+
             e.vel.minMax(config.speedMinValue, config.speedMaxValue);
 
             e.pos.add(e.vel);
@@ -1383,23 +1385,29 @@ public class Application extends JPanel implements KeyListener {
      */
     public static class World {
         /**
-         * {@link World} friction factor applied to ALL entities.
-         */
-        public double friction = 1.0;
-        /**
          * Area for this {@link World} object.
          */
         public Rectangle2D area;
-        /**
-         * THe World default gravity is set to the Earth gravity value. it can be changed for your own usage.
-         */
-        public double gravity = 0.981;
+
+        private Material material;
+
+        public Vec2d gravity;
+
+        public World setMaterial(Material m) {
+            this.material = m;
+            return this;
+        }
+
+        public Material getMaterial() {
+            return material;
+        }
 
         /**
          * Initialize the world with some default values with an area of 320.0 x 200.0.
          */
         public World() {
             area = new Rectangle2D.Double(0.0, 0.0, 320.0, 200.0);
+            gravity = new Vec2d(0.0, -0.981);
         }
 
         /**
@@ -1420,19 +1428,8 @@ public class Application extends JPanel implements KeyListener {
          * @param g the new gravity for this World to be applied to all {@link Entity} in this {@link World}.
          * @return the world updated with its new gravity.
          */
-        public World setGravity(double g) {
+        public World setGravity(Vec2d g) {
             this.gravity = g;
-            return this;
-        }
-
-        /**
-         * The {@link World} default friction can be changed to a new <code>f</code> value.
-         *
-         * @param f the value for the new friction applied to all {@link Entity} evolving in this {@link World}.
-         * @return the World updated with its new friction factor.
-         */
-        public World setFriction(double f) {
-            this.friction = f;
             return this;
         }
     }
@@ -1446,6 +1443,8 @@ public class Application extends JPanel implements KeyListener {
      * @since 1.0.5
      */
     public static class Influencer extends Entity {
+
+        public Material material;
 
         public Influencer(String name) {
             super(name);
@@ -1497,35 +1496,11 @@ public class Application extends JPanel implements KeyListener {
         }
 
         /**
-         * Define the {@link Influencer}'s attribute elasticity to be applied to any {@link Entity}
-         * contained by this {@link Influencer}..
-         *
-         * @param e the elasticity to be applied in this {@link Influencer} zone.
-         * @return the updated {@link Influencer} with its new elasticity.
-         */
-        public Influencer setElasticity(double e) {
-            this.attributes.put("elasticity", e);
-            return this;
-        }
-
-        /**
-         * Define the {@link Influencer}'s attribute friction to be applied to any {@link Entity}
-         * contained by this {@link Influencer}..
-         *
-         * @param f the friction to be applied in this {@link Influencer} zone.
-         * @return the updated {@link Influencer} with its new friction.
-         */
-        public Influencer setFriction(double f) {
-            this.attributes.put("friction", f);
-            return this;
-        }
-
-        /**
          * retrieve the current gravity attribute value for this {@link Influencer}
          *
          * @return value for this Influencer's gravity.
          */
-        public Vec2d getGravtity() {
+        public Vec2d getGravity() {
             return (Vec2d) this.attributes.get("gravity");
         }
 
@@ -1538,24 +1513,38 @@ public class Application extends JPanel implements KeyListener {
             return (Vec2d) this.attributes.get("force");
         }
 
-        /**
-         * retrieve the current elasticity attribute value for this {@link Influencer}
-         *
-         * @return value for this Influencer's elasticity.
-         */
-        public double getElasticity() {
-            return (double) this.attributes.get("elasticity");
+        public Material getMaterial() {
+            return material;
         }
+    }
 
-        /**
-         * retrieve the current friction attribute value for this {@link Influencer}
-         *
-         * @return value for this Influencer's friction.
-         */
-        public double getFriction() {
-            return (double) this.attributes.get("friction");
+
+    /**
+     * The {@link Material} is a new way to manage physic attributes for any {@link Entity}.
+     * It is used by {@link PhysicEngine} and {@link Influencer} to compute moves for {@link Entity}.
+     * {@link Influencer} is able to change temporarily {@link Material} for an {@link Entity} when
+     * the {@link Influencer} contains {@link Entity}.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.5
+     */
+    public static class Material {
+        public String name;
+        public double density;
+        public double elasticity;
+        public double friction;
+        public Color color = Color.BLUE;
+        public float transparency = 0.0f;
+
+        public Material(String name,
+                        double density,
+                        double elasticity,
+                        double friction) {
+            this.name = name;
+            this.density = density;
+            this.elasticity = elasticity;
+            this.friction = friction;
         }
-
     }
 
     /**
@@ -1914,6 +1903,9 @@ public class Application extends JPanel implements KeyListener {
         public Vec2d vel = new Vec2d(0.0, 0.0);
         public Vec2d acc = new Vec2d(0.0, 0.0);
         public double mass = 1.0;
+
+        public Material material;
+
         public double elasticity = 1.0, friction = 1.0;
 
         // internal attributes
@@ -2042,13 +2034,8 @@ public class Application extends JPanel implements KeyListener {
             return this;
         }
 
-        public Entity setElasticity(double e) {
-            this.elasticity = e;
-            return this;
-        }
-
-        public Entity setFriction(double f) {
-            this.friction = f;
+        public Entity setMaterial(Material m) {
+            this.material = m;
             return this;
         }
 
@@ -2142,7 +2129,7 @@ public class Application extends JPanel implements KeyListener {
      * Here is a Fluent API to ease the Animation set definition.
      *
      * @author Frédéric Delorme
-     * @Since 1.0.3
+     * @since 1.0.3
      */
     public static class AnimationSet {
         String name;
@@ -2796,7 +2783,7 @@ public class Application extends JPanel implements KeyListener {
         I18n.setLanguage(config);
         world = new World()
                 .setArea(config.worldWidth, config.worldHeight)
-                .setGravity(config.worldGravity);
+                .setGravity(new Vec2d(0.0, config.worldGravity));
     }
 
     private boolean start() {
@@ -3163,7 +3150,6 @@ public class Application extends JPanel implements KeyListener {
     public CollisionDetector getCollisionDetector() {
         return collisionDetect;
     }
-
 
     public Map<String, Entity> getEntities() {
         return entities;

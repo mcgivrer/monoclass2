@@ -38,14 +38,19 @@ public class DemoScene extends AbstractScene {
 
         gameOver = false;
         // define default world friction (air resistance ?)
-        app.world.setFriction(0.98);
+        app.world.setMaterial(
+                new Material(
+                        "world",
+                        1.0,
+                        0.0,
+                        0.98));
 
         // define Game global variables
         app.setAttribute("life", 5);
         app.setAttribute("score", 0);
         app.setAttribute("time", (long) (180 * 1000));
 
-
+        Material matFloor= new Material("floor_mat",1.0,0.1,0.70);
         Entity floor = new Entity("floor")
                 .setType(RECTANGLE)
                 .setPhysicType(STATIC)
@@ -53,8 +58,7 @@ public class DemoScene extends AbstractScene {
                 .setPosition(32, app.world.area.getHeight() - 16)
                 .setSize(app.world.area.getWidth() - 64, 16)
                 .setCollisionBox(0, 0, 0, 0)
-                .setElasticity(0.1)
-                .setFriction(0.70)
+                .setMaterial(matFloor)
                 .setMass(10000);
         app.addEntity(floor);
 
@@ -65,8 +69,7 @@ public class DemoScene extends AbstractScene {
                 .setPosition(app.world.area.getWidth() - 48, app.world.area.getHeight() - 8)
                 .setSize(48, 8)
                 .setCollisionBox(0, 0, 0, 0)
-                .setElasticity(0.1)
-                .setFriction(0.70)
+                .setMaterial(matFloor)
                 .setMass(10000)
                 .setAttribute("dead", true);
         app.addEntity(opf1);
@@ -78,8 +81,7 @@ public class DemoScene extends AbstractScene {
                 .setPosition(0, app.world.area.getHeight() - 8)
                 .setSize(48, 8)
                 .setCollisionBox(0, 0, 0, 0)
-                .setElasticity(0.1)
-                .setFriction(0.70)
+                .setMaterial(matFloor)
                 .setMass(10000)
                 .setAttribute("dead", true);
         app.addEntity(opf2);
@@ -112,8 +114,8 @@ public class DemoScene extends AbstractScene {
                 .setType(IMAGE)
                 .setPosition(app.world.area.getWidth() * 0.5, app.world.area.getHeight() * 0.5)
                 .setSize(32.0, 32.0)
-                .setElasticity(0.0)
-                .setFriction(0.98)
+                .setMaterial(
+                        new Material("player_mat",1.0,0.0,0.98))
                 .setColor(Color.RED)
                 .setPriority(1)
                 .setMass(40.0)
@@ -235,17 +237,17 @@ public class DemoScene extends AbstractScene {
 
         // Add a Map display
         MapEntity mapEntity = (MapEntity) new MapEntity("map")
-                .setColorMapping(
-                        Map.of(
-                                "ball_", Color.RED,
-                                "player", Color.BLUE,
-                                "pf_", Color.LIGHT_GRAY,
-                                "floor", Color.GRAY,
-                                "outPlatform", Color.YELLOW))
-                .setRefEntities(app.entities.values().stream().toList())
-                .setWorld(app.world)
-                .setSize(48, 32)
-                .setPosition(10, app.config.screenHeight - 48);
+            .setColorMapping(
+                Map.of(
+                    "ball_", Color.RED,
+                    "player", Color.BLUE,
+                    "pf_", Color.LIGHT_GRAY,
+                    "floor", Color.GRAY,
+                    "outPlatform", Color.YELLOW))
+            .setRefEntities(app.entities.values().stream().toList())
+            .setWorld(app.world)
+            .setSize(48, 32)
+            .setPosition(10, app.config.screenHeight - 48);
         app.addEntity(mapEntity);
 
         // ---- Everything about Messages ----
@@ -341,6 +343,8 @@ public class DemoScene extends AbstractScene {
         pfCol = pfCol < maxCols ? pfCol : maxRows - pfWidth;
         double pfRow = (int) ((Math.random() * maxRows) + 3);
 
+        Material matPF = new Material("matPF",1.0,0.1,0.7);
+
         Entity pf = new Entity("pf_" + i)
                 .setType(RECTANGLE)
                 .setPhysicType(STATIC)
@@ -350,8 +354,7 @@ public class DemoScene extends AbstractScene {
                         pfRow * 48)
                 .setSize(pfWidth * 16, 16)
                 .setCollisionBox(0, 0, 0, 0)
-                .setElasticity(0.1)
-                .setFriction(0.70)
+                .setMaterial(matPF)
                 .setMass(10000)
                 .setDuration(-1);
         return pf;
@@ -470,6 +473,9 @@ public class DemoScene extends AbstractScene {
     }
 
     private void generateEntity(Application app, String namePrefix, int nbEntity, double acc) {
+
+        Material matEnt = new Material("matEnt",1.0,0.65,0.98);
+
         for (int i = 0; i < nbEntity; i++) {
             Entity e = new Entity(namePrefix + Application.getEntityIndex())
                     .setType(ELLIPSE)
@@ -478,8 +484,7 @@ public class DemoScene extends AbstractScene {
                             Math.random() * (app.world.area.getHeight() - 48))
                     .setColor(Color.RED)
                     .setInitialDuration((int) ((Math.random() * 5) + 5) * 5000)
-                    .setElasticity(0.65)
-                    .setFriction(0.98)
+                    .setMaterial(matEnt)
                     .setMass(30.0)
                     .setPriority(2)
                     // player will loose 1 point of energy.

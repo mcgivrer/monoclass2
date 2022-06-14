@@ -44,7 +44,7 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
     @Test
     public void addOneEntityUnderInfluencerAction() {
         // stop gravity effect on the application's World instance.
-        app.getWorld().setGravity(0.0);
+        app.getWorld().setGravity(new Vec2d(0.0,0.0));
 
         // Create an Influencer in the initialized app World
         Influencer i = (Influencer) new Influencer("influencer_1")
