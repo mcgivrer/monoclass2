@@ -17,23 +17,16 @@ graphical attributes.
 
 The `Influencer` will take benefit of all already existing `Entity` attribute to support `Influencer`'s goals:
 Change the `Entity` contained in the area defined by the Influencer position and size, and the attributes will support
-the `attributes` to be applied to these contained entities.
+the `attributes` to be applied to these contained entities. Attributes will be changed by a nen entity named Material (see bellow).
 
 ```java 
 public class Influencer extends Entity {
+    
+    public Material material;
+    
     public Influencer(String name){
         super(name);
     }
-    //...
-}
-```
-
-The `World` object will contain the list of `Influencer` to be managed by the `PhysicEngine`.
-
-```java 
-public class World {
-    //...
-    Map<String,Influencer> influencers = new ConcurrentHashMap<>();
     //...
 }
 ```
@@ -56,12 +49,15 @@ public class Material {
     public double density;
     // ---- graphic attributes
     public Color color;
-    public double transparency;
+    public float transparency;
 }
 ```
 
-## CollisionDetector update
+## PhysicEngine and Render adaptation.
 
-The CollisionDetector responsible for collision event and processing, will perform the Influencer vs. Entity collision
-detection. A Behavior is applied at Influence creation to proceed the collision event.
+The `Influencer` can be added to the `Applicaiton` entities Map.
+
+- The `Render` processing is now adpated to display specifically the `Influencer` like an `Entity`.
+- The `PhysicEngine` is updated to detect when an Entity is "influcend" by an Influencer, if that the casen the `Material` defined in the `Influencer` is temporarily applied in place of the one of the Entity in the physic computation. So `density`, `friction` or `elasticity` can be changed in the `Influencer`'s influence area :P
+
 
