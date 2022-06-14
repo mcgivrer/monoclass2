@@ -60,4 +60,79 @@ The `Influencer` can be added to the `Applicaiton` entities Map.
 - The `Render` processing is now adpated to display specifically the `Influencer` like an `Entity`.
 - The `PhysicEngine` is updated to detect when an Entity is "influcend" by an Influencer, if that the casen the `Material` defined in the `Influencer` is temporarily applied in place of the one of the Entity in the physic computation. So `density`, `friction` or `elasticity` can be changed in the `Influencer`'s influence area :P
 
+### Render
 
+The new draw method will take care of the `Influencer` entity:
+
+```java
+public class Render
+    //...
+    public void draw(long realFps) {
+        //...
+        gPipeline.stream()
+            .filter(e -> !(e instanceof Light)
+                    && e.isAlive() || e.isPersistent())
+            .forEach(e -> {
+                if (e.isNotStickToCamera()) {
+                    moveCamera(g, activeCamera, -1);
+                }
+                g.setColor(e.color);
+                switch (e) {
+                    //...
+                    // This is an Influencer
+                    case Influencer ie -> {
+                        drawInfluencer(g, ie);
+                    }
+                    //...
+                }
+                //...
+        });
+    }
+    //...
+}
+```
+
+### PhysicEngine
+
+```java
+public class PhysicEngine {
+    //...
+    public Map<String, Influencer> getInfluencers() {
+        return app.entities.values()
+                .stream()
+                .filter(e -> e instanceof Influencer)
+                .collect(Collectors.toMap(e -> e.name, e -> (Influencer) e));
+    }
+    //...
+    private void applyWorldInfluencers(Entity e) {
+        final Vec2d[] g = {new Vec2d(0, e.mass * -world.gravity)};
+        getInfluencers().values()
+            .stream()
+            .filter(i -> i.box.contains(e.box))
+            .forEach(i2 -> {
+                if (Optional.ofNullable(i2.getGravtity()).isPresent()) {
+                    g[0] = new Vec2d(
+                            i2.getGravtity().x,
+                            e.mass * i2.getGravtity().y);
+                }
+                if (Optional.ofNullable(i2.getForce()).isPresent()) {
+                    e.forces.add(i2.getForce());
+                }
+            });
+        e.forces.add(g[0]);
+    }
+    //...
+    
+    private void applyPhysicRuleToEntity(Entity e, double elapsed) {
+        e.oldPos.x = e.pos.x;
+        e.oldPos.y = e.pos.y;
+
+        // a small reduction of time
+        elapsed *= 0.4;
+
+        applyWorldInfluencers(e);
+        //...
+    }
+    
+}
+```
