@@ -104,22 +104,16 @@ public class PhysicEngine {
                 .collect(Collectors.toMap(e -> e.name, e -> (Influencer) e));
     }
     //...
-    private void applyWorldInfluencers(Entity e) {
-        final Vec2d[] g = {new Vec2d(0, e.mass * -world.gravity)};
+    private Material applyWorldInfluencers(Entity e) {
+        Material m = e.material;
         getInfluencers().values()
             .stream()
             .filter(i -> i.box.contains(e.box))
             .forEach(i2 -> {
-                if (Optional.ofNullable(i2.getGravtity()).isPresent()) {
-                    g[0] = new Vec2d(
-                            i2.getGravtity().x,
-                            e.mass * i2.getGravtity().y);
-                }
-                if (Optional.ofNullable(i2.getForce()).isPresent()) {
-                    e.forces.add(i2.getForce());
-                }
+                m = i2.material;
+                e.forces.add(i1.force);
             });
-        e.forces.add(g[0]);
+        return m;
     }
     //...
     
@@ -130,8 +124,18 @@ public class PhysicEngine {
         // a small reduction of time
         elapsed *= 0.4;
 
-        applyWorldInfluencers(e);
-        //...
+        Material m = applyWorldInfluencers(e);
+        e.acc = new Vec2d(0.0, 0.0);
+        e.acc.add(e.forces);
+
+        e.vel.add(e.acc
+                .minMax(config.accMinValue, config.accMaxValue)
+                .multiply(0.5 * elapsed * e.material.friction * world.friction));
+        e.vel.minMax(config.speedMinValue, config.speedMaxValue);
+
+        e.pos.add(e.vel);
+
+        e.forces.clear();
     }
     
 }
