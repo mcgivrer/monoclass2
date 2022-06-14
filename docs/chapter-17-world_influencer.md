@@ -52,6 +52,25 @@ public class Material {
     public float transparency;
 }
 ```
+## World
+
+The `World` object now must support a default `Material` to define environmental constrains.
+
+```java
+public static class World {
+    public double gravity = 0.981;
+    public Rectangle2D area;
+    public Material material;
+    
+    public Material setMaterial(Material m){
+      this.material = m;
+      return this;
+    }
+    public getMaterial(){
+      return material;
+    }
+}
+```
 
 ## PhysicEngine and Render adaptation.
 
