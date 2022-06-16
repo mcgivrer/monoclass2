@@ -20,3 +20,18 @@ In our code example, we will go with the Playstation 3 bluetooth controller, but
 
 > :blue_book: **NOTE**
 > Maybe an adaptator design pattern would be used here to do the trick.
+
+### Add it to our Applciation
+
+
+
+The first thing we will have to do is to add these dependecies, in fact, 2 JAR, one for the API and the other for the multi-OS adaptors.
+
+```bash
+export LIB_DEP="$LIBS/dependencies/jinput-2.0.9.jar $LIBS/dependencies/jinput-2.0.9-natives-all.jar"
+```
+
+This new `LIB_DEP` internal build script variable will let us adding any dependency to our project, for compilation and execution.
+
+### Bring new implementation
+
