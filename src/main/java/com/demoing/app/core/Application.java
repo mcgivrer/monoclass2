@@ -3,6 +3,13 @@ package com.demoing.app.core;
 import javax.imageio.ImageIO;
 import javax.management.*;
 import javax.swing.*;
+
+import net.java.games.input.Component;
+import net.java.games.input.Controller;
+import net.java.games.input.ControllerEnvironment;
+import net.java.games.input.Event;
+import net.java.games.input.EventQueue;
+
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -34,16 +41,20 @@ import java.util.stream.Collectors;
 import static com.demoing.app.core.Application.EntityType.*;
 
 /**
- * <p>{@link Application} is a Proof of Concept of a game mechanics, satisfying to some rules:
+ * <p>
+ * {@link Application} is a Proof of Concept of a game mechanics, satisfying to
+ * some rules:
  * <ul>
  * <li>only one main java classe (sub classes and enum are authorized),</li>
- * <li> limit the number of line of code (without javadoc)</li>
- * <li> Build without any external tools but bash and JDK.</li>
+ * <li>limit the number of line of code (without javadoc)</li>
+ * <li>Build without any external tools but bash and JDK.</li>
  * </ul>
  * </p>
  * <p>
- * <p>The entrypoint is the {@link Application#run()} method to start.
- * Its reading its default configuration from an <code>app.properties</code> file.
+ * <p>
+ * The entrypoint is the {@link Application#run()} method to start.
+ * Its reading its default configuration from an <code>app.properties</code>
+ * file.
  * </p>
  *
  * @author Frédéric Delorme
@@ -61,11 +72,13 @@ public class Application extends JPanel implements KeyListener {
     private static long entityIndex = 0;
     /**
      * THe map of Scene to be activated int o the Application instance.
-     * See <code>app.scenes</code> and <code>add.default.scene</code> in configuration files.
+     * See <code>app.scenes</code> and <code>add.default.scene</code> in
+     * configuration files.
      */
     private Map<String, Scene> scenes = new HashMap<>();
     /**
-     * Scene readiness flag. After loaded and activated, the scene readiness state is set to true.
+     * Scene readiness flag. After loaded and activated, the scene readiness state
+     * is set to true.
      */
     private boolean sceneReady;
 
@@ -79,29 +92,35 @@ public class Application extends JPanel implements KeyListener {
      */
     public enum DisplayModeEnum {
         /**
-         * The {@link Render} will display the {@link Application} window (see {@link JFrame}) in a Full screen mode.
+         * The {@link Render} will display the {@link Application} window (see
+         * {@link JFrame}) in a Full screen mode.
          */
         DISPLAY_MODE_FULLSCREEN,
         /**
-         * The {@link Render} will display the {@link Application} window (see {@link JFrame}) as a normal window with a title bar.
+         * The {@link Render} will display the {@link Application} window (see
+         * {@link JFrame}) as a normal window with a title bar.
          */
         DISPLAY_MODE_WINDOWED,
     }
 
     /**
-     * The {@link EntityType} define the type of rendered entity, a RECTANGLE, an ELLIPSE or an IMAGE (see {@link BufferedImage}.
+     * The {@link EntityType} define the type of rendered entity, a RECTANGLE, an
+     * ELLIPSE or an IMAGE (see {@link BufferedImage}.
      */
     public enum EntityType {
         /**
-         * An {@link Entity} having a {@link EntityType#RECTANGLE} type will be drawn as a rectangle with the {@link Rectangle2D} shape.
+         * An {@link Entity} having a {@link EntityType#RECTANGLE} type will be drawn as
+         * a rectangle with the {@link Rectangle2D} shape.
          */
         RECTANGLE,
         /**
-         * An {@link Entity} having a {@link EntityType#ELLIPSE} type will be drawn as an ellipse with the {@link Ellipse2D} share.
+         * An {@link Entity} having a {@link EntityType#ELLIPSE} type will be drawn as
+         * an ellipse with the {@link Ellipse2D} share.
          */
         ELLIPSE,
         /**
-         * An {@link Entity} having a {@link EntityType#IMAGE} type will be drawn as a {@link BufferedImage}.
+         * An {@link Entity} having a {@link EntityType#IMAGE} type will be drawn as a
+         * {@link BufferedImage}.
          */
         IMAGE,
         /**
@@ -111,45 +130,55 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
-     * The {@link PhysicType} is used by the PhysicEngine to compute physic behavior for the object.
-     * It can be STATIC for static object like static platform, or DYNAMIC for moving objects.
+     * The {@link PhysicType} is used by the PhysicEngine to compute physic behavior
+     * for the object.
+     * It can be STATIC for static object like static platform, or DYNAMIC for
+     * moving objects.
      */
     public enum PhysicType {
         /**
-         * An {@link Entity} with a {@link PhysicType#DYNAMIC} physic type will be managed by the {@link PhysicEngine} as a dynamic object,
+         * An {@link Entity} with a {@link PhysicType#DYNAMIC} physic type will be
+         * managed by the {@link PhysicEngine} as a dynamic object,
          */
         DYNAMIC,
         /**
-         * An {@link Entity} with a {@link PhysicType#STATIC} physic type will not be modified by the {@link PhysicEngine}.
+         * An {@link Entity} with a {@link PhysicType#STATIC} physic type will not be
+         * modified by the {@link PhysicEngine}.
          */
         STATIC,
         /**
-         * An Entity with a {@link PhysicType#NONE} physic type will not be manage in any way by the physic engine.
+         * An Entity with a {@link PhysicType#NONE} physic type will not be manage in
+         * any way by the physic engine.
          */
         NONE
     }
 
     /**
-     * THe TextAlign attribute value is use for TextEntity only, to define how the rendered text must be aligned.
+     * THe TextAlign attribute value is use for TextEntity only, to define how the
+     * rendered text must be aligned.
      * Possible values are LEFT, CENTER and RIGHT.
      */
     public enum TextAlign {
         /**
-         * The text provided for the {@link TextEntity} will be justified on LEFT side of the text rectangle position.
+         * The text provided for the {@link TextEntity} will be justified on LEFT side
+         * of the text rectangle position.
          */
         LEFT,
         /**
-         * The text provided for the {@link TextEntity} will be centered on its current position.
+         * The text provided for the {@link TextEntity} will be centered on its current
+         * position.
          */
         CENTER,
         /**
-         * The text provided for the {@link TextEntity} will be justified on RIGHT side of the text rectangle position.
+         * The text provided for the {@link TextEntity} will be justified on RIGHT side
+         * of the text rectangle position.
          */
         RIGHT
     }
 
     /**
-     * This MBean is for metrics and action exposition through the JMX service. Connecting with the JConsole
+     * This MBean is for metrics and action exposition through the JMX service.
+     * Connecting with the JConsole
      * to this java process will provide some metrics and action.
      */
     public interface AppStatusMBean {
@@ -170,12 +199,14 @@ public class Application extends JPanel implements KeyListener {
         /**
          * Retrieve the current number of entities.
          *
-         * @return an INteger value correspondong to the size of the {@link Application#entities} Map.
+         * @return an INteger value correspondong to the size of the
+         *         {@link Application#entities} Map.
          */
         Integer getNbEntities();
 
         /**
-         * Return the number of elements in  the {@link Render} graphic pipeline (see {@link Render#gPipeline}).
+         * Return the number of elements in the {@link Render} graphic pipeline (see
+         * {@link Render#gPipeline}).
          *
          * @return the size fo the gPipeline list.
          */
@@ -266,7 +297,8 @@ public class Application extends JPanel implements KeyListener {
         private String programName;
 
         /**
-         * Creating the AppStatus object to full feed all the {@link AppStatusMBean} attributes with the
+         * Creating the AppStatus object to full feed all the {@link AppStatusMBean}
+         * attributes with the
          * {@link Application} and other services measures.
          *
          * @param app  The parent {@link Application} this {@link AppStatus} belongs to.
@@ -379,7 +411,8 @@ public class Application extends JPanel implements KeyListener {
         }
 
         /**
-         * Action to request the reset of the {@link Application} to restart the current game level.
+         * Action to request the reset of the {@link Application} to restart the current
+         * game level.
          */
         @Override
         public synchronized void requestReset() {
@@ -388,8 +421,10 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
-     * The Configuration class provide default attributes values provision from a <code>app.properties</code> file.
-     * Based on a simple {@link Properties} java class, it eases the initialization of the {@link Application}.
+     * The Configuration class provide default attributes values provision from a
+     * <code>app.properties</code> file.
+     * Based on a simple {@link Properties} java class, it eases the initialization
+     * of the {@link Application}.
      */
     public static class Configuration {
         Properties appProps = new Properties();
@@ -410,7 +445,8 @@ public class Application extends JPanel implements KeyListener {
          */
         public double fps = 0.0;
         /**
-         * The internal display debug level to display infirmation at rendering time on screen
+         * The internal display debug level to display infirmation at rendering time on
+         * screen
          * (level from 0 =No debug to 5 max level debug info).
          */
         public int debug;
@@ -430,7 +466,7 @@ public class Application extends JPanel implements KeyListener {
          */
         public double worldGravity = 1.0;
         /**
-         * Flag to define fullscreen mode.  true=> full screen.
+         * Flag to define fullscreen mode. true=> full screen.
          */
         public boolean fullScreen = false;
 
@@ -479,7 +515,6 @@ public class Application extends JPanel implements KeyListener {
          */
         public String defaultLanguage;
 
-
         /**
          * Initialize configuration with the filename properties file.
          *
@@ -491,7 +526,8 @@ public class Application extends JPanel implements KeyListener {
                 appProps.load(is);
                 loadConfig();
             } catch (Exception e) {
-                System.err.printf("ERR: Unable to read the configuration file %s : %s\n", fileName, e.getLocalizedMessage());
+                System.err.printf("ERR: Unable to read the configuration file %s : %s\n", fileName,
+                        e.getLocalizedMessage());
             }
         }
 
@@ -548,7 +584,8 @@ public class Application extends JPanel implements KeyListener {
         }
 
         /**
-         * Parse a list of arguments (typically produced from command line interface) and extract arguments values
+         * Parse a list of arguments (typically produced from command line interface)
+         * and extract arguments values
          * to configuration attributes values.
          *
          * @param args the main arguments list
@@ -587,7 +624,8 @@ public class Application extends JPanel implements KeyListener {
         }
 
         /**
-         * Convert a String value to a boolean value. Will transform "ON", "on", "true", "TRUE", "1" or "True" to a true bollean value.
+         * Convert a String value to a boolean value. Will transform "ON", "on", "true",
+         * "TRUE", "1" or "True" to a true bollean value.
          *
          * @param value the String value to be converted to boolean.
          */
@@ -598,8 +636,10 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
-     * The {@link Render} service will provide the drawing process to  display entities to the {@link Application}
-     * display buffer,  and then copy the buffer to the application window (see {@link JFrame}.
+     * The {@link Render} service will provide the drawing process to display
+     * entities to the {@link Application}
+     * display buffer, and then copy the buffer to the application window (see
+     * {@link JFrame}.
      */
     public static class Render {
         /**
@@ -631,7 +671,8 @@ public class Application extends JPanel implements KeyListener {
          */
         private List<Entity> gPipeline = new CopyOnWriteArrayList<>();
         /**
-         * The current active camera to draw all the scene entities from this point of view.
+         * The current active camera to draw all the scene entities from this point of
+         * view.
          */
         Camera activeCamera;
         /**
@@ -640,7 +681,8 @@ public class Application extends JPanel implements KeyListener {
         private static int screenShotIndex;
 
         /**
-         * Initialize the Render service with the parent Application, the current Configuration, and its World object.
+         * Initialize the Render service with the parent Application, the current
+         * Configuration, and its World object.
          *
          * @param a the parent Application
          * @param c the Configuration object for this instance.
@@ -655,8 +697,8 @@ public class Application extends JPanel implements KeyListener {
             Graphics2D g = buffer.createGraphics();
             try {
                 debugFont = Font.createFont(
-                                Font.PLAIN,
-                                Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
+                        Font.PLAIN,
+                        Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
                         .deriveFont(9.0f);
             } catch (FontFormatException | IOException e) {
                 System.out.println("ERR: Unable to initialize Render: " + e.getLocalizedMessage());
@@ -767,7 +809,8 @@ public class Application extends JPanel implements KeyListener {
             Camera cam = app.render.activeCamera;
             Configuration conf = app.config;
 
-            final Area ambientArea = new Area(new Rectangle2D.Double(cam.pos.x, cam.pos.y, conf.screenWidth, conf.screenHeight));
+            final Area ambientArea = new Area(
+                    new Rectangle2D.Double(cam.pos.x, cam.pos.y, conf.screenWidth, conf.screenHeight));
             g.setColor(l.color);
             Composite c = g.getComposite();
             g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) l.energy));
@@ -780,10 +823,10 @@ public class Application extends JPanel implements KeyListener {
             Color medColor = brighten(l.color, l.energy * 0.5);
             Color endColor = new Color(0.0f, 0.0f, 0.0f, 0.2f);
 
-            l.colors = new Color[]{l.color,
+            l.colors = new Color[] { l.color,
                     medColor,
-                    endColor};
-            l.dist = new float[]{0.0f, 0.05f, 0.5f};
+                    endColor };
+            l.dist = new float[] { 0.0f, 0.05f, 0.5f };
             l.rgp = new RadialGradientPaint(
                     new Point(
                             (int) (l.pos.x + (l.width * 0.5) + (10 * Math.random() * l.glitterEffect)),
@@ -870,8 +913,8 @@ public class Application extends JPanel implements KeyListener {
                     sprite.getWidth(), sprite.getHeight(),
                     BufferedImage.TYPE_INT_ARGB);
 
-            float[] scales = {1f, 1f, 1f, alpha};
-            float[] offsets = {0f, 0f, 0f, 0f};
+            float[] scales = { 1f, 1f, 1f, alpha };
+            float[] offsets = { 0f, 0f, 0f, 0f };
 
             RescaleOp rop = new RescaleOp(scales, offsets, null);
             rop.filter(sprite, drawImage);
@@ -916,7 +959,7 @@ public class Application extends JPanel implements KeyListener {
                     // collision box
                     g.setColor(new Color(1.0f, 0.5f, 0.1f, 0.8f));
                     g.draw(e.box);
-                    //initial coordinate
+                    // initial coordinate
                     g.setColor(Color.WHITE);
                     g.drawRect((int) e.pos.x, (int) e.pos.y, 1, 1);
                 }
@@ -939,7 +982,8 @@ public class Application extends JPanel implements KeyListener {
                         // display 2D parameters
                         g.setColor(Color.ORANGE);
                         g.drawString(String.format(Locale.ROOT, "name:%s", e.name), offsetX, offsetY + lineHeight);
-                        g.drawString(String.format(Locale.ROOT, "pos:%03.0f,%03.0f", e.pos.x, e.pos.y), offsetX, offsetY + (lineHeight * 2));
+                        g.drawString(String.format(Locale.ROOT, "pos:%03.0f,%03.0f", e.pos.x, e.pos.y), offsetX,
+                                offsetY + (lineHeight * 2));
                         g.drawString(String.format("life:%d", e.duration), offsetX, offsetY + (lineHeight * 3));
                         if (config.debug > 3) {
                             // display Physic parameters
@@ -949,8 +993,8 @@ public class Application extends JPanel implements KeyListener {
                                     offsetY + (lineHeight * 5));
                             if (e.getAnimations()) {
                                 g.drawString(String.format("anim:%s/%d",
-                                                e.animations.currentAnimationSet,
-                                                e.animations.currentFrame),
+                                        e.animations.currentAnimationSet,
+                                        e.animations.currentFrame),
                                         offsetX, offsetY + (lineHeight * 6));
                             }
                         }
@@ -981,7 +1025,7 @@ public class Application extends JPanel implements KeyListener {
             String textValue = se.valueTxt.strip();
             byte c[] = textValue.getBytes(StandardCharsets.US_ASCII);
             for (int pos = 0; pos < textValue.length(); pos++) {
-                //convert character ascii value to number from 0 to 9.
+                // convert character ascii value to number from 0 to 9.
                 int v = c[pos] - 48;
                 drawFig(g, se, v, se.pos.x + (pos * 8), se.pos.y);
             }
@@ -1062,11 +1106,13 @@ public class Application extends JPanel implements KeyListener {
         }
 
         /**
-         * Move rendering point of view to Camera cam, with a direction -1 move to camera, 1 move back from camera.
+         * Move rendering point of view to Camera cam, with a direction -1 move to
+         * camera, 1 move back from camera.
          *
          * @param g         the Graphics API device.
          * @param cam       the camera to move to/from.
-         * @param direction the direction of the move : -1 move to camera, 1 move back from camera.
+         * @param direction the direction of the move : -1 move to camera, 1 move back
+         *                  from camera.
          */
         private void moveCamera(Graphics2D g, Camera cam, double direction) {
             if (Optional.ofNullable(activeCamera).isPresent()) {
@@ -1120,7 +1166,8 @@ public class Application extends JPanel implements KeyListener {
         }
 
         /**
-         * Write out to the class root path ./screenshots directory a new screenshot from the current displayed buffer.
+         * Write out to the class root path ./screenshots directory a new screenshot
+         * from the current displayed buffer.
          */
         public void saveScreenshot() {
             String path = Utils.getJarPath();
@@ -1192,7 +1239,8 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
-     * A Physic computation engine to process Object moves according to their resulting process acceleration and speed
+     * A Physic computation engine to process Object moves according to their
+     * resulting process acceleration and speed
      * from the applied forces to each Entity.
      *
      * @author Frédéric Delorme
@@ -1206,11 +1254,13 @@ public class Application extends JPanel implements KeyListener {
         private Map<String, Influencer> influencers = new ConcurrentHashMap<>();
 
         /**
-         * Initialize the Physic Engine for the parent Application a, with the Configuration c
+         * Initialize the Physic Engine for the parent Application a, with the
+         * Configuration c
          * and in a World w.
          *
          * @param a the parent Application
-         * @param c the Configuration where to find Physic Engine initialization parameters
+         * @param c the Configuration where to find Physic Engine initialization
+         *          parameters
          * @param w the World where the Entities will evolve in.
          */
         public PhysicEngine(Application a, Configuration c, World w) {
@@ -1220,8 +1270,9 @@ public class Application extends JPanel implements KeyListener {
         }
 
         /**
-         * Update and process physics attributes the Entity (acceleration, speed and position) from the
-         * <code>app.entities map</code>, with  the elapsed time since previous call.
+         * Update and process physics attributes the Entity (acceleration, speed and
+         * position) from the
+         * <code>app.entities map</code>, with the elapsed time since previous call.
          *
          * @param elapsed the elapsed time since previous call.
          */
@@ -1250,7 +1301,7 @@ public class Application extends JPanel implements KeyListener {
                         .toList()
                         .forEach(b -> b.update(app, elapsed));
             }
-            //  update active camera if presents.
+            // update active camera if presents.
             if (Optional.ofNullable(app.render.activeCamera).isPresent()) {
                 app.render.activeCamera.update(elapsed);
             }
@@ -1269,7 +1320,7 @@ public class Application extends JPanel implements KeyListener {
         }
 
         private void applyWorldInfluencers(Entity e) {
-            final Vec2d[] g = {new Vec2d(world.gravity.x, e.mass * world.gravity.y)};
+            final Vec2d[] g = { new Vec2d(world.gravity.x, e.mass * world.gravity.y) };
             getInfluencers().values()
                     .stream()
                     .filter(i -> i.box.contains(e.box))
@@ -1378,9 +1429,11 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
-     * The {@link World} object to define game play area limits and a default gravity and friction.
+     * The {@link World} object to define game play area limits and a default
+     * gravity and friction.
      *
-     * <blockquote>May more to comes in the next release with some <code>Influencers</code> to
+     * <blockquote>May more to comes in the next release with some
+     * <code>Influencers</code> to
      * dynamically modify entity display or physic attributes</blockquote>
      */
     public static class World {
@@ -1425,7 +1478,8 @@ public class Application extends JPanel implements KeyListener {
         /**
          * Yot can also set the gravity for your {@link World}.
          *
-         * @param g the new gravity for this World to be applied to all {@link Entity} in this {@link World}.
+         * @param g the new gravity for this World to be applied to all {@link Entity}
+         *          in this {@link World}.
          * @return the world updated with its new gravity.
          */
         public World setGravity(Vec2d g) {
@@ -1435,7 +1489,8 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
-     * The {@link Influencer} extending {@link Entity} to provide environmental influencer to change {@link Entity}
+     * The {@link Influencer} extending {@link Entity} to provide environmental
+     * influencer to change {@link Entity}
      * behavior has soon the Entity is contained by the {@link Influencer}.
      * An influencer can change temporarily some {@link Entity} attribute's values.
      *
@@ -1473,7 +1528,8 @@ public class Application extends JPanel implements KeyListener {
         }
 
         /**
-         * Define the {@link Influencer}'s gravity attribute, 0 means World's default gravity.
+         * Define the {@link Influencer}'s gravity attribute, 0 means World's default
+         * gravity.
          *
          * @param g the new gravity for this {@link Influencer} zone
          * @return the updated Influencer with its new gravity.
@@ -1484,7 +1540,8 @@ public class Application extends JPanel implements KeyListener {
         }
 
         /**
-         * Define the {@link Influencer}'s attribute force to be applied to any {@link Entity}
+         * Define the {@link Influencer}'s attribute force to be applied to any
+         * {@link Entity}
          * contained by this {@link Influencer}..
          *
          * @param f the force to be applied in this {@link Influencer} zone.
@@ -1518,11 +1575,13 @@ public class Application extends JPanel implements KeyListener {
         }
     }
 
-
     /**
-     * The {@link Material} is a new way to manage physic attributes for any {@link Entity}.
-     * It is used by {@link PhysicEngine} and {@link Influencer} to compute moves for {@link Entity}.
-     * {@link Influencer} is able to change temporarily {@link Material} for an {@link Entity} when
+     * The {@link Material} is a new way to manage physic attributes for any
+     * {@link Entity}.
+     * It is used by {@link PhysicEngine} and {@link Influencer} to compute moves
+     * for {@link Entity}.
+     * {@link Influencer} is able to change temporarily {@link Material} for an
+     * {@link Entity} when
      * the {@link Influencer} contains {@link Entity}.
      *
      * @author Frédéric Delorme
@@ -1537,9 +1596,9 @@ public class Application extends JPanel implements KeyListener {
         public float transparency = 0.0f;
 
         public Material(String name,
-                        double density,
-                        double elasticity,
-                        double friction) {
+                double density,
+                double elasticity,
+                double friction) {
             this.name = name;
             this.density = density;
             this.elasticity = elasticity;
@@ -1602,7 +1661,8 @@ public class Application extends JPanel implements KeyListener {
             e1.collide = true;
             e2.collide = true;
             Vec2d vp = new Vec2d((e2.pos.x - e1.pos.x), (e2.pos.y - e1.pos.y));
-            double distance = Math.sqrt((e2.pos.x - e1.pos.x) * (e2.pos.x - e1.pos.x) + (e2.pos.y - e1.pos.y) * (e2.pos.y - e1.pos.y));
+            double distance = Math.sqrt(
+                    (e2.pos.x - e1.pos.x) * (e2.pos.x - e1.pos.x) + (e2.pos.y - e1.pos.y) * (e2.pos.y - e1.pos.y));
             Vec2d colNorm = new Vec2d(vp.x / distance, vp.y / distance);
             if (e1.physicType == PhysicType.DYNAMIC && e2.physicType == PhysicType.DYNAMIC) {
                 Vec2d vRelSpeed = new Vec2d(e1.vel.x - e2.vel.x, e1.vel.y - e2.vel.y);
@@ -1617,7 +1677,8 @@ public class Application extends JPanel implements KeyListener {
                 e2.vel.y += Utils.ceilMinMaxValue(impulse * e1.mass * colSpeed * colNorm.y,
                         config.speedMinValue, config.colSpeedMaxValue);
                 if (e1.name.equals("player") && config.debug > 4) {
-                    System.out.printf("e1.%s collides e2.%s Vp=%s / dist=%f / norm=%s\n", e1.name, e2.name, vp, distance, colNorm);
+                    System.out.printf("e1.%s collides e2.%s Vp=%s / dist=%f / norm=%s\n", e1.name, e2.name, vp,
+                            distance, colNorm);
                 }
             } else {
                 if (e1.physicType == PhysicType.DYNAMIC && e2.physicType == PhysicType.STATIC) {
@@ -1709,6 +1770,8 @@ public class Application extends JPanel implements KeyListener {
         private final Application app;
         private boolean anyKeyPressed;
 
+        private Event event;
+        private Controller[] controllers;
         public Map<Integer, Function> actionMapping = new HashMap<>();
 
         /**
@@ -1718,12 +1781,32 @@ public class Application extends JPanel implements KeyListener {
          */
         public ActionHandler(Application a) {
             this.app = a;
+            this.event = new Event();
+            this.controllers = ControllerEnvironment.getDefaultEnvironment().getControllers();
             this.actionMapping.put(KeyEvent.VK_F3, (e) -> {
                 app.render.saveScreenshot();
                 return this;
             });
         }
 
+        public void update(double elapsed) {
+            for (int i = 0; i < controllers.length; i++) {
+                /* Remember to poll each one */
+                this.controllers[i].poll();
+
+                /* Get the controllers event queue */
+                EventQueue queue = this.controllers[i].getEventQueue();
+
+                /* For each object in the queue */
+                while (queue.getNextEvent(event)) {
+                    /* Get event component */
+                    Component comp = this.event.getComponent();
+
+                    /* Process event (your awesome code) */
+                    // TODO
+                }
+            }
+        }
 
         @Override
         public void keyTyped(KeyEvent e) {
@@ -1769,7 +1852,7 @@ public class Application extends JPanel implements KeyListener {
         /**
          * Return the translated message for key.
          *
-         * @param key the  key of the message to retrieved
+         * @param key the key of the message to retrieved
          * @return the translated value for the key message.
          */
         public static String get(String key) {
@@ -1802,7 +1885,6 @@ public class Application extends JPanel implements KeyListener {
             this.x = 0.0;
             this.y = 0.0;
         }
-
 
         public Vec2d(double x, double y) {
             this.x = x;
@@ -1864,10 +1946,13 @@ public class Application extends JPanel implements KeyListener {
 
     /**
      * Definition for all {@link Entity} managed by the small game framework.
-     * A lot of attributes and <a href="https://en.wikipedia.org/wiki/Fluent_interface#Java">Fluent API</a> methods
+     * A lot of attributes and
+     * <a href="https://en.wikipedia.org/wiki/Fluent_interface#Java">Fluent API</a>
+     * methods
      * to ease the Entity initialization.
      * <p>
-     * Support some {@link PhysicEngine}, {@link Render}, {@link Animation}, and {@link CollisionDetector} information,
+     * Support some {@link PhysicEngine}, {@link Render}, {@link Animation}, and
+     * {@link CollisionDetector} information,
      * mandatory attributes for multiple services.
      *
      * @author Frédéric Delorme
@@ -2085,7 +2170,8 @@ public class Application extends JPanel implements KeyListener {
                     : image);
         }
 
-        public Entity addAnimation(String key, int x, int y, int tw, int th, int[] durations, String pathToImage, int loop) {
+        public Entity addAnimation(String key, int x, int y, int tw, int th, int[] durations, String pathToImage,
+                int loop) {
             if (Optional.ofNullable(this.animations).isEmpty()) {
                 this.animations = new Animation();
             }
@@ -2122,8 +2208,10 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
-     * {@link AnimationSet} defining a series of Frames and their duration for a specific animation name.
-     * This animationSet object is used in the {@link Animation#animationSet} attributes, to defined all the possible
+     * {@link AnimationSet} defining a series of Frames and their duration for a
+     * specific animation name.
+     * This animationSet object is used in the {@link Animation#animationSet}
+     * attributes, to defined all the possible
      * animation into an Entity (see {@link Entity#animations}.
      * <p>
      * Here is a Fluent API to ease the Animation set definition.
@@ -2163,10 +2251,13 @@ public class Application extends JPanel implements KeyListener {
 
     /**
      * {@link Animation} is the animations manager for an {@link Entity}.
-     * A simple Fluent APi is provided to declare animationSet and to activate one of those set.
+     * A simple Fluent APi is provided to declare animationSet and to activate one
+     * of those set.
      * <p>
-     * the {@link Animation#update(long)} process will refresh the and compute the frame according to the elapsed
-     * time since previous call, while the {@link Animation#getFrame()} will return the current active frame
+     * the {@link Animation#update(long)} process will refresh the and compute the
+     * frame according to the elapsed
+     * time since previous call, while the {@link Animation#getFrame()} will return
+     * the current active frame
      * ({@link BufferedImage}) for the current active AnimationSet.
      *
      * @author Frédéric Delorme
@@ -2196,7 +2287,8 @@ public class Application extends JPanel implements KeyListener {
             return this;
         }
 
-        public Animation addAnimationSet(String key, String imgSrc, int x, int y, int tw, int th, int[] durations, int loop) {
+        public Animation addAnimationSet(String key, String imgSrc, int x, int y, int tw, int th, int[] durations,
+                int loop) {
             AnimationSet aSet = new AnimationSet(key).setSize(tw, th);
             BufferedImage image = Resources.loadImage(imgSrc);
             aSet.frames = new BufferedImage[durations.length];
@@ -2238,8 +2330,10 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
-     * A {@link TextEntity} extending the {@link Entity} will display a {@link TextEntity#text} with a dedicated
-     * {@link TextEntity#font}, with an {@link TextEntity#align} as required on the {@link TextEntity#pos}.
+     * A {@link TextEntity} extending the {@link Entity} will display a
+     * {@link TextEntity#text} with a dedicated
+     * {@link TextEntity#font}, with an {@link TextEntity#align} as required on the
+     * {@link TextEntity#pos}.
      */
     public static class TextEntity extends Entity {
         private String text;
@@ -2249,7 +2343,8 @@ public class Application extends JPanel implements KeyListener {
         /**
          * Create a new {@link TextEntity} with a name.
          *
-         * @param name the name for this new TextEntity (see {@link Entity#Entity(String)}
+         * @param name the name for this new TextEntity (see
+         *             {@link Entity#Entity(String)}
          */
         public TextEntity(String name) {
             super(name);
@@ -2281,7 +2376,8 @@ public class Application extends JPanel implements KeyListener {
         /**
          * Set the {@link TextAlign} value for this {@link TextEntity}.
          *
-         * @param a the {@link TextAlign} value defining howto draw the text at its {@link TextEntity#pos}.
+         * @param a the {@link TextAlign} value defining howto draw the text at its
+         *          {@link TextEntity#pos}.
          * @return the {@link TextEntity} object with its new text alignement defined.
          */
         public TextEntity setAlign(TextAlign a) {
@@ -2292,17 +2388,24 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
-     * <p> A {@link GaugeEntity} extending the {@link Entity} to display a Gauge on the HUD, to show Energy or Mana
-     * of a dedicated Entity.</p>
-     * <p></p>At declaration, you must set a Min and  max <code>value</code> representing the gauge <code>minValue</code>
+     * <p>
+     * A {@link GaugeEntity} extending the {@link Entity} to display a Gauge on the
+     * HUD, to show Energy or Mana
+     * of a dedicated Entity.
+     * </p>
+     * <p>
+     * </p>
+     * At declaration, you must set a Min and max <code>value</code> representing
+     * the gauge <code>minValue</code>
      * and <code>maxValue</code> for your value:
+     * 
      * <pre>
      * GaugeEntity myGE = new GaugeEntity("myValue")
-     *   .setPosition(10,10)
-     *   .setSize(8,40)
-     *   .setMin(0)
-     *   .setMax(100)
-     *   .setColor(Color.RED);
+     *         .setPosition(10, 10)
+     *         .setSize(8, 40)
+     *         .setMin(0)
+     *         .setMax(100)
+     *         .setColor(Color.RED);
      * </pre>
      * </p>
      */
@@ -2336,18 +2439,26 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
-     * <p>The {@link ValueEntity} extends the {@link Entity} by adding the capability to display an integer value.</p>
-     * <p>The ValueEntity will be created as follow: setting {@link ValueEntity} specific attributes like
-     * the <code>value</code>, the display <code>format</code>, the array of {@link BufferedImage}
-     * as <code>figures</code>, and then, the {@link Entity} inherited attributes:</p>
+     * <p>
+     * The {@link ValueEntity} extends the {@link Entity} by adding the capability
+     * to display an integer value.
+     * </p>
+     * <p>
+     * The ValueEntity will be created as follow: setting {@link ValueEntity}
+     * specific attributes like
+     * the <code>value</code>, the display <code>format</code>, the array of
+     * {@link BufferedImage}
+     * as <code>figures</code>, and then, the {@link Entity} inherited attributes:
+     * </p>
+     * 
      * <pre>
      * ValueEntity scoreEntity = (ValueEntity) new ValueEntity("score")
-     *   .setValue(score)
-     *   .setFormat("%06d")
-     *   .setFigures(figs)
-     *   .setPosition(20, 20)
-     *   .setSize(6 * 8, 16)
-     *   .setStickToCamera(true);
+     *         .setValue(score)
+     *         .setFormat("%06d")
+     *         .setFigures(figs)
+     *         .setPosition(20, 20)
+     *         .setSize(6 * 8, 16)
+     *         .setStickToCamera(true);
      * app.addEntity(scoreEntity);
      * </pre>
      *
@@ -2371,7 +2482,8 @@ public class Application extends JPanel implements KeyListener {
         }
 
         /**
-         * Value displayed as text must be updated according to the value and its string format.
+         * Value displayed as text must be updated according to the value and its string
+         * format.
          * This is what happened during the update() processing.
          *
          * @param elapsed the elapsed time since previous call.
@@ -2394,12 +2506,15 @@ public class Application extends JPanel implements KeyListener {
         }
 
         /**
-         * Define the array of {@link BufferedImage} as {@link ValueEntity#figures} to render this integer
+         * Define the array of {@link BufferedImage} as {@link ValueEntity#figures} to
+         * render this integer
          * {@link ValueEntity#value}.
          *
-         * @param figures the new BufferedImage array to be used as figures (Must provide an array of 10 {@link BufferedImage},
+         * @param figures the new BufferedImage array to be used as figures (Must
+         *                provide an array of 10 {@link BufferedImage},
          *                corresponding to the 10 digits from 0 to 9).
-         * @return this {@link ValueEntity} with its new figures to be used to draw the integer value.
+         * @return this {@link ValueEntity} with its new figures to be used to draw the
+         *         integer value.
          */
         public ValueEntity setFigures(BufferedImage[] figures) {
             this.figures = figures;
@@ -2407,10 +2522,12 @@ public class Application extends JPanel implements KeyListener {
         }
 
         /**
-         * The value for {@link ValueEntity} must be transformed to a String with some conversion rule according
+         * The value for {@link ValueEntity} must be transformed to a String with some
+         * conversion rule according
          * to the {@link String#format(String, Object...)} method.
          *
-         * @param f the new {@link String#format(String, Object...)} value to be used for integer to String
+         * @param f the new {@link String#format(String, Object...)} value to be used
+         *          for integer to String
          *          conversion (default is "%d").
          * @return this {@link ValueEntity} with is new String format attribute.
          */
@@ -2456,25 +2573,42 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
-     * <p>The {@link Camera}, extending the {@link Entity} object, has a specific role. It will set the point of view to
-     * show all the {@link Entity} from the {@link Scene} in the {@link World}.</p>
-     * <p>This camera position will be set according to an {@link Entity}  target position, to be tracked.</p>
-     * <p>The {@link Camera} position will be computed with a specific tweenFactor, adding a certain delay to the tracking
-     * position, acting as a spring between the camera and its target.</p>
-     * <p>To define a camera, you must set the camera name, and its target and its viewport:</p>
+     * <p>
+     * The {@link Camera}, extending the {@link Entity} object, has a specific role.
+     * It will set the point of view to
+     * show all the {@link Entity} from the {@link Scene} in the {@link World}.
+     * </p>
+     * <p>
+     * This camera position will be set according to an {@link Entity} target
+     * position, to be tracked.
+     * </p>
+     * <p>
+     * The {@link Camera} position will be computed with a specific tweenFactor,
+     * adding a certain delay to the tracking
+     * position, acting as a spring between the camera and its target.
+     * </p>
+     * <p>
+     * To define a camera, you must set the camera name, and its target and its
+     * viewport:
+     * </p>
      *
      * <pre>
      * Camera cam = new Camera("cam01")
-     *   .setViewport(new Rectangle2D.Double(0, 0, app.config.screenWidth, app.config.screenHeight))
-     *   .setTarget(player)
-     *   .setTweenFactor(0.005);
+     *         .setViewport(new Rectangle2D.Double(0, 0, app.config.screenWidth, app.config.screenHeight))
+     *         .setTarget(player)
+     *         .setTweenFactor(0.005);
      * app.render.addCamera(cam);
      * </pre>
      *
-     * <p>The viewport mainly corresponds to the size of the displayed window
-     * (see {@link Configuration#screenWidth} and {@link Configuration#screenHeight}).</p>
+     * <p>
+     * The viewport mainly corresponds to the size of the displayed window
+     * (see {@link Configuration#screenWidth} and
+     * {@link Configuration#screenHeight}).
+     * </p>
      *
-     * <p>The tweenFactor a value from 0.0 to 1.0 is a delay on target tracking.</p>
+     * <p>
+     * The tweenFactor a value from 0.0 to 1.0 is a delay on target tracking.
+     * </p>
      *
      * @author Frédéric Delorme
      * @since 1.0.0
@@ -2498,7 +2632,8 @@ public class Application extends JPanel implements KeyListener {
         /**
          * Define the {@link Camera} target to be tracked.
          *
-         * @param target the target to tracked by this {@link Camera}, it must be an {@link Entity}.
+         * @param target the target to tracked by this {@link Camera}, it must be an
+         *               {@link Entity}.
          * @return this {@link Camera} with its new target to be tracked.
          */
         public Camera setTarget(Entity target) {
@@ -2518,7 +2653,8 @@ public class Application extends JPanel implements KeyListener {
         }
 
         /**
-         * The {@link Camera#viewport} display corresponding to the JFrame display size. This is the view from the camera.
+         * The {@link Camera#viewport} display corresponding to the JFrame display size.
+         * This is the view from the camera.
          *
          * @param vp the new viewport for this {@link Camera}.
          * @return this {@link Camera} with ots new Viewport.
@@ -2529,15 +2665,21 @@ public class Application extends JPanel implements KeyListener {
         }
 
         /**
-         * This {@link Camera#pos} will be computed during the update phase of the {@link Application#update(double)},
-         * according to the {@link Camera#target} position and the {@link Camera#tweenFactor}.
+         * This {@link Camera#pos} will be computed during the update phase of the
+         * {@link Application#update(double)},
+         * according to the {@link Camera#target} position and the
+         * {@link Camera#tweenFactor}.
          *
-         * @param elapsed the elapsed time since the previous call, contributing to the new {@link Camera}'s position
-         *                computation with the tweenFactor value and the {@link Camera#target}.
+         * @param elapsed the elapsed time since the previous call, contributing to the
+         *                new {@link Camera}'s position
+         *                computation with the tweenFactor value and the
+         *                {@link Camera#target}.
          */
         public void update(double elapsed) {
-            pos.x += Math.round((target.pos.x + target.width - (viewport.getWidth() * 0.5) - pos.x) * tweenFactor * elapsed);
-            pos.y += Math.round((target.pos.y + target.height - (viewport.getHeight() * 0.5) - pos.y) * tweenFactor * elapsed);
+            pos.x += Math
+                    .round((target.pos.x + target.width - (viewport.getWidth() * 0.5) - pos.x) * tweenFactor * elapsed);
+            pos.y += Math.round(
+                    (target.pos.y + target.height - (viewport.getHeight() * 0.5) - pos.y) * tweenFactor * elapsed);
         }
     }
 
@@ -2549,29 +2691,38 @@ public class Application extends JPanel implements KeyListener {
      */
     public enum LightType {
         /**
-         * An {@link LightType#AMBIENT} light will display a colored rectangle on all the viewport,
+         * An {@link LightType#AMBIENT} light will display a colored rectangle on all
+         * the viewport,
          * with a color corresponding to the defined {@link Light#color}.
          */
         AMBIENT,
         /**
-         * A {@link LightType#SPOT} light will display directional light of with {@link Light#color} at {@link Light#pos}.
-         * The light direction and length is set by the {@link Light#rotation} and {@link Light#height} attributes.
+         * A {@link LightType#SPOT} light will display directional light of with
+         * {@link Light#color} at {@link Light#pos}.
+         * The light direction and length is set by the {@link Light#rotation} and
+         * {@link Light#height} attributes.
          */
         SPOT,
         AREA_RECTANGLE,
         /**
-         * A {@link LightType#SPHERICAL} light will display an ellipse centered light of {@link Light#width} x {@link Light#height}
+         * A {@link LightType#SPHERICAL} light will display an ellipse centered light of
+         * {@link Light#width} x {@link Light#height}
          * with {@link Light#color} at {@link Light#pos}.
          */
         SPHERICAL
     }
 
     /**
-     * <p>A {@link Light} class to simulate lights in a {@link Scene}.</p>
-     * It can be a {@link LightType#SPOT}, an {@link LightType#AMBIENT} or a {@link LightType#SPHERICAL} one.
+     * <p>
+     * A {@link Light} class to simulate lights in a {@link Scene}.
+     * </p>
+     * It can be a {@link LightType#SPOT}, an {@link LightType#AMBIENT} or a
+     * {@link LightType#SPHERICAL} one.
      * It will have an {@link Light#energy}, and specific {@link Light#rotation}
-     * angle and a {@link Light#height}  (for SPOT only), or a {@link Light#width} and {@link Light#height}
-     * of the ellipse size(for SPHERICAL only) and a glitter effect (see {@link Light#glitterEffect},
+     * angle and a {@link Light#height} (for SPOT only), or a {@link Light#width}
+     * and {@link Light#height}
+     * of the ellipse size(for SPHERICAL only) and a glitter effect (see
+     * {@link Light#glitterEffect},
      * to simulate neon glittering light.
      *
      * @author Frédéric Delorme
@@ -2632,7 +2783,8 @@ public class Application extends JPanel implements KeyListener {
         }
 
         /**
-         * The glitterEffect factor, adding an offset to the light center to create aglitter effect.
+         * The glitterEffect factor, adding an offset to the light center to create
+         * aglitter effect.
          *
          * @param ge the Glitter factor from 0 to 1.0
          * @return the updated Light entity.
@@ -2676,7 +2828,8 @@ public class Application extends JPanel implements KeyListener {
         String getName();
 
         /**
-         * The map of behaviors attached to this Scene and executed during the update cycle.
+         * The map of behaviors attached to this Scene and executed during the update
+         * cycle.
          *
          * @return a Map of Behaviors implementations.
          */
@@ -2744,8 +2897,10 @@ public class Application extends JPanel implements KeyListener {
     /**
      * Constructor used mainly for test purpose.
      *
-     * @param args                  the list of arguments to be parsed by the Configuration
-     * @param configurationFileName the configuration file path to be loaded by Configuration.
+     * @param args                  the list of arguments to be parsed by the
+     *                              Configuration
+     * @param configurationFileName the configuration file path to be loaded by
+     *                              Configuration.
      */
     public Application(String[] args, String configurationFileName) {
         NumberFormat.getInstance(Locale.ROOT);
@@ -2760,7 +2915,8 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
-     * Initialize the Application with the default configuration file (app.proprerties)
+     * Initialize the Application with the default configuration file
+     * (app.proprerties)
      * and parse java CLI arguments.
      *
      * @param args the array of arguments from java CLI
@@ -2772,7 +2928,8 @@ public class Application extends JPanel implements KeyListener {
 
     /**
      * Initialize the application by setting Configuration instance by loading
-     * data from <code>configFileName</code>  and parsing java CLI arguments <code>args</code>.
+     * data from <code>configFileName</code> and parsing java CLI arguments
+     * <code>args</code>.
      *
      * @param args           the CLI java arguments to be parsed (if provided)
      * @param configFileName the name of the configuration file to be loaded.
@@ -2829,14 +2986,14 @@ public class Application extends JPanel implements KeyListener {
                     setWindowMode(!config.fullScreen);
 
                     return this;
-                }
-        ));
+                }));
     }
 
     /**
      * Initialize all Application services.
      * <p>
-     * <blockquote><em>NOTE</em> This method is now public because of test requirements on services.</blockquote>
+     * <blockquote><em>NOTE</em> This method is now public because of test
+     * requirements on services.</blockquote>
      *
      * @since 1.0.5
      */
@@ -2851,8 +3008,10 @@ public class Application extends JPanel implements KeyListener {
      * Read Scenes and set the default scene according to {@link Configuration}.
      * the concerned properties entries are:
      * <ul>
-     *     <li><code>app.scene.list</code>is a list of Scene implementation classes comma separated,</li>
-     *     <li><code>app.scene.default</code> is the scene to be activated at start (by default).</li>
+     * <li><code>app.scene.list</code>is a list of Scene implementation classes
+     * comma separated,</li>
+     * <li><code>app.scene.default</code> is the scene to be activated at start (by
+     * default).</li>
      * </ul>
      *
      * @return true if Scene is correctly loaded, else false.
@@ -2868,8 +3027,8 @@ public class Application extends JPanel implements KeyListener {
                 Scene s = (Scene) sceneConstructor.newInstance(sceneStr[0]);
                 scenes.put(sceneStr[0], s);
                 activateScene(config.defaultScene);
-            } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                    InvocationTargetException e) {
+            } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException
+                    | InvocationTargetException e) {
                 System.out.println("ERR: Unable to load scene from configuration file:"
                         + e.getLocalizedMessage()
                         + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
@@ -2923,7 +3082,8 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
-     * Create the JFrame window in fullscreen or windowed mode (according to fullScreenMode boolean value).
+     * Create the JFrame window in fullscreen or windowed mode (according to
+     * fullScreenMode boolean value).
      *
      * @param fullScreenMode the display mode to be set:
      *                       <ul>
@@ -2932,8 +3092,7 @@ public class Application extends JPanel implements KeyListener {
      *                       </ul>
      */
     private void setWindowMode(boolean fullScreenMode) {
-        GraphicsEnvironment graphics =
-                GraphicsEnvironment.getLocalGraphicsEnvironment();
+        GraphicsEnvironment graphics = GraphicsEnvironment.getLocalGraphicsEnvironment();
 
         GraphicsDevice device = graphics.getDefaultScreenDevice();
 
