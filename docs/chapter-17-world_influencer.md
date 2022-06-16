@@ -4,6 +4,9 @@
 
 The World object describes the environment into all the Entity will evolve, through the rules of PhysicEngine.
 
+![Diagram Influencer](./diagrams/diagram-influencers.svg "what is an Influencer ?")
+
+
 The Influencer entity will let entity to be temporarily changed in its attributes, changing forces, friction,
 elasticity, color, speed, acceleration, gravity.
 
