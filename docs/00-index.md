@@ -1,10 +1,10 @@
-# MonoClass2, a JDK fun sample usage
+*# MonoClass2, a JDK fun sample usage
 
 By Frédéric Delorme (c) 2022
 
 ---
-
-![A gameplay screenshot](images/monoclass2-1.0.4-snapshot-screenshot.png "Screenshot of the 1.0.3 release")
+/
+![A gameplay screenshot](images/monoclass2-1.0.5-snapshot-screenshot.png "Screenshot of the 1.0.5 pre-release")
 
 ## Summary
 
@@ -22,4 +22,7 @@ By Frédéric Delorme (c) 2022
 12. [Measure things](chapter-12-jmx_and_metrics.md)
 13. [Gathering feedback](chapter-13-monitoring.md)
 14. [More entities](chapter-14-more_entity.md)
-15. [The To Dos](100-todo.md)
+15. [Full screen mode](chapter-15-fullscreen_mode.md)
+16. [Adding Lights](chapter-16-adding_light.md)
+17. [World under Influencer](chapter-17-world_influencer.md)
+18. [The To Dos](100-todo.md)

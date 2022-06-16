@@ -38,13 +38,19 @@ public class DemoScene extends AbstractScene {
 
         gameOver = false;
         // define default world friction (air resistance ?)
-        app.world.setFriction(0.98);
+        app.world.setMaterial(
+                new Material(
+                        "world",
+                        1.0,
+                        0.0,
+                        0.98));
+
         // define Game global variables
         app.setAttribute("life", 5);
         app.setAttribute("score", 0);
         app.setAttribute("time", (long) (180 * 1000));
 
-
+        Material matFloor= new Material("floor_mat",1.0,0.1,0.70);
         Entity floor = new Entity("floor")
                 .setType(RECTANGLE)
                 .setPhysicType(STATIC)
@@ -52,8 +58,7 @@ public class DemoScene extends AbstractScene {
                 .setPosition(32, app.world.area.getHeight() - 16)
                 .setSize(app.world.area.getWidth() - 64, 16)
                 .setCollisionBox(0, 0, 0, 0)
-                .setElasticity(0.1)
-                .setFriction(0.70)
+                .setMaterial(matFloor)
                 .setMass(10000);
         app.addEntity(floor);
 
@@ -64,8 +69,7 @@ public class DemoScene extends AbstractScene {
                 .setPosition(app.world.area.getWidth() - 48, app.world.area.getHeight() - 8)
                 .setSize(48, 8)
                 .setCollisionBox(0, 0, 0, 0)
-                .setElasticity(0.1)
-                .setFriction(0.70)
+                .setMaterial(matFloor)
                 .setMass(10000)
                 .setAttribute("dead", true);
         app.addEntity(opf1);
@@ -77,13 +81,12 @@ public class DemoScene extends AbstractScene {
                 .setPosition(0, app.world.area.getHeight() - 8)
                 .setSize(48, 8)
                 .setCollisionBox(0, 0, 0, 0)
-                .setElasticity(0.1)
-                .setFriction(0.70)
+                .setMaterial(matFloor)
                 .setMass(10000)
                 .setAttribute("dead", true);
         app.addEntity(opf2);
 
-        generatePlatforms(app, 15);
+        generateAllPlatforms(app, 15);
 
         // Add some AMBIENT light
         Light la01 = (Light) new Light("ambientLight")
@@ -93,36 +96,26 @@ public class DemoScene extends AbstractScene {
                 .setColor(new Color(0.3f, 1.0f, 0.3f, 0.9f));
         app.addEntity(la01);
 
-        // Add some AMBIENT light
-        Light lar01 = (Light) new Light("areaLight")
-                .setLightType(LightType.AREA_RECTANGLE)
-                .setEnergy(0.5)
-                .setStickToCamera(false)
-                .setColor(new Color(0f, 0.0f, 1.0f, 0.9f))
-                .setPosition(0,app.world.area.getHeight()*0.75)
-                .setSize(app.world.area.getWidth(), app.world.area.getHeight()*0.25);
-        app.addEntity(lar01);
+        // Create an Influencer in the initialized app World
+        Influencer i1 = (Influencer) new Influencer("influencer_1")
+                .setForce(new Vec2d(0.0, -0.18))
+                .setType(RECTANGLE)
+                .setPosition(0.0, app.world.area.getHeight() - 200.0)
+                .setSize(app.world.area.getWidth(), 200.0)
+                .setPhysicType(Application.PhysicType.NONE)
+                .setColor(new Color(0.0f, 0.0f, 0.5f, .07f));
+        app.addEntity(i1);
 
         // Add some SPHERICAL light
-        for (int i = 0; i < 10; i++) {
-            Light l = (Light) new Light("sphericalLight_" + i)
-                    .setLightType(LightType.SPHERICAL)
-                    .setEnergy(1.0)
-                    .setGlitterEffect(0.1)
-                    .setStickToCamera(false)
-                    .setColor(new Color(0.0f, 0.7f, 0.5f, 0.85f))
-                    .setPosition(100.0 + (80.0 * i), app.config.screenHeight * 0.5)
-                    .setSize(50.0, 50.0);
-            app.addEntity(l);
-        }
+        generateLights(app);
 
         // A main player Entity.
         Entity player = new Entity("player")
                 .setType(IMAGE)
                 .setPosition(app.world.area.getWidth() * 0.5, app.world.area.getHeight() * 0.5)
                 .setSize(32.0, 32.0)
-                .setElasticity(0.0)
-                .setFriction(0.98)
+                .setMaterial(
+                        new Material("player_mat",1.0,0.0,0.98))
                 .setColor(Color.RED)
                 .setPriority(1)
                 .setMass(40.0)
@@ -244,17 +237,17 @@ public class DemoScene extends AbstractScene {
 
         // Add a Map display
         MapEntity mapEntity = (MapEntity) new MapEntity("map")
-                .setColorMapping(
-                        Map.of(
-                                "ball_", Color.RED,
-                                "player", Color.BLUE,
-                                "pf_", Color.LIGHT_GRAY,
-                                "floor", Color.GRAY,
-                                "outPlatform", Color.YELLOW))
-                .setRefEntities(app.entities.values().stream().toList())
-                .setWorld(app.world)
-                .setSize(48, 32)
-                .setPosition(10, app.config.screenHeight - 48);
+            .setColorMapping(
+                Map.of(
+                    "ball_", Color.RED,
+                    "player", Color.BLUE,
+                    "pf_", Color.LIGHT_GRAY,
+                    "floor", Color.GRAY,
+                    "outPlatform", Color.YELLOW))
+            .setRefEntities(app.entities.values().stream().toList())
+            .setWorld(app.world)
+            .setSize(48, 32)
+            .setPosition(10, app.config.screenHeight - 48);
         app.addEntity(mapEntity);
 
         // ---- Everything about Messages ----
@@ -285,6 +278,20 @@ public class DemoScene extends AbstractScene {
         return true;
     }
 
+    private void generateLights(Application app) {
+        for (int i = 0; i < 10; i++) {
+            Light l = (Light) new Light("sphericalLight_" + i)
+                    .setLightType(LightType.SPHERICAL)
+                    .setEnergy(1.0)
+                    .setGlitterEffect(0.1)
+                    .setStickToCamera(false)
+                    .setColor(new Color(0.0f, 0.7f, 0.5f, 0.85f))
+                    .setPosition(100.0 + (80.0 * i), app.config.screenHeight * 0.5)
+                    .setSize(50.0, 50.0);
+            app.addEntity(l);
+        }
+    }
+
     private void reducePlayerEnergy(Application app, Entity player, Entity e) {
         int hurt = (int) e.getAttribute("hurt", 0);
         int energy = (int) player.getAttribute("energy", 0);
@@ -304,13 +311,13 @@ public class DemoScene extends AbstractScene {
         }
     }
 
-    private void generatePlatforms(Application app, int nbPf) {
+    private void generateAllPlatforms(Application app, int nbPf) {
         java.util.List<Entity> platforms = new ArrayList<>();
         Entity pf;
         boolean found = false;
         for (int i = 0; i < nbPf; i++) {
             while (true) {
-                pf = createPlatform(app, i);
+                pf = createOnePlatform(app, i);
                 found = false;
                 for (Entity p : platforms) {
                     if (p.cbox.intersects(pf.cbox.getBounds())) {
@@ -327,7 +334,7 @@ public class DemoScene extends AbstractScene {
 
     }
 
-    private Entity createPlatform(Application app, int i) {
+    private Entity createOnePlatform(Application app, int i) {
         double pfWidth = ((int) (Math.random() * 5) + 4);
         double maxCols = (app.world.area.getWidth() / 16.0);
         // 48=height of 1 pf + 1 player, -(3 + 3) to prevent create platform too low and too high
@@ -335,6 +342,8 @@ public class DemoScene extends AbstractScene {
         double pfCol = (int) (Math.random() * maxCols);
         pfCol = pfCol < maxCols ? pfCol : maxRows - pfWidth;
         double pfRow = (int) ((Math.random() * maxRows) + 3);
+
+        Material matPF = new Material("matPF",1.0,0.1,0.7);
 
         Entity pf = new Entity("pf_" + i)
                 .setType(RECTANGLE)
@@ -345,8 +354,7 @@ public class DemoScene extends AbstractScene {
                         pfRow * 48)
                 .setSize(pfWidth * 16, 16)
                 .setCollisionBox(0, 0, 0, 0)
-                .setElasticity(0.1)
-                .setFriction(0.70)
+                .setMaterial(matPF)
                 .setMass(10000)
                 .setDuration(-1);
         return pf;
@@ -465,6 +473,9 @@ public class DemoScene extends AbstractScene {
     }
 
     private void generateEntity(Application app, String namePrefix, int nbEntity, double acc) {
+
+        Material matEnt = new Material("matEnt",1.0,0.65,0.98);
+
         for (int i = 0; i < nbEntity; i++) {
             Entity e = new Entity(namePrefix + Application.getEntityIndex())
                     .setType(ELLIPSE)
@@ -473,9 +484,8 @@ public class DemoScene extends AbstractScene {
                             Math.random() * (app.world.area.getHeight() - 48))
                     .setColor(Color.RED)
                     .setInitialDuration((int) ((Math.random() * 5) + 5) * 5000)
-                    .setElasticity(0.65)
-                    .setFriction(0.98)
-                    .setMass(5.0)
+                    .setMaterial(matEnt)
+                    .setMass(30.0)
                     .setPriority(2)
                     // player will loose 1 point of energy.
                     .setAttribute("hurt", 1)

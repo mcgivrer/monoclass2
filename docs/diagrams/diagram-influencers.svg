@@ -1,0 +1,12 @@
+<svg width="360" height="240" xlmns="http://www.w3.org/2000/svg" version="1.1">
+    <rect id="screen" x="0" y="0" width="360" height="240" fill="rgb(255, 255, 255)" />
+    <rect id="influencer_1" x="0" y="120" width="360" height="120"
+        style="fill:rgba(0, 255, 255,128);stroke:rgb(0,0,0);stroke-width:1;" />
+    <rect id="player" x="160" y="114" width="32" height="32" fill="rgb(255, 0, 0)" stroke="black" stroke-width="1" />
+    <text x="156" y="106" font-size="10">Player</text>
+    <line x1="40" y1="180" x2="40" y2="220" stroke-width="2" stroke="rgb(6,6,6)" />
+    <text x="4" y="160" stroke="navy" font-size="10">Influencer_1</text>
+    <text x="4" y="12">(0,0)</text>
+    <text x="300" y="230" font-size="12">360x240</text>
+
+</svg>
