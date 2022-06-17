@@ -31,8 +31,9 @@ export GIT_COMMIT_ID=$(git rev-parse HEAD)
 # Paths
 export SRC=src
 export LIBS=lib
-export LIB_DEP="$LIBS/dependencies/jinput-2.0.9.jar $LIBS/dependencies/jinput-2.0.9-natives-all.jar"
-export LIB_TEST=$LIBS/test/junit-platform-console-standalone-1.8.2.jar
+export LIB_DEP="$LIBS/dependencies/jinput-2.0.9.jar"
+export LIB_NATIVES="$LIBS/dependencies/jinput-2.0.9-natives-all.jar"
+export LIB_TEST="$LIBS/test/junit-platform-console-standalone-1.8.2.jar"
 export LIB_CHECKSTYLES=$LIBS/tools/checkstyle-10.3-all.jar
 export TARGET=./target
 export BUILD=$TARGET/build
@@ -73,31 +74,36 @@ function compile() {
   echo "compile sources "
   echo "> from : $SRC"
   echo "> to   : $CLASSES"
+  echo "|_ 2. compile sources from '$SRC/main' ..."
   # prepare target
   mkdir -p $CLASSES
   # Compile class files
   rm -Rf $CLASSES/*
-  echo "|_ 2. compile sources from '$SRC/main' ..."
+  # Prepare JInput natives libraries
+  mkdir $TARGET/natives
+  unzip $LIB_NATIVES -d $TARGET/natives
+  # list sources
   find $SRC/main -name '*.java' >$TARGET/sources.lst
   # Compilation via JavaC with some debug options to add source, lines and vars in the compiled classes.
   javac $COMPILATION_OPTS \
-   -d $CLASSES \
-   -g:source,lines,vars \
-   -source $SOURCE_VERSION \
-   -target $SOURCE_VERSION \
-   -classpath $CLASSES @$TARGET/sources.lst -cp $CLASSES
+    -d $CLASSES \
+    -g:source,lines,vars \
+    -source $SOURCE_VERSION \
+    -target $SOURCE_VERSION \
+    -cp "$LIBS/dependencies/jinput-2.0.9.jar;$CLASSES;." @$TARGET/sources.lst
   echo "   done."
 }
+#
 function checkCodeStyleQA() {
   echo "check code quality against rules $CHECK_RULES"
   echo "> explore sources at : $SRC"
   find $SRC/main -name '*.java' >$TARGET/sources.lst
   java $JAR_OPTS -cp "$LIB_CHECKSTYLES:$CLASSES:." \
-   -jar $LIB_CHECKSTYLES \
-   -c $CHECK_RULES_FILE \
-   -f xml \
-   -o $TARGET/checkstyle_errors.xml \
-   @$TARGET/sources.lst
+    -jar $LIB_CHECKSTYLES \
+    -c $CHECK_RULES_FILE \
+    -f xml \
+    -o $TARGET/checkstyle_errors.xml \
+    @$TARGET/sources.lst
   echo "   done."
 }
 #
@@ -115,6 +121,7 @@ function generatedoc() {
     -author -use -version \
     -doctitle "<h1>$PROGRAM_TITLE</h1>" \
     -d $TARGET/javadoc \
+    -cp "$LIB_DEP;$CLASSES;." \
     -sourcepath $SRC/main/java $JAVADOC_CLASSPATH \
     -overview $TARGET/javadoc/overview.html \
     $JAVADOC_GROUPS
@@ -134,9 +141,9 @@ function executeTests() {
   #list test sources
   find $SRC/main -name '*.java' >$TARGET/sources.lst
   find $SRC/test -name '*.java' >$TARGET/test-sources.lst
-  javac -source $SOURCE_VERSION -encoding $SOURCE_ENCODING $COMPILATION_OPTS -cp ".;$LIB_TEST" -d $TESTCLASSES @$TARGET/sources.lst @$TARGET/test-sources.lst
+  javac -source $SOURCE_VERSION -encoding $SOURCE_ENCODING $COMPILATION_OPTS -cp ".;$LIB_TEST;$LIB_DEP" -d $TESTCLASSES @$TARGET/sources.lst @$TARGET/test-sources.lst
   echo "execute tests through JUnit"
-  java $JAR_OPTS -jar $LIB_TEST --class-path "$CLASSES;$TESTCLASSES;." --scan-class-path
+  java $JAR_OPTS -jar $LIB_TEST -cp "$LIB_DEP;$CLASSES;." --scan-class-path
   echo "done."
 }
 #
@@ -166,7 +173,10 @@ function executeJar() {
   compile
   createJar
   echo "|_ 5.Execute just created JAR $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar"
-  java $JAR_OPTS -jar $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar "$@"
+  java $JAR_OPTS -cp $LIB_DEP \
+    -jar $TARGET/$PROGRAM_NAME-$PROGRAM_VERSION.jar \
+    -cp $LIB_DEP \
+    -Djava.library.path=$TARGET/natives "$@"
 }
 #
 function generateEpub() {

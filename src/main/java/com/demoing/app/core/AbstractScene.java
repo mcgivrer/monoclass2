@@ -13,7 +13,7 @@ public abstract class AbstractScene implements Application.Scene {
      */
     protected List<Application.Light> lights = new ArrayList<>();
 
-    public AbstractScene(String name) {
+    protected AbstractScene(String name) {
         this.name = name;
     }
 

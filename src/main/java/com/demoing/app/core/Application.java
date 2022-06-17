@@ -200,7 +200,7 @@ public class Application extends JPanel implements KeyListener {
          * Retrieve the current number of entities.
          *
          * @return an INteger value correspondong to the size of the
-         *         {@link Application#entities} Map.
+         * {@link Application#entities} Map.
          */
         Integer getNbEntities();
 
@@ -593,7 +593,7 @@ public class Application extends JPanel implements KeyListener {
          */
         private Configuration parseArgs(String[] args) {
             // args not null and not empty ? parse it !
-            if (Optional.ofNullable((args)).isPresent() && args.length > 0) {
+            if (Optional.ofNullable((args)).isPresent() && args.length > 1) {
                 Arrays.asList(args).forEach(arg -> {
                     String[] argSplit = arg.split("=");
                     System.out.println("- arg:" + argSplit[0] + "=" + argSplit[1]);
@@ -697,8 +697,8 @@ public class Application extends JPanel implements KeyListener {
             Graphics2D g = buffer.createGraphics();
             try {
                 debugFont = Font.createFont(
-                        Font.PLAIN,
-                        Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
+                                Font.PLAIN,
+                                Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
                         .deriveFont(9.0f);
             } catch (FontFormatException | IOException e) {
                 System.out.println("ERR: Unable to initialize Render: " + e.getLocalizedMessage());
@@ -823,10 +823,10 @@ public class Application extends JPanel implements KeyListener {
             Color medColor = brighten(l.color, l.energy * 0.5);
             Color endColor = new Color(0.0f, 0.0f, 0.0f, 0.2f);
 
-            l.colors = new Color[] { l.color,
+            l.colors = new Color[]{l.color,
                     medColor,
-                    endColor };
-            l.dist = new float[] { 0.0f, 0.05f, 0.5f };
+                    endColor};
+            l.dist = new float[]{0.0f, 0.05f, 0.5f};
             l.rgp = new RadialGradientPaint(
                     new Point(
                             (int) (l.pos.x + (l.width * 0.5) + (10 * Math.random() * l.glitterEffect)),
@@ -913,8 +913,8 @@ public class Application extends JPanel implements KeyListener {
                     sprite.getWidth(), sprite.getHeight(),
                     BufferedImage.TYPE_INT_ARGB);
 
-            float[] scales = { 1f, 1f, 1f, alpha };
-            float[] offsets = { 0f, 0f, 0f, 0f };
+            float[] scales = {1f, 1f, 1f, alpha};
+            float[] offsets = {0f, 0f, 0f, 0f};
 
             RescaleOp rop = new RescaleOp(scales, offsets, null);
             rop.filter(sprite, drawImage);
@@ -993,8 +993,8 @@ public class Application extends JPanel implements KeyListener {
                                     offsetY + (lineHeight * 5));
                             if (e.getAnimations()) {
                                 g.drawString(String.format("anim:%s/%d",
-                                        e.animations.currentAnimationSet,
-                                        e.animations.currentFrame),
+                                                e.animations.currentAnimationSet,
+                                                e.animations.currentFrame),
                                         offsetX, offsetY + (lineHeight * 6));
                             }
                         }
@@ -1320,7 +1320,7 @@ public class Application extends JPanel implements KeyListener {
         }
 
         private void applyWorldInfluencers(Entity e) {
-            final Vec2d[] g = { new Vec2d(world.gravity.x, e.mass * world.gravity.y) };
+            final Vec2d[] g = {new Vec2d(world.gravity.x, e.mass * world.gravity.y)};
             getInfluencers().values()
                     .stream()
                     .filter(i -> i.box.contains(e.box))
@@ -1596,9 +1596,9 @@ public class Application extends JPanel implements KeyListener {
         public float transparency = 0.0f;
 
         public Material(String name,
-                double density,
-                double elasticity,
-                double friction) {
+                        double density,
+                        double elasticity,
+                        double friction) {
             this.name = name;
             this.density = density;
             this.elasticity = elasticity;
@@ -1770,8 +1770,15 @@ public class Application extends JPanel implements KeyListener {
         private final Application app;
         private boolean anyKeyPressed;
 
+        /**
+         * The {@link Event} polled from a JInput {@link Controller}
+         */
         private Event event;
+        /**
+         * The list of {@link Controller} provided by the JInput library.
+         */
         private Controller[] controllers;
+
         public Map<Integer, Function> actionMapping = new HashMap<>();
 
         /**
@@ -1789,22 +1796,41 @@ public class Application extends JPanel implements KeyListener {
             });
         }
 
+        /**
+         * Parse the JInput controller list to update status and detect possible actions
+         *
+         * @param elapsed the elapsed time since previous call.
+         */
         public void update(double elapsed) {
-            for (int i = 0; i < controllers.length; i++) {
+            for (Controller controller : controllers) {
                 /* Remember to poll each one */
-                this.controllers[i].poll();
+                controller.poll();
 
                 /* Get the controllers event queue */
-                EventQueue queue = this.controllers[i].getEventQueue();
+                EventQueue queue = controller.getEventQueue();
 
                 /* For each object in the queue */
                 while (queue.getNextEvent(event)) {
                     /* Get event component */
                     Component comp = this.event.getComponent();
+                    manageComponentAction(controller, comp, elapsed);
 
-                    /* Process event (your awesome code) */
-                    // TODO
                 }
+            }
+        }
+
+        /**
+         * Manage the component from a GAME controller to intercept player input.
+         *
+         * @param ct      the Controller to be analysed
+         * @param comp    the component of the Controller to retrieve status from
+         * @param elapsed the elapsed time since previous call.
+         * @author Frédéric Delorme
+         * @since 1.0.6
+         */
+        private void manageComponentAction(Controller ct, Component comp, double elapsed) {
+            if (ct.getType().equals(Controller.Type.GAMEPAD)) {
+                System.out.printf("- %s/%s\n", ct.getName(), comp.getName());
             }
         }
 
@@ -2171,7 +2197,7 @@ public class Application extends JPanel implements KeyListener {
         }
 
         public Entity addAnimation(String key, int x, int y, int tw, int th, int[] durations, String pathToImage,
-                int loop) {
+                                   int loop) {
             if (Optional.ofNullable(this.animations).isEmpty()) {
                 this.animations = new Animation();
             }
@@ -2288,7 +2314,7 @@ public class Application extends JPanel implements KeyListener {
         }
 
         public Animation addAnimationSet(String key, String imgSrc, int x, int y, int tw, int th, int[] durations,
-                int loop) {
+                                         int loop) {
             AnimationSet aSet = new AnimationSet(key).setSize(tw, th);
             BufferedImage image = Resources.loadImage(imgSrc);
             aSet.frames = new BufferedImage[durations.length];
@@ -2398,7 +2424,7 @@ public class Application extends JPanel implements KeyListener {
      * At declaration, you must set a Min and max <code>value</code> representing
      * the gauge <code>minValue</code>
      * and <code>maxValue</code> for your value:
-     * 
+     *
      * <pre>
      * GaugeEntity myGE = new GaugeEntity("myValue")
      *         .setPosition(10, 10)
@@ -2450,7 +2476,7 @@ public class Application extends JPanel implements KeyListener {
      * {@link BufferedImage}
      * as <code>figures</code>, and then, the {@link Entity} inherited attributes:
      * </p>
-     * 
+     *
      * <pre>
      * ValueEntity scoreEntity = (ValueEntity) new ValueEntity("score")
      *         .setValue(score)
@@ -2514,7 +2540,7 @@ public class Application extends JPanel implements KeyListener {
          *                provide an array of 10 {@link BufferedImage},
          *                corresponding to the 10 digits from 0 to 9).
          * @return this {@link ValueEntity} with its new figures to be used to draw the
-         *         integer value.
+         * integer value.
          */
         public ValueEntity setFigures(BufferedImage[] figures) {
             this.figures = figures;
@@ -3223,6 +3249,7 @@ public class Application extends JPanel implements KeyListener {
     }
 
     private synchronized void update(double elapsed) {
+        actionHandler.update(elapsed);
         if (!pause) {
             double maxElapsedTime = Math.min(elapsed, config.frameTime);
             physicEngine.update(maxElapsedTime);
