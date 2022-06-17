@@ -10,16 +10,15 @@ the magic of a bash script (Back to Roots !).
 
 ![2022 Gitkraken Project Timeline](docs/images/project-timeline-2022.png "2022 Gitkraken Project Timeline")
 
-And a last constrain is to reduce as much as possible the number of LoC, using enhancement from latest JDK.
+And a last constrain is to reduce as much as possible the number of LoC, using enhancement from the latest JDK.
 
 Have fun discover this beast of code, to learn and take benefits of some latest JDK features (like
-the [pattern matching for switch](https://openjdk.java.net/jeps/406 "ssee the official specification")), and moreover,
+the [pattern matching for switch](https://openjdk.java.net/jeps/406 "see the official specification")), and moreover,
 overuse of lambda and stream each time this was possible.
 
 > :blue_book: _**NOTE**_[^1]
-> _If your are curious, just visit
-the "[Java Language Updates](https://docs.oracle.com/en/java/javase/18/language/java-language-changes.html "go to official source of information for Java evolution")"
-page from Oracle, you will discover accross release from 9 to 18, the list of new introduced features._
+> _If you are curious, just visit the "[Java Language Updates](https://docs.oracle.com/en/java/javase/18/language/java-language-changes.html "go to official source of information for Java evolution")"
+page from Oracle, you will discover across release from 9 to 18, the list of new introduced features._
 >
 
 ## More Doc sir ?
@@ -55,7 +54,7 @@ build script)
 Or if you build it with `scripts/build.sh a`, you will be able to run it with :
 
 ```shell
-$> java --enable-preview -jar target/monoclass2-1.0.3.jar
+$> java --enable-preview -Djava.library.path=target/natives -cp lib/dependencies/jinput-2.0.9.jar -jar target/monoclass2-1.0.5.jar
 ```
 
 You will get the following window
@@ -69,7 +68,7 @@ _figure 1 - LightAndShadow pre-release preparing the v1.0.5 with Light and Influ
 
 ### Keyboard
 
-Here are all the keys and their corresponding action 
+Here are all the keys and their corresponding action
 
 | Key                | Action              |
 |:-------------------|:--------------------|
@@ -87,47 +86,54 @@ Here are all the keys and their corresponding action
 
 You can configure dynamically some of the internal parameters:
 
-| Argument                | Configuration key | Description                                                                                         | Default   |
-|:------------------------|:------------------|:----------------------------------------------------------------------------------------------------|:----------|
-| `w`, `width`            | screenWidth       | The width of the game window                                                                        | 320       |
-| `h`, `height`           | screenHeight      | The height of the game window                                                                       | 240       |
-| `s`, `scale`            | displayScale      | The the pixel scale                                                                                 | 2         |
-| `d`, `debug`            | debug             | the debug level of display mode                                                                     | 1         |
-| `ww`, `worldwidth`      | worldWidth        | The width of the world play area                                                                    | 800       |
-| `wh`, `worldheight`     | worldHeight       | The height of the world play area                                                                   | 600       |
-| `wg`, `worldgravity`    | worldGravity      | The gravity in the world play area                                                                  | 0.981     |
-| `spmin`                 | speedMinValue     | Physic Engine threshold object minimum speed to 0                                                   |           |
-| `spmax`                 | speedMaxValue     | Physic Engine maximum object speed                                                                  |           |
-| `accmin`                | accMinValue       | Physic Engine threshold object minimum acceleration to 0                                            |           |
-| `accmax`                | accMaxValue       | Physic Engine maximum object acceleration                                                           |           |
-| `cspmin`                | colSpeedMinValue  | Collision Detector threshold object minimum speed to 0                                              |           |
-| `cspmax`                | colSpeedMaxValue  | Collision Detector maximum object speed                                                             |           |
-| `fps`                   | fps               | Frame Per Second                                                                                    | 60        |
-| `f`, `fullScreen`       | fullScreen        | Switch game window to fullscreen mode                                                               | false[^2] |
-| `scene`                 | defaultScene      | the default scene to be activated (must be listed in the `app.scenes` in the `app.properties` file) | N/A       |
-| `l`, `language`, `lang` | defaultLanguage   | select the preferred language  (existing values are en_EN, fr_FR, es_ES or de_DE).                  | en_EN     |
-
+| Argument                  | Configuration key | Description                                                                                         | Default   |
+|:--------------------------|:------------------|:----------------------------------------------------------------------------------------------------|:----------|
+| `w`, `width`              | screenWidth       | The width of the game window                                                                        | 320       |
+| `h`, `height`             | screenHeight      | The height of the game window                                                                       | 240       |
+| `s`, `scale`              | displayScale      | The the pixel scale                                                                                 | 2         |
+| `d`, `debug`              | debug             | the debug level of display mode                                                                     | 1         |
+| `ww`, `worldwidth`        | worldWidth        | The width of the world play area                                                                    | 800       |
+| `wh`, `worldheight`       | worldHeight       | The height of the world play area                                                                   | 600       |
+| `wg`, `worldgravity`      | worldGravity      | The gravity in the world play area                                                                  | 0.981     |
+| `spmin`                   | speedMinValue     | Physic Engine threshold object minimum speed to 0                                                   |           |
+| `spmax`                   | speedMaxValue     | Physic Engine maximum object speed                                                                  |           |
+| `accmin`                  | accMinValue       | Physic Engine threshold object minimum acceleration to 0                                            |           |
+| `accmax`                  | accMaxValue       | Physic Engine maximum object acceleration                                                           |           |
+| `cspmin`                  | colSpeedMinValue  | Collision Detector threshold object minimum speed to 0                                              |           |
+| `cspmax`                  | colSpeedMaxValue  | Collision Detector maximum object speed                                                             |           |
+| `fps`                     | fps               | Frame Per Second                                                                                    | 60        |
+| `f`, `fullScreen`         | fullScreen        | Switch game window to fullscreen mode                                                               | false[^2] |
+| `scene`                   | defaultScene      | the default scene to be activated (must be listed in the `app.scenes` in the `app.properties` file) | N/A       |
+| `l`, `language`, `lang`   | defaultLanguage   | select the preferred language  (existing values are en_EN, fr_FR, es_ES or de_DE).                  | en_EN     |
 
 ### Usage example
 
 1. Change the size of the opened window :
 
 ```shell
-$ java ---enable-preview -jar target/monoclass2-x.y.z.jar w=600 h=400
+$ java --enable-preview -Djava.library.path=target/natives \
+-cp lib/dependencies/jinput-2.0.9.jar  \
+-jar target/monoclass2-x.y.z.jar \
+w=600 h=400
 ```
 
 2. set the preferred language to English at start :
 
 ```shell
-$ java ---enable-preview -jar target/monoclass2-x.y.z.jar language=en_EN
+$ java --enable-preview -Djava.library.path=target/natives \
+ -cp lib/dependencies/jinput-2.0.9.jar  \
+ -jar target/monoclass2-x.y.z.jar \ 
+ language=en_EN
 ```
 
 3. set the preferred language to French and change the pixel scale :
 
 ```shell
-$ java ---enable-preview -jar target/monoclass2-x.y.z.jar language=fr_FR s=2.0
+$ java --enable-preview -Djava.library.path=target/natives \
+ -cp lib/dependencies/jinput-2.0.9.jar  \
+ -jar target/monoclass2-x.y.z.jar \ 
+ language=fr_FR s=2.0
 ```
-
 
 ## Contribute
 
