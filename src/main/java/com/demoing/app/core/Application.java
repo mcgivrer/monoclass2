@@ -11,8 +11,8 @@ import net.java.games.input.Event;
 import net.java.games.input.EventQueue;
 
 import java.awt.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+import java.awt.datatransfer.SystemFlavorMap;
+import java.awt.event.*;
 import java.awt.geom.Area;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.Ellipse2D;
@@ -83,7 +83,7 @@ public class Application extends JPanel implements KeyListener {
     private boolean sceneReady;
 
     /**
-     * Display MOde for the application window.
+     * Display Mode for the application window.
      */
     private DisplayModeEnum displayMode;
 
@@ -200,7 +200,7 @@ public class Application extends JPanel implements KeyListener {
          * Retrieve the current number of entities.
          *
          * @return an INteger value correspondong to the size of the
-         *         {@link Application#entities} Map.
+         * {@link Application#entities} Map.
          */
         Integer getNbEntities();
 
@@ -699,8 +699,8 @@ public class Application extends JPanel implements KeyListener {
             Graphics2D g = buffer.createGraphics();
             try {
                 debugFont = Font.createFont(
-                        Font.PLAIN,
-                        Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
+                                Font.PLAIN,
+                                Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
                         .deriveFont(9.0f);
             } catch (FontFormatException | IOException e) {
                 System.out.println("ERR: Unable to initialize Render: " + e.getLocalizedMessage());
@@ -825,10 +825,10 @@ public class Application extends JPanel implements KeyListener {
             Color medColor = brighten(l.color, l.energy * 0.5);
             Color endColor = new Color(0.0f, 0.0f, 0.0f, 0.2f);
 
-            l.colors = new Color[] { l.color,
+            l.colors = new Color[]{l.color,
                     medColor,
-                    endColor };
-            l.dist = new float[] { 0.0f, 0.05f, 0.5f };
+                    endColor};
+            l.dist = new float[]{0.0f, 0.05f, 0.5f};
             l.rgp = new RadialGradientPaint(
                     new Point(
                             (int) (l.pos.x + (l.width * 0.5) + (10 * Math.random() * l.glitterEffect)),
@@ -915,8 +915,8 @@ public class Application extends JPanel implements KeyListener {
                     sprite.getWidth(), sprite.getHeight(),
                     BufferedImage.TYPE_INT_ARGB);
 
-            float[] scales = { 1f, 1f, 1f, alpha };
-            float[] offsets = { 0f, 0f, 0f, 0f };
+            float[] scales = {1f, 1f, 1f, alpha};
+            float[] offsets = {0f, 0f, 0f, 0f};
 
             RescaleOp rop = new RescaleOp(scales, offsets, null);
             rop.filter(sprite, drawImage);
@@ -995,8 +995,8 @@ public class Application extends JPanel implements KeyListener {
                                     offsetY + (lineHeight * 5));
                             if (e.getAnimations()) {
                                 g.drawString(String.format("anim:%s/%d",
-                                        e.animations.currentAnimationSet,
-                                        e.animations.currentFrame),
+                                                e.animations.currentAnimationSet,
+                                                e.animations.currentFrame),
                                         offsetX, offsetY + (lineHeight * 6));
                             }
                         }
@@ -1096,12 +1096,14 @@ public class Application extends JPanel implements KeyListener {
                 g.setColor(Color.WHITE);
                 g.drawString(
                         String.format(
-                                "[ dbg: %d | fps:%3.0f | obj:%d | {g:%1.03f, a(%3.0fx%3.0f) }]",
+                                "[ dbg: %d | fps:%3.0f | obj:%d | {g:%1.03f, a(%3.0fx%3.0f) } | m:(%4.0f,%4.0f) ]",
                                 config.debug,
                                 realFps,
                                 gPipeline.size(),
                                 world.gravity.y * 1000.0,
-                                world.area.getWidth(), world.area.getHeight()),
+                                world.area.getWidth(), world.area.getHeight(),
+                                app.actionHandler.getMousePosition().x, app.actionHandler.getMousePosition().y
+                        ),
                         20, (int) app.getHeight() - 20);
             }
 
@@ -1322,7 +1324,7 @@ public class Application extends JPanel implements KeyListener {
         }
 
         private void applyWorldInfluencers(Entity e) {
-            final Vec2d[] g = { new Vec2d(world.gravity.x, e.mass * world.gravity.y) };
+            final Vec2d[] g = {new Vec2d(world.gravity.x, e.mass * world.gravity.y)};
             getInfluencers().values()
                     .stream()
                     .filter(i -> i.box.contains(e.box))
@@ -1610,9 +1612,9 @@ public class Application extends JPanel implements KeyListener {
         public float transparency = 0.0f;
 
         public Material(String name,
-                double density,
-                double elasticity,
-                double friction) {
+                        double density,
+                        double elasticity,
+                        double friction) {
             this.name = name;
             this.density = density;
             this.elasticity = elasticity;
@@ -1778,11 +1780,15 @@ public class Application extends JPanel implements KeyListener {
      * @author Frédéric Delorme
      * @since 1.0.3
      */
-    public static class ActionHandler implements KeyListener {
+    public static class ActionHandler implements KeyListener, MouseListener, MouseWheelListener {
         private final boolean[] prevKeys = new boolean[65536];
         private final boolean[] keys = new boolean[65536];
         private final Application app;
+        private final boolean[] mouseButtons;
+        private final Vec2d mousePosition = new Vec2d();
+        private int mouseWheel;
         private boolean anyKeyPressed;
+
 
         /**
          * The {@link Event} polled from a JInput {@link Controller}
@@ -1802,6 +1808,7 @@ public class Application extends JPanel implements KeyListener {
          */
         public ActionHandler(Application a) {
             this.app = a;
+            this.mouseButtons = new boolean[MouseInfo.getNumberOfButtons()];
             System.setProperty("net.java.games.input.useDefaultPlugin", "false");
             this.event = new Event();
             this.controllers = ControllerEnvironment.getDefaultEnvironment().getControllers();
@@ -1865,6 +1872,60 @@ public class Application extends JPanel implements KeyListener {
         @Override
         public void keyReleased(KeyEvent e) {
 
+        }
+
+        @Override
+        public void mouseClicked(MouseEvent e) {
+            getMouseInfo(e, true);
+        }
+
+        private void getMouseInfo(MouseEvent e, boolean x) {
+            getMousePosition(e);
+            this.mouseButtons[e.getButton()] = x;
+        }
+
+        private void getMousePosition(MouseEvent e) {
+            this.mousePosition.x = e.getX();
+            this.mousePosition.y = e.getY();
+        }
+
+        @Override
+        public void mousePressed(MouseEvent e) {
+            getMouseInfo(e, true);
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent e) {
+            getMouseInfo(e, false);
+        }
+
+        @Override
+        public void mouseEntered(MouseEvent e) {
+            getMousePosition(e);
+        }
+
+        @Override
+        public void mouseExited(MouseEvent e) {
+            getMousePosition(e);
+        }
+
+        @Override
+        public void mouseWheelMoved(MouseWheelEvent e) {
+            getMousePosition(e);
+            this.mouseWheel = e.getWheelRotation();
+        }
+
+        public Vec2d getMousePosition() {
+            return this.mousePosition;
+        }
+
+        public boolean getMouseButton(int i) {
+            assert (i > this.mouseButtons.length);
+            return this.mouseButtons[i];
+        }
+
+        public int getMouseWheel() {
+            return this.mouseWheel;
         }
     }
 
@@ -2212,7 +2273,7 @@ public class Application extends JPanel implements KeyListener {
         }
 
         public Entity addAnimation(String key, int x, int y, int tw, int th, int[] durations, String pathToImage,
-                int loop) {
+                                   int loop) {
             if (Optional.ofNullable(this.animations).isEmpty()) {
                 this.animations = new Animation();
             }
@@ -2329,7 +2390,7 @@ public class Application extends JPanel implements KeyListener {
         }
 
         public Animation addAnimationSet(String key, String imgSrc, int x, int y, int tw, int th, int[] durations,
-                int loop) {
+                                         int loop) {
             AnimationSet aSet = new AnimationSet(key).setSize(tw, th);
             BufferedImage image = Resources.loadImage(imgSrc);
             aSet.frames = new BufferedImage[durations.length];
@@ -2555,7 +2616,7 @@ public class Application extends JPanel implements KeyListener {
          *                provide an array of 10 {@link BufferedImage},
          *                corresponding to the 10 digits from 0 to 9).
          * @return this {@link ValueEntity} with its new figures to be used to draw the
-         *         integer value.
+         * integer value.
          */
         public ValueEntity setFigures(BufferedImage[] figures) {
             this.figures = figures;
