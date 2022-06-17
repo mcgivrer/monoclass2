@@ -200,7 +200,7 @@ public class Application extends JPanel implements KeyListener {
          * Retrieve the current number of entities.
          *
          * @return an INteger value correspondong to the size of the
-         * {@link Application#entities} Map.
+         *         {@link Application#entities} Map.
          */
         Integer getNbEntities();
 
@@ -595,7 +595,7 @@ public class Application extends JPanel implements KeyListener {
             // args not null and not empty ? parse it !
             if (Optional.ofNullable((args)).isPresent() && args.length > 1) {
                 Arrays.asList(args).forEach(arg -> {
-                    if(arg.contains("=")) {
+                    if (arg.contains("=")) {
                         String[] argSplit = arg.split("=");
                         System.out.println("- arg:" + argSplit[0] + "=" + argSplit[1]);
                         switch (argSplit[0].toLowerCase()) {
@@ -618,7 +618,7 @@ public class Application extends JPanel implements KeyListener {
                             case "scene" -> defaultScene = argSplit[1];
                             case "l", "language", "lang" -> defaultLanguage = argSplit[1];
                             default -> System.out.printf("\nERR : Unknown argument %s\n", arg);
-                        }    
+                        }
                     }
                 });
             }
@@ -699,8 +699,8 @@ public class Application extends JPanel implements KeyListener {
             Graphics2D g = buffer.createGraphics();
             try {
                 debugFont = Font.createFont(
-                                Font.PLAIN,
-                                Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
+                        Font.PLAIN,
+                        Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
                         .deriveFont(9.0f);
             } catch (FontFormatException | IOException e) {
                 System.out.println("ERR: Unable to initialize Render: " + e.getLocalizedMessage());
@@ -825,10 +825,10 @@ public class Application extends JPanel implements KeyListener {
             Color medColor = brighten(l.color, l.energy * 0.5);
             Color endColor = new Color(0.0f, 0.0f, 0.0f, 0.2f);
 
-            l.colors = new Color[]{l.color,
+            l.colors = new Color[] { l.color,
                     medColor,
-                    endColor};
-            l.dist = new float[]{0.0f, 0.05f, 0.5f};
+                    endColor };
+            l.dist = new float[] { 0.0f, 0.05f, 0.5f };
             l.rgp = new RadialGradientPaint(
                     new Point(
                             (int) (l.pos.x + (l.width * 0.5) + (10 * Math.random() * l.glitterEffect)),
@@ -915,8 +915,8 @@ public class Application extends JPanel implements KeyListener {
                     sprite.getWidth(), sprite.getHeight(),
                     BufferedImage.TYPE_INT_ARGB);
 
-            float[] scales = {1f, 1f, 1f, alpha};
-            float[] offsets = {0f, 0f, 0f, 0f};
+            float[] scales = { 1f, 1f, 1f, alpha };
+            float[] offsets = { 0f, 0f, 0f, 0f };
 
             RescaleOp rop = new RescaleOp(scales, offsets, null);
             rop.filter(sprite, drawImage);
@@ -995,8 +995,8 @@ public class Application extends JPanel implements KeyListener {
                                     offsetY + (lineHeight * 5));
                             if (e.getAnimations()) {
                                 g.drawString(String.format("anim:%s/%d",
-                                                e.animations.currentAnimationSet,
-                                                e.animations.currentFrame),
+                                        e.animations.currentAnimationSet,
+                                        e.animations.currentFrame),
                                         offsetX, offsetY + (lineHeight * 6));
                             }
                         }
@@ -1322,7 +1322,7 @@ public class Application extends JPanel implements KeyListener {
         }
 
         private void applyWorldInfluencers(Entity e) {
-            final Vec2d[] g = {new Vec2d(world.gravity.x, e.mass * world.gravity.y)};
+            final Vec2d[] g = { new Vec2d(world.gravity.x, e.mass * world.gravity.y) };
             getInfluencers().values()
                     .stream()
                     .filter(i -> i.box.contains(e.box))
@@ -1443,9 +1443,16 @@ public class Application extends JPanel implements KeyListener {
          * Area for this {@link World} object.
          */
         public Rectangle2D area;
-
+        /**
+         * Default {@ink Material} for the newly created World. This material is used by
+         * the {@link PhysicEngine} to compute physical attributes of {@link Entity}.
+         */
         private Material material;
 
+        /**
+         * The default gravity applied by the world environment on any {@link Entity}
+         * which moves arecomputed by the {@link PhysicEngine}.
+         */
         public Vec2d gravity;
 
         public World setMaterial(Material m) {
@@ -1458,11 +1465,16 @@ public class Application extends JPanel implements KeyListener {
         }
 
         /**
-         * Initialize the world with some default values with an area of 320.0 x 200.0.
+         * Initialize the world with some default values with an area of 320.0 x 200.0,
+         * a default world material, and the Earth planet's gravity.
          */
         public World() {
-            area = new Rectangle2D.Double(0.0, 0.0, 320.0, 200.0);
-            gravity = new Vec2d(0.0, -0.981);
+            // A simple short rectangle
+            setArea(320.0, 200.0);
+            // Earth gravity
+            setGravity(new Vec2d(0.0, -0.981));
+            // a quite cool environment for entities.
+            setMaterial(new Material("defaultWorldMaterial", 1.0, 0.05, 0.20));
         }
 
         /**
@@ -1598,9 +1610,9 @@ public class Application extends JPanel implements KeyListener {
         public float transparency = 0.0f;
 
         public Material(String name,
-                        double density,
-                        double elasticity,
-                        double friction) {
+                double density,
+                double elasticity,
+                double friction) {
             this.name = name;
             this.density = density;
             this.elasticity = elasticity;
@@ -1619,7 +1631,7 @@ public class Application extends JPanel implements KeyListener {
         private final Application app;
         private final World world;
 
-        // ToDo! maintain a binTree to 'sub-space' world.
+        // TODO maintains an OctTree to split World into 'sub-spaces'.
         public Map<String, Entity> colliders = new ConcurrentHashMap<>();
 
         public CollisionDetector(Application a, Configuration c, World w) {
@@ -1790,6 +1802,7 @@ public class Application extends JPanel implements KeyListener {
          */
         public ActionHandler(Application a) {
             this.app = a;
+            System.setProperty("net.java.games.input.useDefaultPlugin", "false");
             this.event = new Event();
             this.controllers = ControllerEnvironment.getDefaultEnvironment().getControllers();
             this.actionMapping.put(KeyEvent.VK_F3, (e) -> {
@@ -2199,7 +2212,7 @@ public class Application extends JPanel implements KeyListener {
         }
 
         public Entity addAnimation(String key, int x, int y, int tw, int th, int[] durations, String pathToImage,
-                                   int loop) {
+                int loop) {
             if (Optional.ofNullable(this.animations).isEmpty()) {
                 this.animations = new Animation();
             }
@@ -2316,7 +2329,7 @@ public class Application extends JPanel implements KeyListener {
         }
 
         public Animation addAnimationSet(String key, String imgSrc, int x, int y, int tw, int th, int[] durations,
-                                         int loop) {
+                int loop) {
             AnimationSet aSet = new AnimationSet(key).setSize(tw, th);
             BufferedImage image = Resources.loadImage(imgSrc);
             aSet.frames = new BufferedImage[durations.length];
@@ -2542,7 +2555,7 @@ public class Application extends JPanel implements KeyListener {
          *                provide an array of 10 {@link BufferedImage},
          *                corresponding to the 10 digits from 0 to 9).
          * @return this {@link ValueEntity} with its new figures to be used to draw the
-         * integer value.
+         *         integer value.
          */
         public ValueEntity setFigures(BufferedImage[] figures) {
             this.figures = figures;

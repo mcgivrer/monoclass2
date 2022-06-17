@@ -43,7 +43,7 @@ public class DemoScene extends AbstractScene {
                         "world",
                         1.0,
                         0.0,
-                        0.98));
+                        0.32));
 
         // define Game global variables
         app.setAttribute("life", 5);
@@ -195,7 +195,6 @@ public class DemoScene extends AbstractScene {
         app.addEntity(scoreEntity);
 
         long time = (long) app.getAttribute("time", 0);
-        Font timeFont = wlcFont.deriveFont(16.0f);
         ValueEntity timeTxtE = (ValueEntity) new ValueEntity("time")
                 .setFormat("%3d")
                 .setValue((int) (time / 1000))
