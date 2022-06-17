@@ -595,28 +595,30 @@ public class Application extends JPanel implements KeyListener {
             // args not null and not empty ? parse it !
             if (Optional.ofNullable((args)).isPresent() && args.length > 1) {
                 Arrays.asList(args).forEach(arg -> {
-                    String[] argSplit = arg.split("=");
-                    System.out.println("- arg:" + argSplit[0] + "=" + argSplit[1]);
-                    switch (argSplit[0].toLowerCase()) {
-                        case "w", "width" -> screenWidth = parseDouble(argSplit[1]);
-                        case "h", "height" -> screenHeight = parseDouble(argSplit[1]);
-                        case "s", "scale" -> displayScale = parseDouble(argSplit[1]);
-                        case "b", "buffers" -> numberOfBuffer = parseInt(argSplit[1]);
-                        case "d", "debug" -> debug = parseInt(argSplit[1]);
-                        case "ww", "worldwidth" -> worldWidth = parseDouble(argSplit[1]);
-                        case "wh", "worldheight" -> worldHeight = parseDouble(argSplit[1]);
-                        case "wg", "worldgravity" -> worldGravity = parseDouble(argSplit[1]);
-                        case "spmin" -> speedMinValue = parseDouble(argSplit[1]);
-                        case "spmax" -> speedMaxValue = parseDouble(argSplit[1]);
-                        case "accmin" -> accMinValue = parseDouble(argSplit[1]);
-                        case "accmax" -> accMaxValue = parseDouble(argSplit[1]);
-                        case "cspmin" -> colSpeedMinValue = parseDouble(argSplit[1]);
-                        case "cspmax" -> colSpeedMaxValue = parseDouble(argSplit[1]);
-                        case "fps" -> fps = parseDouble(argSplit[1]);
-                        case "f", "fullScreen" -> convertStringToBoolean(argSplit[1]);
-                        case "scene" -> defaultScene = argSplit[1];
-                        case "l", "language", "lang" -> defaultLanguage = argSplit[1];
-                        default -> System.out.printf("\nERR : Unknown argument %s\n", arg);
+                    if(arg.contains("=")) {
+                        String[] argSplit = arg.split("=");
+                        System.out.println("- arg:" + argSplit[0] + "=" + argSplit[1]);
+                        switch (argSplit[0].toLowerCase()) {
+                            case "w", "width" -> screenWidth = parseDouble(argSplit[1]);
+                            case "h", "height" -> screenHeight = parseDouble(argSplit[1]);
+                            case "s", "scale" -> displayScale = parseDouble(argSplit[1]);
+                            case "b", "buffers" -> numberOfBuffer = parseInt(argSplit[1]);
+                            case "d", "debug" -> debug = parseInt(argSplit[1]);
+                            case "ww", "worldwidth" -> worldWidth = parseDouble(argSplit[1]);
+                            case "wh", "worldheight" -> worldHeight = parseDouble(argSplit[1]);
+                            case "wg", "worldgravity" -> worldGravity = parseDouble(argSplit[1]);
+                            case "spmin" -> speedMinValue = parseDouble(argSplit[1]);
+                            case "spmax" -> speedMaxValue = parseDouble(argSplit[1]);
+                            case "accmin" -> accMinValue = parseDouble(argSplit[1]);
+                            case "accmax" -> accMaxValue = parseDouble(argSplit[1]);
+                            case "cspmin" -> colSpeedMinValue = parseDouble(argSplit[1]);
+                            case "cspmax" -> colSpeedMaxValue = parseDouble(argSplit[1]);
+                            case "fps" -> fps = parseDouble(argSplit[1]);
+                            case "f", "fullScreen" -> convertStringToBoolean(argSplit[1]);
+                            case "scene" -> defaultScene = argSplit[1];
+                            case "l", "language", "lang" -> defaultLanguage = argSplit[1];
+                            default -> System.out.printf("\nERR : Unknown argument %s\n", arg);
+                        }    
                     }
                 });
             }
