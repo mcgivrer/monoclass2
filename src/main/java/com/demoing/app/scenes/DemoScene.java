@@ -343,7 +343,7 @@ public class DemoScene extends AbstractScene {
         pfCol = pfCol < maxCols ? pfCol : maxRows - pfWidth;
         double pfRow = (int) ((Math.random() * maxRows) + 3);
 
-        Material matPF = new Material("matPF",1.0,0.1,0.7);
+        Material matPF = new Material("matPF",1.0,0.02,0.2);
 
         Entity pf = new Entity("pf_" + i)
                 .setType(RECTANGLE)

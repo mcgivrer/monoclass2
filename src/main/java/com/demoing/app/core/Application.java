@@ -1529,13 +1529,39 @@ public class Application extends JPanel implements KeyListener {
      * @since 1.0.5
      */
     public static class Material {
+        /**
+         * Name for this material
+         */
         public String name;
+        /**
+         * Material density
+         */
         public double density;
+        /**
+         * Material elasticity. Used to compute collision effect into the {@link PhysicEngine}
+         */
         public double elasticity;
+        /**
+         * Material friction. Used to compute friction resistance on moves into the {@link PhysicEngine}
+         */
         public double friction;
+        /**
+         * Default Material {@link Color} to render this object material.
+         */
         public Color color = Color.BLUE;
-        public float transparency = 0.0f;
+        /**
+         * Default Material alpha channel (transparency) to render this material.
+         */
+        public float alpha = 0.0f;
 
+        /**
+         * Create a new Material with a name and with some physic characteristics.
+         *
+         * @param name       Name for this new material
+         * @param density    material density to be used in computation (collision and attraction)
+         * @param elasticity material elasticity to compute bouncing capability after collision
+         * @param friction   the friction facture to be used by the {@link PhysicEngine} to compute move resistence.
+         */
         public Material(String name,
                         double density,
                         double elasticity,
@@ -1544,6 +1570,28 @@ public class Application extends JPanel implements KeyListener {
             this.density = density;
             this.elasticity = elasticity;
             this.friction = friction;
+        }
+
+        /**
+         * Define the new Color for this Material.
+         *
+         * @param c the new {@link Color} used by {@link Render} to draw this {@link Material}.
+         * @return the updated Material.
+         */
+        public Material setColor(Color c) {
+            this.color = c;
+            return this;
+        }
+
+        /**
+         * Define the new Alpha channel (transparency) for this Material, to be used by {@link Render} at draw time.
+         *
+         * @param a the new alpha value to compute transparency at rendering time;
+         * @return the updated Material.
+         */
+        public Material setAlpha(float a) {
+            this.alpha = a;
+            return this;
         }
     }
 
@@ -2421,10 +2469,31 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
-     * MapEntity is a displayed map of the all Scene existing active objects.
-     * The Render will display all object according to a defined color code.
+     * <p>{@link MapEntity} is a displayed map of the all Scene existing active objects.</p>
+     * <p>The {@link Render} will display all object according to a defined color code.
+     * <pre>
+     * MapEntity mapEntity = (MapEntity) new MapEntity("map")
+     *   .setColorMapping(
+     *     // define color mapping on name entity filtering
+     *     Map.of(
+     *       "ball_", Color.RED,
+     *     "player", Color.BLUE,
+     *     "pf_", Color.LIGHT_GRAY,
+     *     "floor", Color.GRAY,
+     *     "outPlatform", Color.YELLOW))
+     *   // define list of entities to be displayed on the map
+     *   .setRefEntities(app.entities.values().stream().toList())
+     *   // set World reference
+     *   .setWorld(app.world)
+     *   // define Map display size
+     *   .setSize(48, 32)
+     *   // define where to display the Map
+     *   .setPosition(10, app.config.screenHeight - 48);
+     * </pre>
+     * </p>
      *
      * @author Frédéric Delorme
+     * @see Entity
      * @since 1.0.4
      */
     public static class MapEntity extends Entity {
