@@ -4,9 +4,8 @@ import javax.imageio.ImageIO;
 import javax.management.*;
 import javax.swing.*;
 
+import net.java.games.input.*;
 import net.java.games.input.Component;
-import net.java.games.input.Controller;
-import net.java.games.input.ControllerEnvironment;
 import net.java.games.input.Event;
 import net.java.games.input.EventQueue;
 
@@ -1784,7 +1783,7 @@ public class Application extends JPanel implements KeyListener {
         private final boolean[] prevKeys = new boolean[65536];
         private final boolean[] keys = new boolean[65536];
         private final Application app;
-        private final boolean[] mouseButtons;
+        private boolean[] mouseButtons;
         private final Vec2d mousePosition = new Vec2d();
         private int mouseWheel;
         private boolean anyKeyPressed;
@@ -1808,14 +1807,36 @@ public class Application extends JPanel implements KeyListener {
          */
         public ActionHandler(Application a) {
             this.app = a;
-            this.mouseButtons = new boolean[MouseInfo.getNumberOfButtons()];
-            System.setProperty("net.java.games.input.useDefaultPlugin", "false");
-            this.event = new Event();
-            this.controllers = ControllerEnvironment.getDefaultEnvironment().getControllers();
+            initializeKeyBoard();
+            initializeMouse();
+            initializeControllers();
+        }
+
+        private void initializeKeyBoard() {
             this.actionMapping.put(KeyEvent.VK_F3, (e) -> {
                 app.render.saveScreenshot();
                 return this;
             });
+        }
+
+        private void initializeMouse() {
+            this.mouseButtons = new boolean[MouseInfo.getNumberOfButtons()];
+        }
+
+        private void initializeControllers() {
+            System.setProperty("net.java.games.input.useDefaultPlugin", "false");
+            ControllerEnvironment env = new DirectAndRawInputEnvironmentPlugin();
+            if (!env.isSupported()) {
+                env = ControllerEnvironment.getDefaultEnvironment();
+                System.out.printf("JInput Env: nb controller = %d\n",env.getControllers().length);
+            }
+            this.event = new Event();
+            this.controllers = ControllerEnvironment.getDefaultEnvironment().getControllers();
+            int i = 0;
+            for (Controller c : controllers) {
+                System.out.printf("controller[%d]:%s", i, c.getName());
+                i++;
+            }
         }
 
         /**
@@ -1828,7 +1849,7 @@ public class Application extends JPanel implements KeyListener {
                 /* Remember to poll each one */
                 controller.poll();
 
-                /* Get the controllers event queue */
+                /* Get the controller event queue */
                 EventQueue queue = controller.getEventQueue();
 
                 /* For each object in the queue */
@@ -1851,9 +1872,9 @@ public class Application extends JPanel implements KeyListener {
          * @since 1.0.6
          */
         private void manageComponentAction(Controller ct, Component comp, double elapsed) {
-            if (ct.getType().equals(Controller.Type.GAMEPAD)) {
-                System.out.printf("- %s/%s\n", ct.getName(), comp.getName());
-            }
+            //if (ct.getType().equals(Controller.Type.GAMEPAD)) {
+            System.out.printf("- %s/%s\n", ct.getName(), comp.getName());
+            //}
         }
 
         @Override

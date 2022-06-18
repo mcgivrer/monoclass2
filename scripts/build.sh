@@ -81,7 +81,7 @@ function compile() {
   rm -Rf $CLASSES/*
   # Prepare JInput natives libraries
   mkdir $TARGET/natives
-  unzip $LIB_NATIVES -d $TARGET/natives
+  cp $LIBS/dependencies/natives/* $TARGET/natives
   # list sources
   find $SRC/main -name '*.java' >$TARGET/sources.lst
   # Compilation via JavaC with some debug options to add source, lines and vars in the compiled classes.
