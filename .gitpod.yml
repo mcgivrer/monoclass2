@@ -1,3 +1,7 @@
+# Docker image base for this gitpod
+image:
+  file: .gitpod.Dockerfile
+
 # List the start up tasks. Learn more https://www.gitpod.io/docs/config-start-tasks/
 tasks:
   - init: echo 'init script' # runs during prebuild
