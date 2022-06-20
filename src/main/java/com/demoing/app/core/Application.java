@@ -24,10 +24,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.CodeSource;
 import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -521,7 +526,7 @@ public class Application extends JPanel implements KeyListener {
             debug = parseInt(appProps.getProperty("app.debug.level", "0"));
             convertStringToBoolean(appProps.getProperty("app.window.mode.fullscreen", "false"));
 
-            scenes = appProps.getProperty("app.scenes");
+            scenes = appProps.getProperty("app.scene.list");
             defaultScene = appProps.getProperty("app.scene.default");
 
             defaultLanguage = appProps.getProperty("app.language.default", "en_EN");
@@ -555,31 +560,34 @@ public class Application extends JPanel implements KeyListener {
          * @return the updated Configuration object.
          */
         private Configuration parseArgs(String[] args) {
-            Arrays.asList(args).forEach(arg -> {
-                String[] argSplit = arg.split("=");
-                System.out.println("- arg:" + argSplit[0] + "=" + argSplit[1]);
-                switch (argSplit[0].toLowerCase()) {
-                    case "w", "width" -> screenWidth = parseDouble(argSplit[1]);
-                    case "h", "height" -> screenHeight = parseDouble(argSplit[1]);
-                    case "s", "scale" -> displayScale = parseDouble(argSplit[1]);
-                    case "b", "buffers" -> numberOfBuffer = parseInt(argSplit[1]);
-                    case "d", "debug" -> debug = parseInt(argSplit[1]);
-                    case "ww", "worldwidth" -> worldWidth = parseDouble(argSplit[1]);
-                    case "wh", "worldheight" -> worldHeight = parseDouble(argSplit[1]);
-                    case "wg", "worldgravity" -> worldGravity = parseDouble(argSplit[1]);
-                    case "spmin" -> speedMinValue = parseDouble(argSplit[1]);
-                    case "spmax" -> speedMaxValue = parseDouble(argSplit[1]);
-                    case "accmin" -> accMinValue = parseDouble(argSplit[1]);
-                    case "accmax" -> accMaxValue = parseDouble(argSplit[1]);
-                    case "cspmin" -> colSpeedMinValue = parseDouble(argSplit[1]);
-                    case "cspmax" -> colSpeedMaxValue = parseDouble(argSplit[1]);
-                    case "fps" -> fps = parseDouble(argSplit[1]);
-                    case "f", "fullScreen" -> convertStringToBoolean(argSplit[1]);
-                    case "scene" -> defaultScene = argSplit[1];
-                    case "l", "language", "lang" -> defaultLanguage = argSplit[1];
-                    default -> System.out.printf("\nERR : Unknown argument %s\n", arg);
-                }
-            });
+            // args not null and not empty ? parse it !
+            if (Optional.ofNullable((args)).isPresent() && args.length > 0) {
+                Arrays.asList(args).forEach(arg -> {
+                    String[] argSplit = arg.split("=");
+                    Logger.log(Logger.ERROR, this.getClass(), "arg: %s=%s", argSplit[0], argSplit[1]);
+                    switch (argSplit[0].toLowerCase()) {
+                        case "w", "width" -> screenWidth = parseDouble(argSplit[1]);
+                        case "h", "height" -> screenHeight = parseDouble(argSplit[1]);
+                        case "s", "scale" -> displayScale = parseDouble(argSplit[1]);
+                        case "b", "buffers" -> numberOfBuffer = parseInt(argSplit[1]);
+                        case "d", "debug" -> debug = parseInt(argSplit[1]);
+                        case "ww", "worldwidth" -> worldWidth = parseDouble(argSplit[1]);
+                        case "wh", "worldheight" -> worldHeight = parseDouble(argSplit[1]);
+                        case "wg", "worldgravity" -> worldGravity = parseDouble(argSplit[1]);
+                        case "spmin" -> speedMinValue = parseDouble(argSplit[1]);
+                        case "spmax" -> speedMaxValue = parseDouble(argSplit[1]);
+                        case "accmin" -> accMinValue = parseDouble(argSplit[1]);
+                        case "accmax" -> accMaxValue = parseDouble(argSplit[1]);
+                        case "cspmin" -> colSpeedMinValue = parseDouble(argSplit[1]);
+                        case "cspmax" -> colSpeedMaxValue = parseDouble(argSplit[1]);
+                        case "fps" -> fps = parseDouble(argSplit[1]);
+                        case "f", "fullScreen" -> convertStringToBoolean(argSplit[1]);
+                        case "scene" -> defaultScene = argSplit[1];
+                        case "l", "language", "lang" -> defaultLanguage = argSplit[1];
+                        default -> Logger.log(Logger.ERROR, this.getClass(), "ERR : Unknown argument %s\n", arg);
+                    }
+                });
+            }
             return this;
         }
 
@@ -656,7 +664,7 @@ public class Application extends JPanel implements KeyListener {
                                 Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
                         .deriveFont(9.0f);
             } catch (FontFormatException | IOException e) {
-                System.out.println("ERR: Unable to initialize Render: " + e.getLocalizedMessage());
+                Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to initialize Render: " + e.getLocalizedMessage());
             }
         }
 
@@ -680,7 +688,9 @@ public class Application extends JPanel implements KeyListener {
             moveCamera(g, activeCamera, -1);
             drawGrid(g, world, 16, 16);
             moveCamera(g, activeCamera, 1);
-            gPipeline.stream().filter(e -> !(e instanceof Light) && e.isAlive() || e.isPersistent())
+            gPipeline.stream()
+                    .filter(e -> !(e instanceof Light)
+                            && e.isAlive() || e.isPersistent())
                     .forEach(e -> {
                         if (e.isNotStickToCamera()) {
                             moveCamera(g, activeCamera, -1);
@@ -699,8 +709,13 @@ public class Application extends JPanel implements KeyListener {
                             case ValueEntity se -> {
                                 drawValue(g, se);
                             }
+                            // This is a MapEntity
                             case MapEntity me -> {
                                 drawMapEntity(g, me);
+                            }
+                            // This is an Influencer
+                            case Influencer ie -> {
+                                drawInfluencer(g, ie);
                             }
                             // This is a basic entity
                             case Entity ee -> {
@@ -725,6 +740,10 @@ public class Application extends JPanel implements KeyListener {
             g.dispose();
             renderToScreen(realFps);
             renderingTime = System.nanoTime() - startTime;
+        }
+
+        private void drawInfluencer(Graphics2D g, Influencer ie) {
+            drawEntity(g, ie);
         }
 
         private void drawLight(Graphics2D g, Light l) {
@@ -964,8 +983,9 @@ public class Application extends JPanel implements KeyListener {
          * @param se ValueEntity object
          */
         private void drawValue(Graphics2D g, ValueEntity se) {
-            byte c[] = se.valueTxt.strip().getBytes(StandardCharsets.US_ASCII);
-            for (int pos = 0; pos < se.valueTxt.length(); pos++) {
+            String textValue = se.valueTxt.strip();
+            byte c[] = textValue.getBytes(StandardCharsets.US_ASCII);
+            for (int pos = 0; pos < textValue.length(); pos++) {
                 //convert character ascii value to number from 0 to 9.
                 int v = c[pos] - 48;
                 drawFig(g, se, v, se.pos.x + (pos * 8), se.pos.y);
@@ -1033,13 +1053,14 @@ public class Application extends JPanel implements KeyListener {
             if (config.debug > 0) {
                 g.setFont(debugFont.deriveFont(16.0f));
                 g.setColor(Color.WHITE);
-                g.drawString(String.format("[ dbg: %d | fps:%3.0f | obj:%d | {g:%1.03f, a(%3.0fx%3.0f) }]",
+                g.drawString(
+                        String.format(
+                                "[ dbg: %d | fps:%3.0f | obj:%d | {g:%1.03f, a(%3.0fx%3.0f) }]",
                                 config.debug,
                                 realFps,
                                 gPipeline.size(),
-                                world.gravity * 1000.0,
+                                world.gravity.y * 1000.0,
                                 world.area.getWidth(), world.area.getHeight()),
-
                         20, (int) app.getHeight() - 20);
             }
 
@@ -1119,9 +1140,9 @@ public class Application extends JPanel implements KeyListener {
                 File out = new File(filename);
                 ImageIO.write(buffer, "PNG", out);
 
-                System.out.printf("INFO: Write screenshot to %s\n", filename);
+                System.out.printf(" Write screenshot to %s\n", filename);
             } catch (IOException e) {
-                System.out.printf("Unable to write screenshot to %s: %s", filename, e.getMessage());
+                Logger.log(Logger.ERROR, this.getClass(), "Unable to write screenshot to %s: %s", filename, e.getMessage());
             }
         }
     }
@@ -1176,10 +1197,42 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
+     * A little Logger class helper to output some basc log to console for debug purpose.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.5
+     */
+    public static class Logger {
+        public static final int ERROR = 0;
+        public static final int INFO = 1;
+        public static final int DEBUG = 2;
+        public static final int FINED = 3;
+        public static final int DETAILED = 4;
+        public static final int ALL = 5;
+
+        private static DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+
+        /**
+         * <p>Write a log message to the system out stream with a <code>level</code> of trace,
+         * the <code>className</code> that emit the log and the <code>message</code> itself and its
+         * arguments <code>args</code> (if necessary).</p>
+         *
+         * @param level     Level of logging 0=ERR to 5=DETAILS
+         * @param className the class tha emitting the log message
+         * @param message   the message to be output
+         * @param args      arguments array to format the correct message.
+         */
+        public static void log(int level, Class className, String message, Object... args) {
+            ZonedDateTime ldt = ZonedDateTime.now();
+            System.out.printf("[%s] %s : %s - %s\n", ldt.format(dtf), className, level, String.format(message, args));
+        }
+    }
+
+    /**
      * A Physic computation engine to process Object moves according to their resulting process acceleration and speed
      * from the applied forces to each Entity.
      *
-     * @Author Frédéric Delorme
+     * @author Frédéric Delorme
      * @since 1.0.2
      */
     public static class PhysicEngine {
@@ -1187,6 +1240,7 @@ public class Application extends JPanel implements KeyListener {
         private final World world;
         private final Configuration config;
         public long updateTime;
+        private Map<String, Influencer> influencers = new ConcurrentHashMap<>();
 
         /**
          * Initialize the Physic Engine for the parent Application a, with the Configuration c
@@ -1206,27 +1260,33 @@ public class Application extends JPanel implements KeyListener {
          * Update and process physics attributes the Entity (acceleration, speed and position) from the
          * <code>app.entities map</code>, with  the elapsed time since previous call.
          *
-         * @param elapsed
+         * @param elapsed the elapsed time since previous call.
          */
         public synchronized void update(double elapsed) {
             long start = System.nanoTime();
+
             // update entities
             app.entities.values().forEach((e) -> {
                 if (e.physicType.equals(PhysicType.DYNAMIC)) {
                     updateEntity(e, elapsed);
                 }
                 e.update(elapsed);
+
                 // TODO update Entity Behavior
                 e.behaviors.values().stream()
-                        .filter(b -> b.filterOnEvent().contains(Behavior.updateEntity))
-                        .collect(Collectors.toList())
+                        .filter(b -> b.filterOnEvent()
+                                .contains(Behavior.updateEntity))
+                        .toList()
                         .forEach(b -> b.update(app, e, elapsed));
             });
+
             // TODO update Scene Behaviors
-            app.activeScene.getBehaviors().values().stream()
-                    .filter(b -> b.filterOnEvent().contains(Behavior.updateScene))
-                    .collect(Collectors.toList())
-                    .forEach(b -> b.update(app, elapsed));
+            if (Optional.ofNullable(app.activeScene.getBehaviors()).isPresent()) {
+                app.activeScene.getBehaviors().values().stream()
+                        .filter(b -> b.filterOnEvent().contains(Behavior.updateScene))
+                        .toList()
+                        .forEach(b -> b.update(app, elapsed));
+            }
             //  update active camera if presents.
             if (Optional.ofNullable(app.render.activeCamera).isPresent()) {
                 app.render.activeCamera.update(elapsed);
@@ -1245,6 +1305,27 @@ public class Application extends JPanel implements KeyListener {
             constrainsEntity(e);
         }
 
+        private Material applyWorldInfluencers(Entity e) {
+            Material m = e.material;
+            Vec2d g = new Vec2d(world.gravity.x, e.mass * world.gravity.y);
+            for (Influencer i : getInfluencers().values()) {
+                if (i.box.intersects(e.box)) {
+                    Logger.log(Logger.INFO, this.getClass(), "Entity named %s intersects Influencer %s", e.name, i.name);
+                    if (Optional.ofNullable(i.getGravity()).isPresent()) {
+                        g = new Vec2d(
+                                i.getGravity().x,
+                                e.mass * i.getGravity().y);
+                    }
+                    if (Optional.ofNullable(i.getForce()).isPresent()) {
+                        e.forces.add(i.getForce());
+                    }
+                    m = i.getMaterial();
+                }
+            }
+            e.forces.add(g);
+            return m;
+        }
+
         /**
          * Apply Physic computation on the Entity e for the elapsed time.
          *
@@ -1258,12 +1339,18 @@ public class Application extends JPanel implements KeyListener {
             // a small reduction of time
             elapsed *= 0.4;
 
-            e.forces.add(new Vec2d(0, e.mass * -world.gravity));
+            Material m = applyWorldInfluencers(e);
 
             e.acc = new Vec2d(0.0, 0.0);
             e.acc.add(e.forces);
 
-            e.vel.add(e.acc.minMax(config.accMinValue, config.accMaxValue).multiply(0.5 * elapsed * e.friction * world.friction));
+            double friction = e.collide ? m.friction * world.getMaterial().friction : world.getMaterial().friction;
+
+            Logger.log(Logger.FINED, this.getClass(), " Entity %s is colliding: %s", e.name, e.collide);
+            e.vel.add(e.acc
+                    .minMax(config.accMinValue, config.accMaxValue)
+                    .multiply(0.5 * elapsed * friction * m.density));
+
             e.vel.minMax(config.speedMinValue, config.speedMaxValue);
 
             e.pos.add(e.vel);
@@ -1323,6 +1410,267 @@ public class Application extends JPanel implements KeyListener {
 
         public void dispose() {
 
+        }
+
+        public Map<String, Influencer> getInfluencers() {
+            return app.entities.values()
+                    .stream()
+                    .filter(e -> e instanceof Influencer)
+                    .collect(Collectors.toMap(e -> e.name, e -> (Influencer) e));
+        }
+    }
+
+    /**
+     * The {@link World} object to define game play area limits and a default gravity and friction.
+     *
+     * <blockquote>May more to comes in the next release with some <code>Influencers</code> to
+     * dynamically modify entity display or physic attributes</blockquote>
+     */
+    public static class World {
+        /**
+         * Area for this {@link World} object.
+         */
+        public Rectangle2D area;
+
+        private Material material;
+
+        public Vec2d gravity;
+
+        public World setMaterial(Material m) {
+            this.material = m;
+            return this;
+        }
+
+        public Material getMaterial() {
+            return material;
+        }
+
+        /**
+         * Initialize the world with some default values with an area of 320.0 x 200.0.
+         */
+        public World() {
+            area = new Rectangle2D.Double(0.0, 0.0, 320.0, 200.0);
+            gravity = new Vec2d(0.0, -0.981);
+        }
+
+        /**
+         * You can set your own {@link World} area dimension of width x height.
+         *
+         * @param width  the area width for this new {@link World}
+         * @param height the area Height for this new {@link World}.
+         * @return a World with ots new area of width x height.
+         */
+        public World setArea(double width, double height) {
+            area = new Rectangle2D.Double(0.0, 0.0, width, height);
+            return this;
+        }
+
+        /**
+         * Yot can also set the gravity for your {@link World}.
+         *
+         * @param g the new gravity for this World to be applied to all {@link Entity} in this {@link World}.
+         * @return the world updated with its new gravity.
+         */
+        public World setGravity(Vec2d g) {
+            this.gravity = g;
+            return this;
+        }
+    }
+
+    /**
+     * The {@link Influencer} extending {@link Entity} to provide environmental influencer to change {@link Entity}
+     * behavior has soon the Entity is contained by the {@link Influencer}.
+     * An influencer can change temporarily some {@link Entity} attribute's values.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.5
+     */
+    public static class Influencer extends Entity {
+
+        public Influencer(String name) {
+            super(name);
+            addBehavior(new Behavior() {
+                @Override
+                public String filterOnEvent() {
+                    return Behavior.onCollision;
+                }
+
+                @Override
+                public void update(Application a, Entity e, double elapsed) {
+
+                }
+
+                @Override
+                public void update(Application a, double elapsed) {
+
+                }
+
+                @Override
+                public void onCollide(Application a, Entity e1, Entity e2) {
+                    Influencer i1 = (Influencer) e1;
+                    e2.forces.add(i1.getForce());
+                }
+            });
+        }
+
+        /**
+         * Define the {@link Influencer}'s gravity attribute, 0 means World's default gravity.
+         *
+         * @param g the new gravity for this {@link Influencer} zone
+         * @return the updated Influencer with its new gravity.
+         */
+        public Influencer setGravity(Vec2d g) {
+            this.attributes.put("gravity", g);
+            return this;
+        }
+
+        /**
+         * Define the {@link Influencer}'s attribute force to be applied to any {@link Entity}
+         * contained by this {@link Influencer}..
+         *
+         * @param f the force to be applied in this {@link Influencer} zone.
+         * @return the updated {@link Influencer} with its new force.
+         */
+        public Influencer setForce(Vec2d f) {
+            this.attributes.put("force", f);
+            return this;
+        }
+
+        /**
+         * retrieve the current gravity attribute value for this {@link Influencer}
+         *
+         * @return value for this Influencer's gravity.
+         */
+        public Vec2d getGravity() {
+            return (Vec2d) this.attributes.get("gravity");
+        }
+
+        /**
+         * retrieve the current force attribute value for this {@link Influencer}
+         *
+         * @return value for this Influencer's force.
+         */
+        public Vec2d getForce() {
+            return (Vec2d) this.attributes.get("force");
+        }
+
+        public Material getMaterial() {
+            return material;
+        }
+    }
+
+    /**
+     * Define a Bunch of default and standard material. See
+     * As a reference :
+     * <pre>
+     *  Rock       Density : 0.6  Restitution : 0.1
+     *  Wood       Density : 0.3  Restitution : 0.2
+     *  Steal      Density : 1.2  Restitution : 0.05
+     *  BouncyBall Density : 0.3  Restitution : 0.8
+     *  SuperBall  Density : 0.3  Restitution : 0.95
+     *  Pillow     Density : 0.1  Restitution : 0.2
+     *  Static     Density : 0.0  Restitution : 0.0
+     * </pre>
+     */
+    public enum DefaultMaterial {
+        DEFAULT(new Material("default", 1.0, 0.0, 1.0)),
+        /*
+        // convert from Material(elasticity,density,dynFriction,staticFriction)
+        ROCK(new Material("rock", 0.6, 1, 1, 1)),
+        WOOD(new Material("wood", 0.1, 0.69, 0.69, 0.3)),
+        STEEL(new Material("metal", 0.05, 1, 1, 1.2)),
+        RUBBER(new Material("rubber", 0.8, 0.88, 0.98, 0.3)),
+        GLASS(new Material("glass", 0.4, 1, 1, 1)),
+        ICE(new Material("ice", 0.1, 0.1, 1, 1)),
+        AIR(new Material("air", 1, 1, 1, 0.01)),
+        STATIC(new Material("static", 0, 0, 0, 0)),
+        NEUTRAL(new Material("neutral", 1, 1, 1, 1));
+        */;
+
+        Material material;
+
+        DefaultMaterial(Material m) {
+            this.material = m;
+        }
+
+        public Material get() {
+            return this.material;
+        }
+    }
+
+    /**
+     * The {@link Material} is a new way to manage physic attributes for any {@link Entity}.
+     * It is used by {@link PhysicEngine} and {@link Influencer} to compute moves for {@link Entity}.
+     * {@link Influencer} is able to change temporarily {@link Material} for an {@link Entity} when
+     * the {@link Influencer} contains {@link Entity}.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.5
+     */
+    public static class Material {
+        /**
+         * Name for this material
+         */
+        public String name;
+        /**
+         * Material density
+         */
+        public double density;
+        /**
+         * Material elasticity. Used to compute collision effect into the {@link PhysicEngine}
+         */
+        public double elasticity;
+        /**
+         * Material friction. Used to compute friction resistance on moves into the {@link PhysicEngine}
+         */
+        public double friction;
+        /**
+         * Default Material {@link Color} to render this object material.
+         */
+        public Color color = Color.BLUE;
+        /**
+         * Default Material alpha channel (transparency) to render this material.
+         */
+        public float alpha = 0.0f;
+
+        /**
+         * Create a new Material with a name and with some physic characteristics.
+         *
+         * @param name       Name for this new material
+         * @param density    material density to be used in computation (collision and attraction)
+         * @param elasticity material elasticity to compute bouncing capability after collision
+         * @param friction   the friction facture to be used by the {@link PhysicEngine} to compute move resistence.
+         */
+        public Material(String name,
+                        double density,
+                        double elasticity,
+                        double friction) {
+            this.name = name;
+            this.density = density;
+            this.elasticity = elasticity;
+            this.friction = friction;
+        }
+
+        /**
+         * Define the new Color for this Material.
+         *
+         * @param c the new {@link Color} used by {@link Render} to draw this {@link Material}.
+         * @return the updated Material.
+         */
+        public Material setColor(Color c) {
+            this.color = c;
+            return this;
+        }
+
+        /**
+         * Define the new Alpha channel (transparency) for this Material, to be used by {@link Render} at draw time.
+         *
+         * @param a the new alpha value to compute transparency at rendering time;
+         * @return the updated Material.
+         */
+        public Material setAlpha(float a) {
+            this.alpha = a;
+            return this;
         }
     }
 
@@ -1395,8 +1743,8 @@ public class Application extends JPanel implements KeyListener {
                         config.speedMinValue, config.colSpeedMaxValue);
                 e2.vel.y += Utils.ceilMinMaxValue(impulse * e1.mass * colSpeed * colNorm.y,
                         config.speedMinValue, config.colSpeedMaxValue);
-                if (e1.name.equals("player") && config.debug > 4) {
-                    System.out.printf("e1.%s collides e2.%s Vp=%s / dist=%f / norm=%s\n", e1.name, e2.name, vp, distance, colNorm);
+                if (e1.name.equals("player")) {
+                    Logger.log(Logger.FINED, this.getClass(), "e1.%s collides e2.%s Vp=%s / dist=%f / norm=%s\n", e1.name, e2.name, vp, distance, colNorm);
                 }
             } else {
                 if (e1.physicType == PhysicType.DYNAMIC && e2.physicType == PhysicType.STATIC) {
@@ -1407,8 +1755,8 @@ public class Application extends JPanel implements KeyListener {
                         e1.vel.y = -e1.vel.y * e1.elasticity;
                         e1.pos.y = e2.pos.y + e2.height;
                     }
-                    if (e1.name.equals("player") && config.debug > 4) {
-                        System.out.printf("e1.%s collides static e2.%s\n", e1.name, e2.name);
+                    if (e1.name.equals("player")) {
+                        Logger.log(Logger.FINED, this.getClass(), "e1.%s collides static e2.%s\n", e1.name, e2.name);
                     }
                 }
             }
@@ -1642,68 +1990,6 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
-     * The {@link World} object to define game play area limits and a default gravity and friction.
-     *
-     * <blockquote>May more to comes in the next release with some <code>Influencers</code> to
-     * dynamically modify entity display or physic attributes</blockquote>
-     */
-    public static class World {
-        /**
-         * {@link World} friction factor applied to ALL entities.
-         */
-        public double friction = 1.0;
-        /**
-         * Area for this {@link World} object.
-         */
-        public Rectangle2D area;
-        /**
-         * THe World default gravity is set to the Earth gravity value. it can be changed for your own usage.
-         */
-        public double gravity = 0.981;
-
-        /**
-         * Initialize the world with some default values with an area of 320.0 x 200.0.
-         */
-        public World() {
-            area = new Rectangle2D.Double(0.0, 0.0, 320.0, 200.0);
-        }
-
-        /**
-         * You can set your own {@link World} area dimension of width x height.
-         *
-         * @param width  the area width for this new {@link World}
-         * @param height the area Height for this new {@link World}.
-         * @return a World with ots new area of width x height.
-         */
-        public World setArea(double width, double height) {
-            area = new Rectangle2D.Double(0.0, 0.0, width, height);
-            return this;
-        }
-
-        /**
-         * Yot can also set the gravity for your {@link World}.
-         *
-         * @param g the new gravity for this World to be applied to all {@link Entity} in this {@link World}.
-         * @return the world updated with its new gravity.
-         */
-        public World setGravity(double g) {
-            this.gravity = g;
-            return this;
-        }
-
-        /**
-         * The {@link World} default friction can be changed to a new <code>f</code> value.
-         *
-         * @param f the value for the new friction applied to all {@link Entity} evolving in this {@link World}.
-         * @return the World updated with its new friction factor.
-         */
-        public World setFriction(double f) {
-            this.friction = f;
-            return this;
-        }
-    }
-
-    /**
      * Definition for all {@link Entity} managed by the small game framework.
      * A lot of attributes and <a href="https://en.wikipedia.org/wiki/Fluent_interface#Java">Fluent API</a> methods
      * to ease the Entity initialization.
@@ -1744,6 +2030,9 @@ public class Application extends JPanel implements KeyListener {
         public Vec2d vel = new Vec2d(0.0, 0.0);
         public Vec2d acc = new Vec2d(0.0, 0.0);
         public double mass = 1.0;
+
+        public Material material = DefaultMaterial.DEFAULT.get();
+
         public double elasticity = 1.0, friction = 1.0;
 
         // internal attributes
@@ -1872,13 +2161,8 @@ public class Application extends JPanel implements KeyListener {
             return this;
         }
 
-        public Entity setElasticity(double e) {
-            this.elasticity = e;
-            return this;
-        }
-
-        public Entity setFriction(double f) {
-            this.friction = f;
+        public Entity setMaterial(Material m) {
+            this.material = m;
             return this;
         }
 
@@ -1972,7 +2256,7 @@ public class Application extends JPanel implements KeyListener {
      * Here is a Fluent API to ease the Animation set definition.
      *
      * @author Frédéric Delorme
-     * @Since 1.0.3
+     * @since 1.0.3
      */
     public static class AnimationSet {
         String name;
@@ -2264,10 +2548,31 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
-     * MapEntity is a displayed map of the all Scene existing active objects.
-     * The Render will display all object according to a defined color code.
+     * <p>{@link MapEntity} is a displayed map of the all Scene existing active objects.</p>
+     * <p>The {@link Render} will display all object according to a defined color code.
+     * <pre>
+     * MapEntity mapEntity = (MapEntity) new MapEntity("map")
+     *   .setColorMapping(
+     *     // define color mapping on name entity filtering
+     *     Map.of(
+     *       "ball_", Color.RED,
+     *     "player", Color.BLUE,
+     *     "pf_", Color.LIGHT_GRAY,
+     *     "floor", Color.GRAY,
+     *     "outPlatform", Color.YELLOW))
+     *   // define list of entities to be displayed on the map
+     *   .setRefEntities(app.entities.values().stream().toList())
+     *   // set World reference
+     *   .setWorld(app.world)
+     *   // define Map display size
+     *   .setSize(48, 32)
+     *   // define where to display the Map
+     *   .setPosition(10, app.config.screenHeight - 48);
+     * </pre>
+     * </p>
      *
      * @author Frédéric Delorme
+     * @see Entity
      * @since 1.0.4
      */
     public static class MapEntity extends Entity {
@@ -2547,6 +2852,7 @@ public class Application extends JPanel implements KeyListener {
         void update(Application a, double elapsed);
 
         void onCollide(Application a, Entity e1, Entity e2);
+
     }
 
     public boolean exit = false;
@@ -2583,6 +2889,17 @@ public class Application extends JPanel implements KeyListener {
         initialize(args);
     }
 
+    /**
+     * Constructor used mainly for test purpose.
+     *
+     * @param args                  the list of arguments to be parsed by the Configuration
+     * @param configurationFileName the configuration file path to be loaded by Configuration.
+     */
+    public Application(String[] args, String configurationFileName) {
+        NumberFormat.getInstance(Locale.ROOT);
+        initialize(args, configurationFileName);
+    }
+
     protected void run() {
         if (start()) {
             loop();
@@ -2590,12 +2907,31 @@ public class Application extends JPanel implements KeyListener {
         }
     }
 
-    private void initialize(String[] args) {
-        config = new Configuration("/app.properties").parseArgs(args);
+    /**
+     * Initialize the Application with the default configuration file (app.proprerties)
+     * and parse java CLI arguments.
+     *
+     * @param args the array of arguments from java CLI
+     * @see Application#initialize(String[], String)
+     */
+    public void initialize(String[] args) {
+        initialize(args, "/app.properties");
+    }
+
+    /**
+     * Initialize the application by setting Configuration instance by loading
+     * data from <code>configFileName</code>  and parsing java CLI arguments <code>args</code>.
+     *
+     * @param args           the CLI java arguments to be parsed (if provided)
+     * @param configFileName the name of the configuration file to be loaded.
+     * @see Configuration
+     */
+    public void initialize(String[] args, String configFileName) {
+        config = new Configuration(configFileName).parseArgs(args);
         I18n.setLanguage(config);
         world = new World()
                 .setArea(config.worldWidth, config.worldHeight)
-                .setGravity(config.worldGravity);
+                .setGravity(new Vec2d(0.0, config.worldGravity));
     }
 
     private boolean start() {
@@ -2606,10 +2942,10 @@ public class Application extends JPanel implements KeyListener {
                 initDefaultActions();
                 // prepare services
                 createJMXStatus(this);
-                System.out.printf("INFO: scene %s activated and created.\n", activeScene.getName());
+                Logger.log(1, this.getClass(), " scene %s activated and created.\n", activeScene.getName());
             }
         } catch (Exception e) {
-            System.out.println("ERR: Unable to initialize scene: " + e.getLocalizedMessage());
+            Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to initialize scene: " + e.getLocalizedMessage());
             return false;
         }
         return true;
@@ -2645,14 +2981,32 @@ public class Application extends JPanel implements KeyListener {
         ));
     }
 
-    private void initializeServices() {
+    /**
+     * Initialize all Application services.
+     * <p>
+     * <blockquote><em>NOTE</em> This method is now public because of test requirements on services.</blockquote>
+     *
+     * @since 1.0.5
+     */
+    public void initializeServices() {
         render = new Render(this, config, world);
         physicEngine = new PhysicEngine(this, config, world);
         collisionDetect = new CollisionDetector(this, config, world);
         actionHandler = new ActionHandler(this);
     }
 
-    private boolean loadScenes() {
+    /**
+     * Read Scenes and set the default scene according to {@link Configuration}.
+     * the concerned properties entries are:
+     * <ul>
+     *     <li><code>app.scene.list</code>is a list of Scene implementation classes comma separated,</li>
+     *     <li><code>app.scene.default</code> is the scene to be activated at start (by default).</li>
+     * </ul>
+     *
+     * @return true if Scene is correctly loaded, else false.
+     * @see Configuration
+     */
+    public boolean loadScenes() {
         String[] scenesList = config.scenes.split(",");
         for (String scene : scenesList) {
             String[] sceneStr = scene.split(":");
@@ -2664,9 +3018,10 @@ public class Application extends JPanel implements KeyListener {
                 activateScene(config.defaultScene);
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
                     InvocationTargetException e) {
-                System.out.println("ERR: Unable to load scene from configuration file:"
+                Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to load scene from configuration file:"
                         + e.getLocalizedMessage()
                         + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
+                e.printStackTrace(System.out);
                 return false;
             }
         }
@@ -2688,10 +3043,10 @@ public class Application extends JPanel implements KeyListener {
                 sceneReady = scene.create(this);
                 this.activeScene = scene;
             } catch (Exception e) {
-                System.out.println("ERR: Unable to initialize the Scene " + name + " => " + e.getLocalizedMessage());
+                Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to initialize the Scene " + name + " => " + e.getLocalizedMessage());
             }
         } else {
-            System.out.print("ERR: Unable to load unknown scene " + name);
+            Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to load unknown scene " + name);
         }
     }
 
@@ -2707,7 +3062,7 @@ public class Application extends JPanel implements KeyListener {
             entityIndex = 0;
             createScene();
         } catch (Exception e) {
-            System.out.println("ERR: Reset scene issue: " + e.getLocalizedMessage());
+            Logger.log(Logger.ERROR, this.getClass(), "ERR: Reset scene issue: " + e.getLocalizedMessage());
         }
     }
 
@@ -2842,7 +3197,7 @@ public class Application extends JPanel implements KeyListener {
             try {
                 Thread.sleep(waitTime);
             } catch (InterruptedException ie) {
-                System.out.println("ERR: Unable to wait for " + waitTime + ": " + ie.getLocalizedMessage());
+                Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to wait for " + waitTime + ": " + ie.getLocalizedMessage());
             }
 
             // Update JMX metrics
@@ -2858,12 +3213,12 @@ public class Application extends JPanel implements KeyListener {
 
     private synchronized void update(double elapsed) {
         if (!pause) {
-            double maxElapsed = Math.min(elapsed, config.frameTime);
-            physicEngine.update(Math.min(elapsed, config.frameTime));
-            collisionDetect.update(maxElapsed);
-            //if (sceneReady) {
-            activeScene.update(this, elapsed);
-            //}
+            double maxElapsedTime = Math.min(elapsed, config.frameTime);
+            physicEngine.update(maxElapsedTime);
+            collisionDetect.update(maxElapsedTime);
+            if (sceneReady) {
+                activeScene.update(this, elapsed);
+            }
         }
     }
 
@@ -2882,7 +3237,9 @@ public class Application extends JPanel implements KeyListener {
     }
 
     public void dispose() {
-        frame.dispose();
+        if (Optional.ofNullable(frame).isPresent()) {
+            frame.dispose();
+        }
     }
 
     public void quit() {
@@ -2934,12 +3291,32 @@ public class Application extends JPanel implements KeyListener {
         return entityIndex;
     }
 
+    public PhysicEngine getPhysicEngine() {
+        return physicEngine;
+    }
+
+    public CollisionDetector getCollisionDetector() {
+        return collisionDetect;
+    }
+
+    public Map<String, Entity> getEntities() {
+        return entities;
+    }
+
+    public World getWorld() {
+        return world;
+    }
+
+    public Render getRender() {
+        return render;
+    }
+
     public static void main(String[] args) {
         try {
             Application app = new Application(args);
             app.run();
         } catch (Exception e) {
-            System.out.printf("ERR: Unable to run application: %s",
+            Logger.log(Logger.ERROR, Application.class, "ERR: Unable to run application: %s",
                     e.getLocalizedMessage());
             e.printStackTrace();
         }
