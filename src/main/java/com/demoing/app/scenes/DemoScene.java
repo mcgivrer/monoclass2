@@ -50,7 +50,7 @@ public class DemoScene extends AbstractScene {
         app.setAttribute("score", 0);
         app.setAttribute("time", (long) (180 * 1000));
 
-        Material matFloor= new Material("floor_mat",1.0,0.1,0.70);
+        Material matFloor = new Material("floor_mat", 1.0, 0.05, 0.20);
         Entity floor = new Entity("floor")
                 .setType(RECTANGLE)
                 .setPhysicType(STATIC)
@@ -100,6 +100,7 @@ public class DemoScene extends AbstractScene {
         Influencer i1 = (Influencer) new Influencer("influencer_1")
                 .setForce(new Vec2d(0.0, -0.18))
                 .setType(RECTANGLE)
+                .setMaterial(new Material("water", 0.6, 0.0, 0.9))
                 .setPosition(0.0, app.world.area.getHeight() - 200.0)
                 .setSize(app.world.area.getWidth(), 200.0)
                 .setPhysicType(Application.PhysicType.NONE)
@@ -115,7 +116,7 @@ public class DemoScene extends AbstractScene {
                 .setPosition(app.world.area.getWidth() * 0.5, app.world.area.getHeight() * 0.5)
                 .setSize(32.0, 32.0)
                 .setMaterial(
-                        new Material("player_mat",1.0,0.0,0.98))
+                        new Material("player_mat", 1.0, 0.1, 0.2))
                 .setColor(Color.RED)
                 .setPriority(1)
                 .setMass(40.0)
@@ -237,17 +238,17 @@ public class DemoScene extends AbstractScene {
 
         // Add a Map display
         MapEntity mapEntity = (MapEntity) new MapEntity("map")
-            .setColorMapping(
-                Map.of(
-                    "ball_", Color.RED,
-                    "player", Color.BLUE,
-                    "pf_", Color.LIGHT_GRAY,
-                    "floor", Color.GRAY,
-                    "outPlatform", Color.YELLOW))
-            .setRefEntities(app.entities.values().stream().toList())
-            .setWorld(app.world)
-            .setSize(48, 32)
-            .setPosition(10, app.config.screenHeight - 48);
+                .setColorMapping(
+                        Map.of(
+                                "ball_", Color.RED,
+                                "player", Color.BLUE,
+                                "pf_", Color.LIGHT_GRAY,
+                                "floor", Color.GRAY,
+                                "outPlatform", Color.YELLOW))
+                .setRefEntities(app.entities.values().stream().toList())
+                .setWorld(app.world)
+                .setSize(48, 32)
+                .setPosition(10, app.config.screenHeight - 48);
         app.addEntity(mapEntity);
 
         // ---- Everything about Messages ----
@@ -343,7 +344,7 @@ public class DemoScene extends AbstractScene {
         pfCol = pfCol < maxCols ? pfCol : maxRows - pfWidth;
         double pfRow = (int) ((Math.random() * maxRows) + 3);
 
-        Material matPF = new Material("matPF",1.0,0.02,0.2);
+        Material matPF = new Material("matPF", 1.0, 0.02, 0.2);
 
         Entity pf = new Entity("pf_" + i)
                 .setType(RECTANGLE)
@@ -474,7 +475,7 @@ public class DemoScene extends AbstractScene {
 
     private void generateEntity(Application app, String namePrefix, int nbEntity, double acc) {
 
-        Material matEnt = new Material("matEnt",1.0,0.65,0.98);
+        Material matEnt = new Material("matEnt", 1.0, 0.65, 0.98);
 
         for (int i = 0; i < nbEntity; i++) {
             Entity e = new Entity(namePrefix + Application.getEntityIndex())
@@ -513,6 +514,7 @@ public class DemoScene extends AbstractScene {
 
                         }
 
+                        @Override
                         public void update(Application a, double d) {
                         }
                     });

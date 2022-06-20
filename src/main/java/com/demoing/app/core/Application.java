@@ -24,10 +24,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.CodeSource;
 import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -559,7 +564,7 @@ public class Application extends JPanel implements KeyListener {
             if (Optional.ofNullable((args)).isPresent() && args.length > 0) {
                 Arrays.asList(args).forEach(arg -> {
                     String[] argSplit = arg.split("=");
-                    System.out.println("- arg:" + argSplit[0] + "=" + argSplit[1]);
+                    Logger.log(Logger.ERROR, this.getClass(), "arg: %s=%s", argSplit[0], argSplit[1]);
                     switch (argSplit[0].toLowerCase()) {
                         case "w", "width" -> screenWidth = parseDouble(argSplit[1]);
                         case "h", "height" -> screenHeight = parseDouble(argSplit[1]);
@@ -579,7 +584,7 @@ public class Application extends JPanel implements KeyListener {
                         case "f", "fullScreen" -> convertStringToBoolean(argSplit[1]);
                         case "scene" -> defaultScene = argSplit[1];
                         case "l", "language", "lang" -> defaultLanguage = argSplit[1];
-                        default -> System.out.printf("\nERR : Unknown argument %s\n", arg);
+                        default -> Logger.log(Logger.ERROR, this.getClass(), "ERR : Unknown argument %s\n", arg);
                     }
                 });
             }
@@ -659,7 +664,7 @@ public class Application extends JPanel implements KeyListener {
                                 Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
                         .deriveFont(9.0f);
             } catch (FontFormatException | IOException e) {
-                System.out.println("ERR: Unable to initialize Render: " + e.getLocalizedMessage());
+                Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to initialize Render: " + e.getLocalizedMessage());
             }
         }
 
@@ -1135,9 +1140,9 @@ public class Application extends JPanel implements KeyListener {
                 File out = new File(filename);
                 ImageIO.write(buffer, "PNG", out);
 
-                System.out.printf("INFO: Write screenshot to %s\n", filename);
+                System.out.printf(" Write screenshot to %s\n", filename);
             } catch (IOException e) {
-                System.out.printf("Unable to write screenshot to %s: %s", filename, e.getMessage());
+                Logger.log(Logger.ERROR, this.getClass(), "Unable to write screenshot to %s: %s", filename, e.getMessage());
             }
         }
     }
@@ -1188,6 +1193,38 @@ public class Application extends JPanel implements KeyListener {
                 e.printStackTrace();
             }
             return jarDir;
+        }
+    }
+
+    /**
+     * A little Logger class helper to output some basc log to console for debug purpose.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.5
+     */
+    public static class Logger {
+        public static final int ERROR = 0;
+        public static final int INFO = 1;
+        public static final int DEBUG = 2;
+        public static final int FINED = 3;
+        public static final int DETAILED = 4;
+        public static final int ALL = 5;
+
+        private static DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+
+        /**
+         * <p>Write a log message to the system out stream with a <code>level</code> of trace,
+         * the <code>className</code> that emit the log and the <code>message</code> itself and its
+         * arguments <code>args</code> (if necessary).</p>
+         *
+         * @param level     Level of logging 0=ERR to 5=DETAILS
+         * @param className the class tha emitting the log message
+         * @param message   the message to be output
+         * @param args      arguments array to format the correct message.
+         */
+        public static void log(int level, Class className, String message, Object... args) {
+            ZonedDateTime ldt = ZonedDateTime.now();
+            System.out.printf("[%s] %s : %s - %s\n", ldt.format(dtf), className, level, String.format(message, args));
         }
     }
 
@@ -1268,22 +1305,25 @@ public class Application extends JPanel implements KeyListener {
             constrainsEntity(e);
         }
 
-        private void applyWorldInfluencers(Entity e) {
-            final Vec2d[] g = {new Vec2d(world.gravity.x, e.mass * world.gravity.y)};
-            getInfluencers().values()
-                    .stream()
-                    .filter(i -> i.box.contains(e.box))
-                    .forEach(i2 -> {
-                        if (Optional.ofNullable(i2.getGravity()).isPresent()) {
-                            g[0] = new Vec2d(
-                                    i2.getGravity().x,
-                                    e.mass * i2.getGravity().y);
-                        }
-                        if (Optional.ofNullable(i2.getForce()).isPresent()) {
-                            e.forces.add(i2.getForce());
-                        }
-                    });
-            e.forces.add(g[0]);
+        private Material applyWorldInfluencers(Entity e) {
+            Material m = e.material;
+            Vec2d g = new Vec2d(world.gravity.x, e.mass * world.gravity.y);
+            for (Influencer i : getInfluencers().values()) {
+                if (i.box.intersects(e.box)) {
+                    Logger.log(Logger.INFO, this.getClass(), "Entity named %s intersects Influencer %s", e.name, i.name);
+                    if (Optional.ofNullable(i.getGravity()).isPresent()) {
+                        g = new Vec2d(
+                                i.getGravity().x,
+                                e.mass * i.getGravity().y);
+                    }
+                    if (Optional.ofNullable(i.getForce()).isPresent()) {
+                        e.forces.add(i.getForce());
+                    }
+                    m = i.getMaterial();
+                }
+            }
+            e.forces.add(g);
+            return m;
         }
 
         /**
@@ -1299,14 +1339,17 @@ public class Application extends JPanel implements KeyListener {
             // a small reduction of time
             elapsed *= 0.4;
 
-            applyWorldInfluencers(e);
+            Material m = applyWorldInfluencers(e);
 
             e.acc = new Vec2d(0.0, 0.0);
             e.acc.add(e.forces);
 
+            double friction = e.collide ? m.friction * world.getMaterial().friction : world.getMaterial().friction;
+
+            Logger.log(Logger.FINED, this.getClass(), " Entity %s is colliding: %s", e.name, e.collide);
             e.vel.add(e.acc
                     .minMax(config.accMinValue, config.accMaxValue)
-                    .multiply(0.5 * elapsed * e.material.friction * world.getMaterial().friction));
+                    .multiply(0.5 * elapsed * friction * m.density));
 
             e.vel.minMax(config.speedMinValue, config.speedMaxValue);
 
@@ -1444,8 +1487,6 @@ public class Application extends JPanel implements KeyListener {
      */
     public static class Influencer extends Entity {
 
-        public Material material;
-
         public Influencer(String name) {
             super(name);
             addBehavior(new Behavior() {
@@ -1518,6 +1559,44 @@ public class Application extends JPanel implements KeyListener {
         }
     }
 
+    /**
+     * Define a Bunch of default and standard material. See
+     * As a reference :
+     * <pre>
+     *  Rock       Density : 0.6  Restitution : 0.1
+     *  Wood       Density : 0.3  Restitution : 0.2
+     *  Steal      Density : 1.2  Restitution : 0.05
+     *  BouncyBall Density : 0.3  Restitution : 0.8
+     *  SuperBall  Density : 0.3  Restitution : 0.95
+     *  Pillow     Density : 0.1  Restitution : 0.2
+     *  Static     Density : 0.0  Restitution : 0.0
+     * </pre>
+     */
+    public enum DefaultMaterial {
+        DEFAULT(new Material("default", 1.0, 0.0, 1.0)),
+        /*
+        // convert from Material(elasticity,density,dynFriction,staticFriction)
+        ROCK(new Material("rock", 0.6, 1, 1, 1)),
+        WOOD(new Material("wood", 0.1, 0.69, 0.69, 0.3)),
+        STEEL(new Material("metal", 0.05, 1, 1, 1.2)),
+        RUBBER(new Material("rubber", 0.8, 0.88, 0.98, 0.3)),
+        GLASS(new Material("glass", 0.4, 1, 1, 1)),
+        ICE(new Material("ice", 0.1, 0.1, 1, 1)),
+        AIR(new Material("air", 1, 1, 1, 0.01)),
+        STATIC(new Material("static", 0, 0, 0, 0)),
+        NEUTRAL(new Material("neutral", 1, 1, 1, 1));
+        */;
+
+        Material material;
+
+        DefaultMaterial(Material m) {
+            this.material = m;
+        }
+
+        public Material get() {
+            return this.material;
+        }
+    }
 
     /**
      * The {@link Material} is a new way to manage physic attributes for any {@link Entity}.
@@ -1664,8 +1743,8 @@ public class Application extends JPanel implements KeyListener {
                         config.speedMinValue, config.colSpeedMaxValue);
                 e2.vel.y += Utils.ceilMinMaxValue(impulse * e1.mass * colSpeed * colNorm.y,
                         config.speedMinValue, config.colSpeedMaxValue);
-                if (e1.name.equals("player") && config.debug > 4) {
-                    System.out.printf("e1.%s collides e2.%s Vp=%s / dist=%f / norm=%s\n", e1.name, e2.name, vp, distance, colNorm);
+                if (e1.name.equals("player")) {
+                    Logger.log(Logger.FINED, this.getClass(), "e1.%s collides e2.%s Vp=%s / dist=%f / norm=%s\n", e1.name, e2.name, vp, distance, colNorm);
                 }
             } else {
                 if (e1.physicType == PhysicType.DYNAMIC && e2.physicType == PhysicType.STATIC) {
@@ -1676,8 +1755,8 @@ public class Application extends JPanel implements KeyListener {
                         e1.vel.y = -e1.vel.y * e1.elasticity;
                         e1.pos.y = e2.pos.y + e2.height;
                     }
-                    if (e1.name.equals("player") && config.debug > 4) {
-                        System.out.printf("e1.%s collides static e2.%s\n", e1.name, e2.name);
+                    if (e1.name.equals("player")) {
+                        Logger.log(Logger.FINED, this.getClass(), "e1.%s collides static e2.%s\n", e1.name, e2.name);
                     }
                 }
             }
@@ -1952,7 +2031,7 @@ public class Application extends JPanel implements KeyListener {
         public Vec2d acc = new Vec2d(0.0, 0.0);
         public double mass = 1.0;
 
-        public Material material;
+        public Material material = DefaultMaterial.DEFAULT.get();
 
         public double elasticity = 1.0, friction = 1.0;
 
@@ -2863,10 +2942,10 @@ public class Application extends JPanel implements KeyListener {
                 initDefaultActions();
                 // prepare services
                 createJMXStatus(this);
-                System.out.printf("INFO: scene %s activated and created.\n", activeScene.getName());
+                Logger.log(1, this.getClass(), " scene %s activated and created.\n", activeScene.getName());
             }
         } catch (Exception e) {
-            System.out.println("ERR: Unable to initialize scene: " + e.getLocalizedMessage());
+            Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to initialize scene: " + e.getLocalizedMessage());
             return false;
         }
         return true;
@@ -2939,7 +3018,7 @@ public class Application extends JPanel implements KeyListener {
                 activateScene(config.defaultScene);
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
                     InvocationTargetException e) {
-                System.out.println("ERR: Unable to load scene from configuration file:"
+                Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to load scene from configuration file:"
                         + e.getLocalizedMessage()
                         + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
                 e.printStackTrace(System.out);
@@ -2964,10 +3043,10 @@ public class Application extends JPanel implements KeyListener {
                 sceneReady = scene.create(this);
                 this.activeScene = scene;
             } catch (Exception e) {
-                System.out.println("ERR: Unable to initialize the Scene " + name + " => " + e.getLocalizedMessage());
+                Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to initialize the Scene " + name + " => " + e.getLocalizedMessage());
             }
         } else {
-            System.out.print("ERR: Unable to load unknown scene " + name);
+            Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to load unknown scene " + name);
         }
     }
 
@@ -2983,7 +3062,7 @@ public class Application extends JPanel implements KeyListener {
             entityIndex = 0;
             createScene();
         } catch (Exception e) {
-            System.out.println("ERR: Reset scene issue: " + e.getLocalizedMessage());
+            Logger.log(Logger.ERROR, this.getClass(), "ERR: Reset scene issue: " + e.getLocalizedMessage());
         }
     }
 
@@ -3118,7 +3197,7 @@ public class Application extends JPanel implements KeyListener {
             try {
                 Thread.sleep(waitTime);
             } catch (InterruptedException ie) {
-                System.out.println("ERR: Unable to wait for " + waitTime + ": " + ie.getLocalizedMessage());
+                Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to wait for " + waitTime + ": " + ie.getLocalizedMessage());
             }
 
             // Update JMX metrics
@@ -3237,7 +3316,7 @@ public class Application extends JPanel implements KeyListener {
             Application app = new Application(args);
             app.run();
         } catch (Exception e) {
-            System.out.printf("ERR: Unable to run application: %s",
+            Logger.log(Logger.ERROR, Application.class, "ERR: Unable to run application: %s",
                     e.getLocalizedMessage());
             e.printStackTrace();
         }
