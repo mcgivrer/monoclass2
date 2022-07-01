@@ -17,12 +17,29 @@ import java.awt.image.BufferedImage;
  */
 public class AnimationSet {
     String name;
+
+
     BufferedImage[] frames;
     int[] durations;
+
+
     int loop;
     int counter;
     private int width;
     private int height;
+
+
+    public BufferedImage[] getFrames() {
+        return frames;
+    }
+
+    public int getDurations(int i) {
+        return durations[i];
+    }
+
+    public int getLoop() {
+        return loop;
+    }
 
     public AnimationSet(String key) {
         this.name = key;

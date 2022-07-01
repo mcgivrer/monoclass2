@@ -40,7 +40,7 @@ public class Entity {
     public static long entityIndex = 0;
     public boolean collide;
     // id & naming attributes
-    public static long id = entityIndex++;
+    public long id = entityIndex++;
     public String name = "entity_" + id;
 
     // Rendering attributes

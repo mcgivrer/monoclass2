@@ -58,7 +58,7 @@ public class AppStatus implements AppStatusMBean {
      * @param app the parent {@link Application} this {@link AppStatus} belongs to.
      */
     public synchronized void update(Application app) {
-        nbEntities = app.entities.size();
+        nbEntities = app.getEntities().size();
         realFPS = app.getRealFps();
         pipelineSize = app.render.getgPipeline().size();
         timeRendering = app.render.getRenderingTime();

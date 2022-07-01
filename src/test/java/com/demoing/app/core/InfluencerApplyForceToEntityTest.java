@@ -5,6 +5,7 @@ import com.demoing.app.core.entity.Influencer;
 import com.demoing.app.core.math.Vec2d;
 import com.demoing.app.core.entity.EntityType;
 import com.demoing.app.core.service.physic.PhysicType;
+import com.demoing.app.core.service.physic.material.DefaultMaterial;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +47,7 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
     @Test
     public void addOneEntityUnderInfluencerAction() {
         // stop gravity effect on the application's World instance.
-        app.getWorld().setGravity(new Vec2d(0.0,0.0));
+        app.getWorld().setGravity(new Vec2d(0.0, 0.0)).setMaterial(DefaultMaterial.DEFAULT.get());
 
         // Create an Influencer in the initialized app World
         Influencer i = (Influencer) new Influencer("influencer_1")
@@ -54,7 +55,7 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
                 .setPosition(0.0, app.world.area.getHeight() - 200.0)
                 .setSize(app.world.area.getWidth(), 200.0)
                 .setPhysicType(PhysicType.NONE)
-                .setColor(new Color(0.0f,0.0f,0.5f,.07f));
+                .setColor(new Color(0.0f, 0.0f, 0.5f, .07f));
         app.addEntity(i);
 
         // create a simple Rectangle entity to be influenced by the "influencer_1"

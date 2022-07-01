@@ -48,11 +48,13 @@ public class CollisionDetector {
             e1.collide = false;
             for (Entity e2 : targets) {
                 e2.collide = false;
-                if (e1.id != e2.id && e1.cbox.getBounds().intersects(e2.cbox.getBounds())) {
-                    resolve(e1, e2);
-                    e1.behaviors.values().stream()
-                            .filter(b -> b.filterOnEvent().equals(Behavior.onCollision)).toList()
-                            .forEach(b -> b.onCollide(app, e1, e2));
+                if (e1.id != e2.id) {
+                    if (e1.cbox.getBounds().intersects(e2.cbox.getBounds())) {
+                        resolve(e1, e2);
+                        e1.behaviors.values().stream()
+                                .filter(b -> b.filterOnEvent().equals(Behavior.onCollision)).toList()
+                                .forEach(b -> b.onCollide(app, e1, e2));
+                    }
                 }
             }
         }
@@ -74,25 +76,25 @@ public class CollisionDetector {
         if (e1.physicType == PhysicType.DYNAMIC && e2.physicType == PhysicType.DYNAMIC) {
             Vec2d vRelSpeed = new Vec2d(e1.vel.x - e2.vel.x, e1.vel.y - e2.vel.y);
             double colSpeed = vRelSpeed.x * colNorm.x + vRelSpeed.y * colNorm.y;
-            var impulse = 2 * colSpeed / (e1.mass + e2.mass);
-            e1.vel.x -= MathUtils.ceilMinMaxValue(impulse * e2.mass * colSpeed * colNorm.x,
+            var impulse = 2 * colSpeed / (e1.mass * e1.material.density + e2.mass * e2.material.density);
+            e1.vel.x -= MathUtils.ceilMinMaxValue(impulse * e2.mass * e2.material.density * colSpeed * colNorm.x,
                     config.speedMinValue, config.colSpeedMaxValue);
-            e1.vel.y -= MathUtils.ceilMinMaxValue(impulse * e2.mass * colSpeed * colNorm.y,
+            e1.vel.y -= MathUtils.ceilMinMaxValue(impulse * e2.mass * e2.material.density * colSpeed * colNorm.y,
                     config.speedMinValue, config.colSpeedMaxValue);
-            e2.vel.x += MathUtils.ceilMinMaxValue(impulse * e1.mass * colSpeed * colNorm.x,
+            e2.vel.x += MathUtils.ceilMinMaxValue(impulse * e1.mass * e2.material.density * colSpeed * colNorm.x,
                     config.speedMinValue, config.colSpeedMaxValue);
-            e2.vel.y += MathUtils.ceilMinMaxValue(impulse * e1.mass * colSpeed * colNorm.y,
+            e2.vel.y += MathUtils.ceilMinMaxValue(impulse * e1.mass * e2.material.density * colSpeed * colNorm.y,
                     config.speedMinValue, config.colSpeedMaxValue);
-            if (e1.name.equals("player")) {
-                Logger.log(Logger.FINED, this.getClass(), "e1.%s collides e2.%s Vp=%s / dist=%f / norm=%s\n", e1.name, e2.name, vp, distance, colNorm);
-            }
+
+            Logger.log(Logger.FINED, this.getClass(), "e1.%s collides e2.%s Vp=%s / dist=%f / norm=%s\n", e1.name, e2.name, vp, distance, colNorm);
+
         } else {
             if (e1.physicType == PhysicType.DYNAMIC && e2.physicType == PhysicType.STATIC) {
                 if (e1.pos.y + e1.height > e2.pos.y && vp.y > 0) {
                     e1.pos.y = e2.pos.y - e1.height;
-                    e1.vel.y = -e1.vel.y * e1.elasticity;
+                    e1.vel.y = -e1.vel.y * e1.material.elasticity;
                 } else {
-                    e1.vel.y = -e1.vel.y * e1.elasticity;
+                    e1.vel.y = -e1.vel.y * e1.material.elasticity;
                     e1.pos.y = e2.pos.y + e2.height;
                 }
                 if (e1.name.equals("player")) {
