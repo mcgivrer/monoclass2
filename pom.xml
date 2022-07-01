@@ -5,7 +5,7 @@
     <artifactId>monoclass2</artifactId>
     <version>1.0.5-SNAPSHOT</version>
     <name>MonoClass2</name>
-    <description>Building a small 2D plateform game framework from a simple class.</description>
+    <description>Building a small 2D platform game framework from a simple class.</description>
     <inceptionYear>2022</inceptionYear>
 
     <!-- Project License -->

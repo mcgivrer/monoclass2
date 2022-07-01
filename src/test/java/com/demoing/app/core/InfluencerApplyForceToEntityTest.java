@@ -1,8 +1,10 @@
 package com.demoing.app.core;
 
-import com.demoing.app.core.Application.Entity;
-import com.demoing.app.core.Application.Influencer;
-import com.demoing.app.core.Application.Vec2d;
+import com.demoing.app.core.entity.Entity;
+import com.demoing.app.core.entity.Influencer;
+import com.demoing.app.core.math.Vec2d;
+import com.demoing.app.core.entity.EntityType;
+import com.demoing.app.core.service.physic.PhysicType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +53,7 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
                 .setForce(new Vec2d(1.0, 0.0))
                 .setPosition(0.0, app.world.area.getHeight() - 200.0)
                 .setSize(app.world.area.getWidth(), 200.0)
-                .setPhysicType(Application.PhysicType.NONE)
+                .setPhysicType(PhysicType.NONE)
                 .setColor(new Color(0.0f,0.0f,0.5f,.07f));
         app.addEntity(i);
 
@@ -59,8 +61,8 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
         Entity e1 = new Entity("entity_1")
                 .setSize(10, 10)
                 .setPosition(10, 10)
-                .setPhysicType(Application.PhysicType.DYNAMIC)
-                .setType(Application.EntityType.RECTANGLE);
+                .setPhysicType(PhysicType.DYNAMIC)
+                .setType(EntityType.RECTANGLE);
         app.addEntity(e1);
 
         // 1 second of update (60 call for physic engine call)

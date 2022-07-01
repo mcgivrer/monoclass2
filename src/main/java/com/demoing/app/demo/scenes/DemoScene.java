@@ -1,8 +1,14 @@
-package com.demoing.app.scenes;
+package com.demoing.app.demo.scenes;
 
-import com.demoing.app.core.AbstractScene;
+import com.demoing.app.core.behavior.Behavior;
+import com.demoing.app.core.io.Resources;
+import com.demoing.app.core.service.physic.material.Material;
+import com.demoing.app.core.service.physic.PhysicType;
+import com.demoing.app.core.math.Vec2d;
+import com.demoing.app.core.scene.AbstractScene;
 import com.demoing.app.core.Application;
-import com.demoing.app.core.Application.*;
+import com.demoing.app.core.entity.*;
+import com.demoing.app.core.utils.I18n;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -12,9 +18,9 @@ import java.io.IOException;
 import java.util.*;
 import java.util.List;
 
-import static com.demoing.app.core.Application.EntityType.*;
-import static com.demoing.app.core.Application.PhysicType.STATIC;
-import static com.demoing.app.core.Application.TextAlign.CENTER;
+import static com.demoing.app.core.entity.EntityType.*;
+import static com.demoing.app.core.service.physic.PhysicType.STATIC;
+import static com.demoing.app.core.entity.TextAlign.CENTER;
 
 public class DemoScene extends AbstractScene {
 
@@ -103,7 +109,7 @@ public class DemoScene extends AbstractScene {
                 .setMaterial(new Material("water", 0.6, 0.0, 0.9))
                 .setPosition(0.0, app.world.area.getHeight() - 200.0)
                 .setSize(app.world.area.getWidth(), 200.0)
-                .setPhysicType(Application.PhysicType.NONE)
+                .setPhysicType(PhysicType.NONE)
                 .setColor(new Color(0.0f, 0.0f, 0.5f, .07f));
         app.addEntity(i1);
 
@@ -255,7 +261,7 @@ public class DemoScene extends AbstractScene {
 
         // A welcome Text
         TextEntity welcomeMsg = (TextEntity) new TextEntity("welcome")
-                .setText(Application.I18n.get("app.message.welcome"))
+                .setText(I18n.get("app.message.welcome"))
                 .setAlign(CENTER)
                 .setFont(wlcFont)
                 .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
@@ -428,21 +434,21 @@ public class DemoScene extends AbstractScene {
             p.activateAnimation("idle");
             if (app.getKeyPressed(KeyEvent.VK_LEFT)) {
                 p.activateAnimation("walk");
-                p.forces.add(new Application.Vec2d(-speed, 0.0));
+                p.forces.add(new Vec2d(-speed, 0.0));
                 action = true;
             }
             if (app.getKeyPressed(KeyEvent.VK_RIGHT)) {
                 p.activateAnimation("walk");
-                p.forces.add(new Application.Vec2d(speed, 0.0));
+                p.forces.add(new Vec2d(speed, 0.0));
                 action = true;
             }
             if (app.getKeyPressed(KeyEvent.VK_UP)) {
                 p.activateAnimation("jump");
-                p.forces.add(new Application.Vec2d(0.0, -jumpFactor * speed));
+                p.forces.add(new Vec2d(0.0, -jumpFactor * speed));
                 action = true;
             }
             if (app.getKeyPressed(KeyEvent.VK_DOWN)) {
-                p.forces.add(new Application.Vec2d(0.0, speed));
+                p.forces.add(new Vec2d(0.0, speed));
                 action = true;
             }
 
@@ -459,7 +465,7 @@ public class DemoScene extends AbstractScene {
     }
 
     @Override
-    public Map<String, Application.Behavior> getBehaviors() {
+    public Map<String, Behavior> getBehaviors() {
         return behaviors;
     }
 
@@ -478,7 +484,7 @@ public class DemoScene extends AbstractScene {
         Material matEnt = new Material("matEnt", 1.0, 0.65, 0.98);
 
         for (int i = 0; i < nbEntity; i++) {
-            Entity e = new Entity(namePrefix + Application.getEntityIndex())
+            Entity e = new Entity(namePrefix + Entity.getEntityIndex())
                     .setType(ELLIPSE)
                     .setSize(8, 8)
                     .setPosition(Math.random() * app.world.area.getWidth(),

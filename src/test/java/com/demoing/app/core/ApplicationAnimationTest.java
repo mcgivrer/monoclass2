@@ -1,6 +1,6 @@
 package com.demoing.app.core;
 
-import com.demoing.app.core.Application.Animation;
+import com.demoing.app.core.gfx.Animation;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
