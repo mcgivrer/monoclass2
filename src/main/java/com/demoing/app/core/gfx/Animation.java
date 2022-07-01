@@ -19,6 +19,7 @@ import java.util.Map;
  * @since 1.0.3
  */
 public class Animation {
+
     Map<String, AnimationSet> animationSet = new HashMap<>();
     public String currentAnimationSet;
     public int currentFrame;
@@ -81,4 +82,7 @@ public class Animation {
         return null;
     }
 
+    public Map<String, AnimationSet> getAnimationSet() {
+        return animationSet;
+    }
 }

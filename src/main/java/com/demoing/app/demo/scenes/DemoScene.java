@@ -49,7 +49,7 @@ public class DemoScene extends AbstractScene {
                         "world",
                         1.0,
                         0.0,
-                        0.98));
+                        1.0));
 
         // define Game global variables
         app.setAttribute("life", 5);
@@ -103,7 +103,7 @@ public class DemoScene extends AbstractScene {
         app.addEntity(la01);
 
         // Create an Influencer in the initialized app World
-        Influencer i1 = (Influencer) new Influencer("influencer_1")
+        Influencer i1 = (Influencer) new Influencer("if_1_water")
                 .setForce(new Vec2d(0.0, -0.18))
                 .setType(RECTANGLE)
                 .setMaterial(new Material("water", 0.6, 0.0, 0.9))
@@ -122,7 +122,7 @@ public class DemoScene extends AbstractScene {
                 .setPosition(app.world.area.getWidth() * 0.5, app.world.area.getHeight() * 0.5)
                 .setSize(32.0, 32.0)
                 .setMaterial(
-                        new Material("player_mat", 1.0, 0.1, 0.2))
+                        new Material("player_mat", 1.0, 0, 0))
                 .setColor(Color.RED)
                 .setPriority(1)
                 .setMass(40.0)
@@ -251,7 +251,7 @@ public class DemoScene extends AbstractScene {
                                 "pf_", Color.LIGHT_GRAY,
                                 "floor", Color.GRAY,
                                 "outPlatform", Color.YELLOW))
-                .setRefEntities(app.entities.values().stream().toList())
+                .setRefEntities(app.getEntities().values().stream().toList())
                 .setWorld(app.world)
                 .setSize(48, 32)
                 .setPosition(10, app.config.screenHeight - 48);
@@ -286,7 +286,9 @@ public class DemoScene extends AbstractScene {
     }
 
     private void generateLights(Application app) {
+        boolean switchFront = false;
         for (int i = 0; i < 10; i++) {
+            switchFront = !switchFront;
             Light l = (Light) new Light("sphericalLight_" + i)
                     .setLightType(LightType.SPHERICAL)
                     .setEnergy(1.0)
@@ -294,7 +296,8 @@ public class DemoScene extends AbstractScene {
                     .setStickToCamera(false)
                     .setColor(new Color(0.0f, 0.7f, 0.5f, 0.85f))
                     .setPosition(100.0 + (80.0 * i), app.config.screenHeight * 0.5)
-                    .setSize(50.0, 50.0);
+                    .setSize(50.0, 50.0)
+                    .setPriority(switchFront ? 10 : 0);
             app.addEntity(l);
         }
     }
@@ -320,11 +323,12 @@ public class DemoScene extends AbstractScene {
 
     private void generateAllPlatforms(Application app, int nbPf) {
         java.util.List<Entity> platforms = new ArrayList<>();
+        Material matPF = new Material("matPF", 1.0, 0.2, 0.90);
         Entity pf;
         boolean found = false;
         for (int i = 0; i < nbPf; i++) {
             while (true) {
-                pf = createOnePlatform(app, i);
+                pf = createOnePlatform(app, i,matPF);
                 found = false;
                 for (Entity p : platforms) {
                     if (p.cbox.intersects(pf.cbox.getBounds())) {
@@ -341,16 +345,14 @@ public class DemoScene extends AbstractScene {
 
     }
 
-    private Entity createOnePlatform(Application app, int i) {
+    private Entity createOnePlatform(Application app, int i, Material matPF) {
         double pfWidth = ((int) (Math.random() * 5) + 4);
         double maxCols = (app.world.area.getWidth() / 16.0);
         // 48=height of 1 pf + 1 player, -(3 + 3) to prevent create platform too low and too high
         double maxRows = (app.world.area.getHeight() / 48) - 6;
-        double pfCol = (int) (Math.random() * maxCols);
+        double pfCol = (int) (Math.random() * (maxCols*(Math.random()>0.5?1.0:0.75)));
         pfCol = pfCol < maxCols ? pfCol : maxRows - pfWidth;
-        double pfRow = (int) ((Math.random() * maxRows) + 3);
-
-        Material matPF = new Material("matPF", 1.0, 0.02, 0.2);
+        double pfRow = (int) ((Math.random() * maxRows) + 2);
 
         Entity pf = new Entity("pf_" + i)
                 .setType(RECTANGLE)
@@ -369,7 +371,7 @@ public class DemoScene extends AbstractScene {
 
     @Override
     public synchronized void update(Application app, double elapsed) {
-        if (app.entities.containsKey("score") && app.entities.containsKey("player")) {
+        if (app.getEntities().containsKey("score") && app.getEntities().containsKey("player")) {
             Entity player = app.getEntity("player");
 
             // Update timer
@@ -413,7 +415,7 @@ public class DemoScene extends AbstractScene {
 
     private void gameOver(Application app, Entity player) {
         player.activateAnimation("dead");
-        TextEntity youAreDead = (TextEntity) app.entities.get("YouAreDead");
+        TextEntity youAreDead = (TextEntity) app.getEntities().get("YouAreDead");
         youAreDead.setInitialDuration(-1);
         gameOver = true;
     }

@@ -3,6 +3,7 @@ package com.demoing.app.core.service.render;
 import com.demoing.app.core.Application;
 import com.demoing.app.core.config.Configuration;
 import com.demoing.app.core.entity.*;
+import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.World;
 import com.demoing.app.core.utils.Logger;
 import com.demoing.app.core.utils.Utils;
@@ -366,7 +367,10 @@ public class Render {
             }
             if (config.debug > 1) {
                 // display colliding box
-                g.setColor(e.collide ? new Color(1.0f, 0.0f, 0.0f, 0.7f) : new Color(0.0f, 0.0f, 1.0f, 0.3f));
+                g.setColor(
+                        e.collide && e.physicType == PhysicType.DYNAMIC
+                        ? new Color(1.0f, 0.0f, 0.0f, 0.4f)
+                        : new Color(0.0f, 0.0f, 1.0f, 0.3f));
                 g.fill(e.cbox);
                 if (config.debug > 2) {
                     // display 2D parameters

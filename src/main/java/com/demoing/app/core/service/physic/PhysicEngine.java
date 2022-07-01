@@ -52,7 +52,7 @@ public class PhysicEngine {
         long start = System.nanoTime();
 
         // update entities
-        app.entities.values().forEach((e) -> {
+        app.getEntities().values().forEach((e) -> {
             if (e.physicType.equals(PhysicType.DYNAMIC)) {
                 updateEntity(e, elapsed);
             }
@@ -64,11 +64,15 @@ public class PhysicEngine {
                             .contains(Behavior.updateEntity))
                     .toList()
                     .forEach(b -> b.update(app, e, elapsed));
+
+            // Reset all collision for the Entity e
+            e.collide = false;
+            e.colliders.clear();
         });
 
         // TODO update Scene Behaviors
-        if (Optional.ofNullable(app.getActiveScene().getBehaviors()).isPresent()) {
-            app.getActiveScene().getBehaviors().values().stream()
+        if (Optional.ofNullable(app.getSceneManager().getActiveScene().getBehaviors()).isPresent()) {
+            app.getSceneManager().getActiveScene().getBehaviors().values().stream()
                     .filter(b -> b.filterOnEvent().contains(Behavior.updateScene))
                     .toList()
                     .forEach(b -> b.update(app, elapsed));
@@ -96,7 +100,7 @@ public class PhysicEngine {
         Vec2d g = new Vec2d(world.gravity.x, e.mass * world.gravity.y);
         for (Influencer i : getInfluencers().values()) {
             if (i.box.intersects(e.box)) {
-                Logger.log(Logger.INFO, this.getClass(), "Entity named %s intersects Influencer %s", e.name, i.name);
+                Logger.log(Logger.DETAILED, this.getClass(), "Entity %s intersects Influencer %s", e.name, i.name);
                 if (Optional.ofNullable(i.getGravity()).isPresent()) {
                     g = new Vec2d(
                             i.getGravity().x,
@@ -129,10 +133,14 @@ public class PhysicEngine {
 
         e.acc = new Vec2d(0.0, 0.0);
         e.acc.add(e.forces);
+        double collisionFriction = e.colliders.stream()
+                .filter(c -> c.collide)
+                .mapToDouble(c -> c.material.friction)
+                .reduce(0, Double::sum);
+        double friction = e.collide
+                    ? collisionFriction * m.friction * world.getMaterial().friction
+                : world.getMaterial().friction;
 
-        double friction = e.collide ? m.friction * world.getMaterial().friction : world.getMaterial().friction;
-
-        Logger.log(Logger.FINED, this.getClass(), " Entity %s is colliding: %s", e.name, e.collide);
         e.vel.add(e.acc
                 .minMax(config.accMinValue, config.accMaxValue)
                 .multiply(0.5 * elapsed * friction * m.density));
@@ -199,7 +207,7 @@ public class PhysicEngine {
     }
 
     public Map<String, Influencer> getInfluencers() {
-        return app.entities.values()
+        return app.getEntities().values()
                 .stream()
                 .filter(e -> e instanceof Influencer)
                 .collect(Collectors.toMap(e -> e.name, e -> (Influencer) e));

@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.demoing.app.core.entity.EntityType.RECTANGLE;
 
@@ -40,8 +41,10 @@ public class Entity {
     public static long entityIndex = 0;
     public boolean collide;
     // id & naming attributes
-    public static long id = entityIndex++;
+    public long id = entityIndex++;
     public String name = "entity_" + id;
+
+    public List<Entity> colliders = new CopyOnWriteArrayList<>();
 
     // Rendering attributes
     public int priority;

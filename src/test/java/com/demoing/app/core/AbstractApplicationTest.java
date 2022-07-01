@@ -4,9 +4,9 @@ public class AbstractApplicationTest {
     protected Application app;
 
     protected void setup(String filename) {
-        app = new Application(new String[]{},filename);
+        app = new Application(new String[]{}, filename);
         app.initializeServices();
-        app.loadScenes();
+        app.getSceneManager().loadScenes();
     }
 
     protected void tearDown() {

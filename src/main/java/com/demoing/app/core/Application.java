@@ -11,6 +11,7 @@ import com.demoing.app.core.service.monitor.AppStatus;
 import com.demoing.app.core.scene.Scene;
 import com.demoing.app.core.service.physic.PhysicEngine;
 import com.demoing.app.core.service.physic.World;
+import com.demoing.app.core.service.scene.SceneManager;
 import com.demoing.app.core.utils.I18n;
 import com.demoing.app.core.utils.Logger;
 
@@ -45,17 +46,8 @@ public class Application extends JPanel implements KeyListener {
     /**
      * The Frame per Second rendering rate default value
      */
-    private static final int FPS_DEFAULT = 60;
+    public static final int FPS_DEFAULT = 60;
 
-    /**
-     * THe map of Scene to be activated int o the Application instance.
-     * See <code>app.scenes</code> and <code>add.default.scene</code> in configuration files.
-     */
-    private Map<String, Scene> scenes = new HashMap<>();
-    /**
-     * Scene readiness flag. After loaded and activated, the scene readiness state is set to true.
-     */
-    private boolean sceneReady;
 
     /**
      * Display MOde for the application window.
@@ -74,12 +66,11 @@ public class Application extends JPanel implements KeyListener {
 
     public Configuration config;
     public Render render;
+    public SceneManager sceneMgr;
     private PhysicEngine physicEngine;
     private CollisionDetector collisionDetect;
     public ActionHandler actionHandler;
 
-
-    private Scene activeScene;
 
     private AppStatus appStats;
 
@@ -87,7 +78,7 @@ public class Application extends JPanel implements KeyListener {
 
     private long computationTime = 0;
 
-    public Map<String, Entity> entities = new HashMap<>();
+    private Map<String, Entity> entities = new HashMap<>();
     public Map<String, Object> attributes = new HashMap<>();
 
     public World world;
@@ -149,11 +140,11 @@ public class Application extends JPanel implements KeyListener {
         try {
             initializeServices();
             createWindow();
-            if (loadScenes()) {
+            if (sceneMgr.loadScenes()) {
                 initDefaultActions();
                 // prepare services
                 createJMXStatus(this);
-                Logger.log(1, this.getClass(), " scene %s activated and created.\n", activeScene.getName());
+                Logger.log(1, this.getClass(), " scene %s activated and created.\n", sceneMgr.getActiveScene().getName());
             }
         } catch (Exception e) {
             Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to initialize scene: " + e.getLocalizedMessage());
@@ -201,65 +192,12 @@ public class Application extends JPanel implements KeyListener {
      */
     public void initializeServices() {
         render = new Render(this, config, world);
+        sceneMgr = new SceneManager(this, config);
         physicEngine = new PhysicEngine(this, config, world);
         collisionDetect = new CollisionDetector(this, config, world);
         actionHandler = new ActionHandler(this);
     }
 
-    /**
-     * Read Scenes and set the default scene according to {@link Configuration}.
-     * the concerned properties entries are:
-     * <ul>
-     *     <li><code>app.scene.list</code>is a list of Scene implementation classes comma separated,</li>
-     *     <li><code>app.scene.default</code> is the scene to be activated at start (by default).</li>
-     * </ul>
-     *
-     * @return true if Scene is correctly loaded, else false.
-     * @see Configuration
-     */
-    public boolean loadScenes() {
-        String[] scenesList = config.scenes.split(",");
-        for (String scene : scenesList) {
-            String[] sceneStr = scene.split(":");
-            try {
-                Class<?> clazzScene = Class.forName(sceneStr[1]);
-                final Constructor<?> sceneConstructor = clazzScene.getConstructor(String.class);
-                Scene s = (Scene) sceneConstructor.newInstance(sceneStr[0]);
-                scenes.put(sceneStr[0], s);
-                activateScene(config.defaultScene);
-            } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                     InvocationTargetException e) {
-                Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to load scene from configuration file:"
-                        + e.getLocalizedMessage()
-                        + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
-                e.printStackTrace(System.out);
-                return false;
-            }
-        }
-        return true;
-    }
-
-    protected void createScene() throws Exception {
-        activeScene.create(this);
-    }
-
-    protected void activateScene(String name) {
-        if (scenes.containsKey(name)) {
-            if (Optional.ofNullable(this.activeScene).isPresent()) {
-                this.activeScene.dispose();
-            }
-            Scene scene = scenes.get(name);
-            try {
-                scene.prepare();
-                sceneReady = scene.create(this);
-                this.activeScene = scene;
-            } catch (Exception e) {
-                Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to initialize the Scene " + name + " => " + e.getLocalizedMessage());
-            }
-        } else {
-            Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to load unknown scene " + name);
-        }
-    }
 
     private void createJMXStatus(Application application) {
         appStats = new AppStatus(this, application, "Application");
@@ -271,7 +209,7 @@ public class Application extends JPanel implements KeyListener {
             render.clear();
             entities.clear();
             Entity.entityIndex = 0;
-            createScene();
+            sceneMgr.createScene();
         } catch (Exception e) {
             Logger.log(Logger.ERROR, this.getClass(), "ERR: Reset scene issue: " + e.getLocalizedMessage());
         }
@@ -419,7 +357,7 @@ public class Application extends JPanel implements KeyListener {
     }
 
     private void input() {
-        activeScene.input(this);
+        sceneMgr.getActiveScene().input(this);
     }
 
     private synchronized void update(double elapsed) {
@@ -427,8 +365,8 @@ public class Application extends JPanel implements KeyListener {
             double maxElapsedTime = Math.min(elapsed, config.frameTime);
             physicEngine.update(maxElapsedTime);
             collisionDetect.update(maxElapsedTime);
-            if (sceneReady) {
-                activeScene.update(this, elapsed);
+            if (sceneMgr.isSceneReady()) {
+                sceneMgr.getActiveScene().update(this, elapsed);
             }
         }
     }
@@ -494,8 +432,8 @@ public class Application extends JPanel implements KeyListener {
     }
 
 
-    public Scene getActiveScene() {
-        return activeScene;
+    public SceneManager getSceneManager() {
+        return this.sceneMgr;
     }
 
     public PhysicEngine getPhysicEngine() {
