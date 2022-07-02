@@ -63,13 +63,8 @@ See the [/docs](docs/00-index.md) for details
 Relying an a custom build script, just execute:
 
 ```shell
-$> scripts/build.sh a
+$> mvn clean compile
 ```
-
-> :blue_book: _**NOTE**_
-> _for curious people, you can experiment the following command line :
-> `$> build h`
-> getting help in this cli build script._
 
 This will build a jar in `target/` directory.
 
@@ -78,7 +73,7 @@ This will build a jar in `target/` directory.
 You can run it by executing the following command line :
 
 ```shell
-$> scripts/build.sh r
+$> mvn exec:java
 ```
 
 (see [Build README](https://gist.github.com/mcgivrer/a31510019029eba73edf5721a93c3dec#file-readme-md) for details on
@@ -87,7 +82,7 @@ build script)
 Or if you build it with `scripts/build.sh a`, you will be able to run it with :
 
 ```shell
-$> java --enable-preview -jar target/monoclass2-1.0.3.jar
+$> java --enable-preview -jar target/monoclass2-{project.version}.jar
 ```
 
 You will get the following window
@@ -146,7 +141,7 @@ You can configure dynamically some of the internal parameters:
 
 ```shell
 $ java ---enable-preview \
- -jar target/monoclass2-x.y.z.jar \
+ -jar target/monoclass2-{project.version}.jar \
  w=600 h=400
 ```
 
@@ -154,7 +149,7 @@ $ java ---enable-preview \
 
 ```shell
 $ java ---enable-preview \
- -jar target/monoclass2-x.y.z.jar \
+ -jar target/monoclass2-{project.version}.jar \
  language=en_EN
 ```
 
@@ -162,7 +157,7 @@ $ java ---enable-preview \
 
 ```shell
 $ java ---enable-preview \
- -jar target/monoclass2-x.y.z.jar\
+ -jar target/monoclass2-{project.version}.jar\
  language=fr_FR s=2.0
 ```
 
