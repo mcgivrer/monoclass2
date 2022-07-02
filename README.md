@@ -2,11 +2,43 @@
 
 A **MonoClass 2** project test.
 
-This _small_ Java project with only one (master) class is a proof-of-concept of an over simplified java program to
-deliver maximum feature in a minimum number lines of code, and WITHOUT dependencies out of the JDK itself.
+**UPDATE 2022-JULY-01** 
+The project evolves to a too big number of feature, and debugging a monoclass is annoying; I reach the point of "class splitting", or refactoring.
+I'e also introduce Maven to perform a better build.
+As for now, the project _small_ is now _standard_ and need standard tools and classes.
 
-A second challenge is in the no use for a build tool (maven or gradle) but nothing else than the JDK compiler tool and
-the magic of a bash script (Back to Roots !).
+the project is now structured through multiple packages :
+
+```text
+com.demoing.app
+|_core
+|  |_  behavior
+|  |_  config
+|  |_  entity
+|  |_  gfx
+|  |_  io
+|  |_  math
+|  |_  scene
+|  |_  services
+|  |   |_  collision
+|  |   |_  monitor
+|  |   |_  physic
+|  |   |_  render
+|  |_  utils
+|_ demo
+     |_ scenes
+```
+
+Root package is `com.demoing.app`, and sub-packages are 
+- `core` is the game framework, 
+- and `demo` ... the Demo !
+
+
+~~This _small_ Java project with only one (master) class is a proof-of-concept of an over simplified java program to
+deliver maximum feature in a minimum number lines of code, and WITHOUT dependencies out of the JDK itself.~~
+
+~~A second challenge is in the no use for a build tool (maven or gradle) but nothing else than the JDK compiler tool and
+the magic of a bash script (Back to Roots !).~~
 
 ![2022 Gitkraken Project Timeline](docs/images/project-timeline-2022.png "2022 Gitkraken Project Timeline")
 
