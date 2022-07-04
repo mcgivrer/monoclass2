@@ -1,16 +1,15 @@
 package com.demoing.app.core;
 
-import com.demoing.app.core.service.collision.CollisionDetector;
 import com.demoing.app.core.config.Configuration;
-import com.demoing.app.core.entity.*;
+import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.gfx.DisplayModeEnum;
-import com.demoing.app.core.service.render.Render;
 import com.demoing.app.core.io.ActionHandler;
-import com.demoing.app.core.math.*;
+import com.demoing.app.core.math.Vec2d;
+import com.demoing.app.core.service.collision.CollisionDetector;
 import com.demoing.app.core.service.monitor.AppStatus;
-import com.demoing.app.core.scene.Scene;
 import com.demoing.app.core.service.physic.PhysicEngine;
 import com.demoing.app.core.service.physic.World;
+import com.demoing.app.core.service.render.Render;
 import com.demoing.app.core.service.scene.SceneManager;
 import com.demoing.app.core.utils.I18n;
 import com.demoing.app.core.utils.Logger;
@@ -19,11 +18,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.text.NumberFormat;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 /**
  * <p>{@link Application} is a Proof of Concept of a game mechanics, satisfying to some rules:

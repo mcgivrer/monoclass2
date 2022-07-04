@@ -105,5 +105,7 @@ public class CollisionDetector {
                 Logger.log(Logger.DETAILED, this.getClass(), "e1.%s collides static e2.%s\n", e1.name, e2.name);
             }
         }
+        e1.update(1);
+        e2.update(1);
     }
 }
