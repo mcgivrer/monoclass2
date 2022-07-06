@@ -45,7 +45,6 @@ public class Application extends JPanel implements KeyListener {
      */
     public static final int FPS_DEFAULT = 60;
 
-
     /**
      * Display MOde for the application window.
      */
@@ -133,6 +132,17 @@ public class Application extends JPanel implements KeyListener {
                 .setGravity(new Vec2d(0.0, config.worldGravity));
     }
 
+    /**
+     * Start the Application by :
+     * <ul>
+     *     <li>initializing services,</li>
+     *     <li>open the Application's window</li>
+     *     <li>and then init JMX monitoring service</li>
+     * </ul>
+     * a boolean start status is return according to the start operations.
+     *
+     * @return true if every thing goes well, false elsewhere.
+     */
     private boolean start() {
         try {
             initializeServices();
@@ -150,6 +160,19 @@ public class Application extends JPanel implements KeyListener {
         return true;
     }
 
+    /**
+     * Define some pre-wired actions on some keys:
+     * <ul>
+     *     <li><kbd>F11</kbd> switch between window and fullscreen display,</li>
+     *     <li><kbd>Z</kbd> reset the current scene,</li>
+     *     <li><kbd>D</kbd> Switch debug level from 0 to 4,</li>
+     *     <li><kbd>ESC</kbd> request to quit application,</li>
+     *     <li><kbd>K</kbd> Kill player's energy (test quicky),</li>
+     * </ul>
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.4
+     */
     private void initDefaultActions() {
         actionHandler.actionMapping.putAll(Map.of(
                 // reset the scene
@@ -174,7 +197,6 @@ public class Application extends JPanel implements KeyListener {
                 },
                 KeyEvent.VK_F11, o -> {
                     setWindowMode(!config.fullScreen);
-
                     return this;
                 }
         ));

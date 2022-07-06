@@ -24,6 +24,56 @@ import static com.demoing.app.core.entity.TextAlign.CENTER;
 
 public class DemoScene extends AbstractScene {
 
+    private final class EnemyOnCollisionBehavior implements Behavior {
+        @Override
+        public String filterOnEvent() {
+            return Behavior.onCollision;
+        }
+
+        @Override
+        public void onCollide(Application a, Entity e1, Entity e2) {
+            // If hurt a dead attribute platform => Die !
+            if ((boolean) e2.getAttribute("dead", false) && e1.isAlive()) {
+                int score = (int) a.getAttribute("score", 0);
+                int points = (int) e1.getAttribute("points", 0);
+                a.setAttribute("score", score + points);
+                e1.setDuration(0);
+            }
+        }
+
+        @Override
+        public void update(Application a, Entity e, double d) {
+
+        }
+
+        @Override
+        public void update(Application a, double d) {
+        }
+    }
+
+    private final class PlayerOnCollisionBehavior implements Behavior {
+        @Override
+        public String filterOnEvent() {
+            return onCollision;
+        }
+
+        @Override
+        public void onCollide(Application a, Entity e1, Entity e2) {
+            if (e2.name.contains("ball_")) {
+                reducePlayerEnergy(a, e1, e2);
+            }
+        }
+
+        @Override
+        public void update(Application a, Entity e, double d) {
+
+        }
+
+        public void update(Application a, double d) {
+
+        }
+    }
+
     Font wlcFont;
 
     private boolean gameOver;
@@ -122,7 +172,7 @@ public class DemoScene extends AbstractScene {
                 .setPosition(app.world.area.getWidth() * 0.5, app.world.area.getHeight() * 0.5)
                 .setSize(32.0, 32.0)
                 .setMaterial(
-                        new Material("player_mat", 1.0, 0, 0))
+                        new Material("player_mat", 1.0, 0.3, 0.98))
                 .setColor(Color.RED)
                 .setPriority(1)
                 .setMass(40.0)
@@ -133,47 +183,25 @@ public class DemoScene extends AbstractScene {
                 .addAnimation("idle",
                         0, 0,
                         32, 32,
-                        new int[]{450, 60, 60, 250, 60, 60, 60, 450, 60, 60, 60, 250, 60},
+                        new int[] { 450, 60, 60, 250, 60, 60, 60, 450, 60, 60, 60, 250, 60 },
                         "/images/sprites01.png", -1)
                 .addAnimation("walk",
                         0, 32,
                         32, 32,
-                        new int[]{60, 60, 60, 150, 60, 60, 60, 150},
+                        new int[] { 60, 60, 60, 150, 60, 60, 60, 150 },
                         "/images/sprites01.png", -1)
                 .addAnimation("jump",
                         0, 5 * 32,
                         32, 32,
-                        new int[]{60, 60, 250, 250, 60, 60},
+                        new int[] { 60, 60, 250, 250, 60, 60 },
                         "/images/sprites01.png", -1)
                 .addAnimation("dead",
                         0, 7 * 32,
                         32, 32,
-                        new int[]{160, 160, 160, 160, 160, 160, 500},
+                        new int[] { 160, 160, 160, 160, 160, 160, 500 },
                         "/images/sprites01.png", 0)
                 .activateAnimation("idle")
-                .addBehavior(new Behavior() {
-
-                    @Override
-                    public String filterOnEvent() {
-                        return onCollision;
-                    }
-
-                    @Override
-                    public void onCollide(Application a, Entity e1, Entity e2) {
-                        if (e2.name.contains("ball_")) {
-                            reducePlayerEnergy(a, e1, e2);
-                        }
-                    }
-
-                    @Override
-                    public void update(Application a, Entity e, double d) {
-
-                    }
-
-                    public void update(Application a, double d) {
-
-                    }
-                });
+                .addBehavior(new PlayerOnCollisionBehavior());
         app.addEntity(player);
 
         Camera cam = new Camera("cam01")
@@ -187,7 +215,7 @@ public class DemoScene extends AbstractScene {
         wlcFont = Resources.loadFont("/fonts/FreePixel.ttf")
                 .deriveFont(12.0f);
 
-        //---- Everything about HUD -----
+        // ---- Everything about HUD -----
 
         // Score Display
         int score = (int) app.getAttribute("score", 0);
@@ -328,7 +356,7 @@ public class DemoScene extends AbstractScene {
         boolean found = false;
         for (int i = 0; i < nbPf; i++) {
             while (true) {
-                pf = createOnePlatform(app, i,matPF);
+                pf = createOnePlatform(app, i, matPF);
                 found = false;
                 for (Entity p : platforms) {
                     if (p.cbox.intersects(pf.cbox.getBounds())) {
@@ -348,9 +376,10 @@ public class DemoScene extends AbstractScene {
     private Entity createOnePlatform(Application app, int i, Material matPF) {
         double pfWidth = ((int) (Math.random() * 5) + 4);
         double maxCols = (app.world.area.getWidth() / 16.0);
-        // 48=height of 1 pf + 1 player, -(3 + 3) to prevent create platform too low and too high
+        // 48=height of 1 pf + 1 player, -(3 + 3) to prevent create platform too low and
+        // too high
         double maxRows = (app.world.area.getHeight() / 48) - 6;
-        double pfCol = (int) (Math.random() * (maxCols*(Math.random()>0.5?1.0:0.75)));
+        double pfCol = (int) (Math.random() * (maxCols * (Math.random() > 0.5 ? 1.0 : 0.75)));
         pfCol = pfCol < maxCols ? pfCol : maxRows - pfWidth;
         double pfRow = (int) ((Math.random() * maxRows) + 2);
 
@@ -397,7 +426,6 @@ public class DemoScene extends AbstractScene {
             int life = (int) app.getAttribute("life", 0);
             ValueEntity lifeEntity = (ValueEntity) app.getEntity("life");
             lifeEntity.setValue(life);
-
 
             int energy = (int) player.getAttribute("energy", 0);
             GaugeEntity energyEntity = (GaugeEntity) app.getEntity("energy");
@@ -478,7 +506,7 @@ public class DemoScene extends AbstractScene {
 
     @Override
     public void dispose() {
-        //todo release all resources captured by the scene.
+        // todo release all resources captured by the scene.
     }
 
     private void generateEntity(Application app, String namePrefix, int nbEntity, double acc) {
@@ -500,32 +528,7 @@ public class DemoScene extends AbstractScene {
                     .setAttribute("hurt", 1)
                     // player can win 10 to 50 points
                     .setAttribute("points", (int) (10 + (Math.random() * 4)) * 10)
-                    .addBehavior(new Behavior() {
-                        @Override
-                        public String filterOnEvent() {
-                            return Behavior.onCollision;
-                        }
-
-                        @Override
-                        public void onCollide(Application a, Entity e1, Entity e2) {
-                            // If hurt a dead attribute platform => Die !
-                            if ((boolean) e2.getAttribute("dead", false) && e1.isAlive()) {
-                                int score = (int) a.getAttribute("score", 0);
-                                int points = (int) e1.getAttribute("points", 0);
-                                a.setAttribute("score", score + points);
-                                e1.setDuration(0);
-                            }
-                        }
-
-                        @Override
-                        public void update(Application a, Entity e, double d) {
-
-                        }
-
-                        @Override
-                        public void update(Application a, double d) {
-                        }
-                    });
+                    .addBehavior(new EnemyOnCollisionBehavior());
             app.addEntity(e);
         }
     }

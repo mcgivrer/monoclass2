@@ -2,11 +2,43 @@
 
 A **MonoClass 2** project test.
 
-This _small_ Java project with only one (master) class is a proof-of-concept of an over simplified java program to
-deliver maximum feature in a minimum number lines of code, and WITHOUT dependencies out of the JDK itself.
+**UPDATE 2022-JULY-01**
+The project evolves to a too big number of feature, and debugging a monoclass is annoying; I reach the point of "class splitting", or refactoring.
+I'e also introduce Maven to perform a better build.
+As for now, the project _small_ is now _standard_ and need standard tools and classes.
 
-A second challenge is in the no use for a build tool (maven or gradle) but nothing else than the JDK compiler tool and
-the magic of a bash script (Back to Roots !).
+the project is now structured through multiple packages :
+
+```text
+com.demoing.app
+|_core
+|  |_  behavior
+|  |_  config
+|  |_  entity
+|  |_  gfx
+|  |_  io
+|  |_  math
+|  |_  scene
+|  |_  services
+|  |   |_  collision
+|  |   |_  monitor
+|  |   |_  physic
+|  |   |_  render
+|  |_  utils
+|_ demo
+     |_ scenes
+```
+
+Root package is `com.demoing.app`, and sub-packages are
+
+- `core` is the game framework,
+- and `demo` ... the Demo !
+
+~~This _small_ Java project with only one (master) class is a proof-of-concept of an over simplified java program to
+deliver maximum feature in a minimum number lines of code, and WITHOUT dependencies out of the JDK itself.~~
+
+~~A second challenge is in the no use for a build tool (maven or gradle) but nothing else than the JDK compiler tool and
+the magic of a bash script (Back to Roots !).~~
 
 ![2022 Gitkraken Project Timeline](docs/images/project-timeline-2022.png "2022 Gitkraken Project Timeline")
 
@@ -31,22 +63,17 @@ See the [/docs](docs/00-index.md) for details
 Relying an a custom build script, just execute:
 
 ```shell
-$> scripts/build.sh a
+$> mvn clean compile
 ```
-
-> :blue_book: _**NOTE**_
-> _for curious people, you can experiment the following command line :
-> `$> build h`
-> getting help in this cli build script._
 
 This will build a jar in `target/` directory.
 
-## Run it !
+## Run it
 
 You can run it by executing the following command line :
 
 ```shell
-$> scripts/build.sh r
+$> mvn exec:java
 ```
 
 (see [Build README](https://gist.github.com/mcgivrer/a31510019029eba73edf5721a93c3dec#file-readme-md) for details on
@@ -55,7 +82,7 @@ build script)
 Or if you build it with `scripts/build.sh a`, you will be able to run it with :
 
 ```shell
-$> java --enable-preview -jar target/monoclass2-1.0.3.jar
+$> java --enable-preview -jar target/monoclass2-{project.version}.jar
 ```
 
 You will get the following window
@@ -69,26 +96,26 @@ _figure 1 - LightAndShadow pre-release preparing the v1.0.5 with Light and Influ
 
 ### Keyboard
 
-Here are all the keys and their corresponding action 
+Here are all the keys and their corresponding action
 
-| Key                | Action              |
-|:-------------------|:--------------------|
-| <kbd>Up</kbd>      | Jump / Move up      |
-| <kbd>Down</kbd>    | Move down           |
-| <kbd>Left</kbd>    | Move left           |
-| <kbd>Right</kbd>   | Move right          |
-| <kbd>F3</kbd>      | take screenshot     |
-| <kbd>Z</kbd>       | reset current scene |
-| <kbd>ESC</kbd>     | Exit the demo       |
-| <kbd>K</kbd>       | Empty energy        |
-| <kbd>D</kbd>       | Switch visual debug level from 0 to 5 |
+| Key              | Action                                |
+| :--------------- | :------------------------------------ |
+| <kbd>Up</kbd>    | Jump / Move up                        |
+| <kbd>Down</kbd>  | Move down                             |
+| <kbd>Left</kbd>  | Move left                             |
+| <kbd>Right</kbd> | Move right                            |
+| <kbd>F3</kbd>    | take screenshot                       |
+| <kbd>Z</kbd>     | reset current scene                   |
+| <kbd>ESC</kbd>   | Exit the demo                         |
+| <kbd>K</kbd>     | Empty energy                          |
+| <kbd>D</kbd>     | Switch visual debug level from 0 to 5 |
 
 ### CLI arguments
 
 You can configure dynamically some of the internal parameters:
 
 | Argument                | Configuration key | Description                                                                                         | Default   |
-|:------------------------|:------------------|:----------------------------------------------------------------------------------------------------|:----------|
+| :---------------------- | :---------------- | :-------------------------------------------------------------------------------------------------- | :-------- |
 | `w`, `width`            | screenWidth       | The width of the game window                                                                        | 320       |
 | `h`, `height`           | screenHeight      | The height of the game window                                                                       | 240       |
 | `s`, `scale`            | displayScale      | The the pixel scale                                                                                 | 2         |
@@ -107,14 +134,13 @@ You can configure dynamically some of the internal parameters:
 | `scene`                 | defaultScene      | the default scene to be activated (must be listed in the `app.scenes` in the `app.properties` file) | N/A       |
 | `l`, `language`, `lang` | defaultLanguage   | select the preferred language  (existing values are en_EN, fr_FR, es_ES or de_DE).                  | en_EN     |
 
-
 ### Usage example
 
 1. Change the size of the opened window :
 
 ```shell
 $ java ---enable-preview \
- -jar target/monoclass2-x.y.z.jar \
+ -jar target/monoclass2-{project.version}.jar \
  w=600 h=400
 ```
 
@@ -122,7 +148,7 @@ $ java ---enable-preview \
 
 ```shell
 $ java ---enable-preview \
- -jar target/monoclass2-x.y.z.jar \
+ -jar target/monoclass2-{project.version}.jar \
  language=en_EN
 ```
 
@@ -130,10 +156,9 @@ $ java ---enable-preview \
 
 ```shell
 $ java ---enable-preview \
- -jar target/monoclass2-x.y.z.jar\
+ -jar target/monoclass2-{project.version}.jar\
  language=fr_FR s=2.0
 ```
-
 
 ## Contribute
 
@@ -141,6 +166,6 @@ Feel free to add/edit/modify for your own usage and learn. You can fork this sma
 
 McG. May 1st, 2022.
 
-[^1]: Icons reference https://gist.github.com/rxaviers/7360908
+[^1]: Icons reference <https://gist.github.com/rxaviers/7360908>
 [^2]: Supported boolean values to set to `true` are "1", "on", "ON", "true", "TRUE", "True", and false value are  "0", "
 off", "OFF", "false", "FALSE", "False".
