@@ -172,7 +172,7 @@ public class DemoScene extends AbstractScene {
                 .setPosition(app.world.area.getWidth() * 0.5, app.world.area.getHeight() * 0.5)
                 .setSize(32.0, 32.0)
                 .setMaterial(
-                        new Material("player_mat", 1.0, 0, 0))
+                        new Material("player_mat", 1.0, 0.3, 0.98))
                 .setColor(Color.RED)
                 .setPriority(1)
                 .setMass(40.0)

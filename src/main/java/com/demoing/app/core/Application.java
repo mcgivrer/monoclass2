@@ -1,16 +1,15 @@
 package com.demoing.app.core;
 
-import com.demoing.app.core.service.collision.CollisionDetector;
 import com.demoing.app.core.config.Configuration;
-import com.demoing.app.core.entity.*;
+import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.gfx.DisplayModeEnum;
-import com.demoing.app.core.service.render.Render;
 import com.demoing.app.core.io.ActionHandler;
-import com.demoing.app.core.math.*;
+import com.demoing.app.core.math.Vec2d;
+import com.demoing.app.core.service.collision.CollisionDetector;
 import com.demoing.app.core.service.monitor.AppStatus;
-import com.demoing.app.core.scene.Scene;
 import com.demoing.app.core.service.physic.PhysicEngine;
 import com.demoing.app.core.service.physic.World;
+import com.demoing.app.core.service.render.Render;
 import com.demoing.app.core.service.scene.SceneManager;
 import com.demoing.app.core.utils.I18n;
 import com.demoing.app.core.utils.Logger;
@@ -19,11 +18,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.text.NumberFormat;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 /**
  * <p>{@link Application} is a Proof of Concept of a game mechanics, satisfying to some rules:
@@ -47,7 +44,6 @@ public class Application extends JPanel implements KeyListener {
      * The Frame per Second rendering rate default value
      */
     public static final int FPS_DEFAULT = 60;
-
 
     /**
      * Display MOde for the application window.
@@ -136,6 +132,17 @@ public class Application extends JPanel implements KeyListener {
                 .setGravity(new Vec2d(0.0, config.worldGravity));
     }
 
+    /**
+     * Start the Application by :
+     * <ul>
+     *     <li>initializing services,</li>
+     *     <li>open the Application's window</li>
+     *     <li>and then init JMX monitoring service</li>
+     * </ul>
+     * a boolean start status is return according to the start operations.
+     *
+     * @return true if every thing goes well, false elsewhere.
+     */
     private boolean start() {
         try {
             initializeServices();
@@ -153,6 +160,19 @@ public class Application extends JPanel implements KeyListener {
         return true;
     }
 
+    /**
+     * Define some pre-wired actions on some keys:
+     * <ul>
+     *     <li><kbd>F11</kbd> switch between window and fullscreen display,</li>
+     *     <li><kbd>Z</kbd> reset the current scene,</li>
+     *     <li><kbd>D</kbd> Switch debug level from 0 to 4,</li>
+     *     <li><kbd>ESC</kbd> request to quit application,</li>
+     *     <li><kbd>K</kbd> Kill player's energy (test quicky),</li>
+     * </ul>
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.4
+     */
     private void initDefaultActions() {
         actionHandler.actionMapping.putAll(Map.of(
                 // reset the scene
@@ -177,7 +197,6 @@ public class Application extends JPanel implements KeyListener {
                 },
                 KeyEvent.VK_F11, o -> {
                     setWindowMode(!config.fullScreen);
-
                     return this;
                 }
         ));
