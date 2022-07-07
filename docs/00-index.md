@@ -1,9 +1,12 @@
-*# MonoClass2, a JDK fun sample usage
-
-By Frédéric Delorme (c) 2022
-
 ---
-/
+title: MonoClass2
+subtitle: a JDK fun sample game
+author: Frédéric Delorme
+createdAt: 2022/05/07
+---
+
+# MonoClass 2, a JDK Fun sample game
+
 ![A gameplay screenshot](images/monoclass2-1.0.5-snapshot-screenshot.png "Screenshot of the 1.0.5 pre-release")
 
 ## Summary
