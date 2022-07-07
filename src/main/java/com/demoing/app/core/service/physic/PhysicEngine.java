@@ -6,7 +6,9 @@ import com.demoing.app.core.config.Configuration;
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.entity.Influencer;
 import com.demoing.app.core.math.Vec2d;
+import com.demoing.app.core.service.physic.material.DefaultMaterial;
 import com.demoing.app.core.service.physic.material.Material;
+import com.demoing.app.core.service.render.Render;
 import com.demoing.app.core.utils.Logger;
 
 import java.util.Map;
@@ -26,7 +28,7 @@ public class PhysicEngine {
     private final World world;
     private final Configuration config;
     public long updateTime;
-    private Map<String, Influencer> influencers = new ConcurrentHashMap<>();
+    private final Map<String, Influencer> influencers = new ConcurrentHashMap<>();
 
     /**
      * Initialize the Physic Engine for the parent Application a, with the Configuration c
@@ -72,14 +74,19 @@ public class PhysicEngine {
 
         // TODO update Scene Behaviors
         if (Optional.ofNullable(app.getSceneManager().getActiveScene().getBehaviors()).isPresent()) {
-            app.getSceneManager().getActiveScene().getBehaviors().values().stream()
-                    .filter(b -> b.filterOnEvent().contains(Behavior.updateScene))
+            app.getSceneManager()
+                    .getActiveScene()
+                    .getBehaviors()
+                    .values().stream()
+                    .filter(b -> b.filterOnEvent()
+                            .contains(Behavior.updateScene))
                     .toList()
                     .forEach(b -> b.update(app, elapsed));
         }
         //  update active camera if presents.
-        if (Optional.ofNullable(app.render.getActiveCamera()).isPresent()) {
-            app.render.getActiveCamera().update(elapsed);
+        Render r = app.getRender();
+        if (Optional.ofNullable(r.getActiveCamera()).isPresent()) {
+            r.getActiveCamera().update(elapsed);
         }
         updateTime = System.nanoTime() - start;
     }
@@ -95,8 +102,14 @@ public class PhysicEngine {
         constrainsEntity(e);
     }
 
+    /**
+     * Apply world Influencer's to the `Entity` e.
+     *
+     * @param e The Entity to be influenced
+     * @return Material out from Influencer's and Entity.
+     */
     private Material applyWorldInfluencers(Entity e) {
-        Material m = e.material;
+        Material m = DefaultMaterial.DEFAULT.get();
         Vec2d g = new Vec2d(world.gravity.x, e.mass * world.gravity.y);
         for (Influencer i : getInfluencers().values()) {
             if (i.box.intersects(e.box)) {
@@ -133,12 +146,15 @@ public class PhysicEngine {
 
         e.acc = new Vec2d(0.0, 0.0);
         e.acc.add(e.forces);
+
+        // TODO fix the friction issue :
+        // TODO here it is but don't already find the right way to fix it !
         double collisionFriction = e.colliders.stream()
                 .filter(c -> c.collide)
                 .mapToDouble(c -> c.material.friction)
-                .reduce(0, Double::sum);
+                .reduce(m.friction, Double::sum);
         double friction = e.collide
-                    ? collisionFriction * m.friction * world.getMaterial().friction
+                ? collisionFriction * m.friction * world.getMaterial().friction
                 : world.getMaterial().friction;
 
         e.vel.add(e.acc
@@ -150,6 +166,7 @@ public class PhysicEngine {
         e.pos.add(e.vel);
 
         e.forces.clear();
+        e.collide = false;
     }
 
     /**

@@ -9,6 +9,8 @@ import com.demoing.app.core.scene.AbstractScene;
 import com.demoing.app.core.Application;
 import com.demoing.app.core.entity.*;
 import com.demoing.app.core.utils.I18n;
+import com.demoing.app.demo.scenes.behaviors.EnemyOnCollisionBehavior;
+import com.demoing.app.demo.scenes.behaviors.PlayerOnCollisionBehavior;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -23,56 +25,6 @@ import static com.demoing.app.core.service.physic.PhysicType.STATIC;
 import static com.demoing.app.core.entity.TextAlign.CENTER;
 
 public class DemoScene extends AbstractScene {
-
-    private final class EnemyOnCollisionBehavior implements Behavior {
-        @Override
-        public String filterOnEvent() {
-            return Behavior.onCollision;
-        }
-
-        @Override
-        public void onCollide(Application a, Entity e1, Entity e2) {
-            // If hurt a dead attribute platform => Die !
-            if ((boolean) e2.getAttribute("dead", false) && e1.isAlive()) {
-                int score = (int) a.getAttribute("score", 0);
-                int points = (int) e1.getAttribute("points", 0);
-                a.setAttribute("score", score + points);
-                e1.setDuration(0);
-            }
-        }
-
-        @Override
-        public void update(Application a, Entity e, double d) {
-
-        }
-
-        @Override
-        public void update(Application a, double d) {
-        }
-    }
-
-    private final class PlayerOnCollisionBehavior implements Behavior {
-        @Override
-        public String filterOnEvent() {
-            return onCollision;
-        }
-
-        @Override
-        public void onCollide(Application a, Entity e1, Entity e2) {
-            if (e2.name.contains("ball_")) {
-                reducePlayerEnergy(a, e1, e2);
-            }
-        }
-
-        @Override
-        public void update(Application a, Entity e, double d) {
-
-        }
-
-        public void update(Application a, double d) {
-
-        }
-    }
 
     Font wlcFont;
 
@@ -169,7 +121,9 @@ public class DemoScene extends AbstractScene {
         // A main player Entity.
         Entity player = new Entity("player")
                 .setType(IMAGE)
-                .setPosition(app.world.area.getWidth() * 0.5, app.world.area.getHeight() * 0.5)
+                .setPosition(
+                        app.world.area.getWidth() * 0.5,
+                        app.world.area.getHeight() * 0.5)
                 .setSize(32.0, 32.0)
                 .setMaterial(
                         new Material("player_mat", 1.0, 0.3, 0.98))
@@ -183,25 +137,25 @@ public class DemoScene extends AbstractScene {
                 .addAnimation("idle",
                         0, 0,
                         32, 32,
-                        new int[] { 450, 60, 60, 250, 60, 60, 60, 450, 60, 60, 60, 250, 60 },
+                        new int[]{450, 60, 60, 250, 60, 60, 60, 450, 60, 60, 60, 250, 60},
                         "/images/sprites01.png", -1)
                 .addAnimation("walk",
                         0, 32,
                         32, 32,
-                        new int[] { 60, 60, 60, 150, 60, 60, 60, 150 },
+                        new int[]{60, 60, 60, 150, 60, 60, 60, 150},
                         "/images/sprites01.png", -1)
                 .addAnimation("jump",
                         0, 5 * 32,
                         32, 32,
-                        new int[] { 60, 60, 250, 250, 60, 60 },
+                        new int[]{60, 60, 250, 250, 60, 60},
                         "/images/sprites01.png", -1)
                 .addAnimation("dead",
                         0, 7 * 32,
                         32, 32,
-                        new int[] { 160, 160, 160, 160, 160, 160, 500 },
+                        new int[]{160, 160, 160, 160, 160, 160, 500},
                         "/images/sprites01.png", 0)
                 .activateAnimation("idle")
-                .addBehavior(new PlayerOnCollisionBehavior());
+                .addBehavior(new PlayerOnCollisionBehavior(this));
         app.addEntity(player);
 
         Camera cam = new Camera("cam01")
@@ -292,22 +246,28 @@ public class DemoScene extends AbstractScene {
                 .setText(I18n.get("app.message.welcome"))
                 .setAlign(CENTER)
                 .setFont(wlcFont)
-                .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
+                .setPosition(
+                        app.config.screenWidth * 0.5,
+                        app.config.screenHeight * 0.8)
                 .setColor(Color.WHITE)
                 .setInitialDuration(5000)
                 .setPriority(20)
                 .setStickToCamera(true);
         app.addEntity(welcomeMsg);
 
-        app.addEntity(new TextEntity("YouAreDead")
+        // You are dead Text
+        TextEntity youAreDeadTxt = (TextEntity) new TextEntity("YouAreDead")
                 .setText(I18n.get("app.player.dead"))
                 .setAlign(CENTER)
                 .setFont(wlcFont)
-                .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
+                .setPosition(
+                        app.config.screenWidth * 0.5,
+                        app.config.screenHeight * 0.8)
                 .setColor(Color.WHITE)
                 .setInitialDuration(0)
                 .setPriority(20)
-                .setStickToCamera(true));
+                .setStickToCamera(true);
+        app.addEntity(youAreDeadTxt);
 
         // mapping of keys actions:
         return true;
@@ -330,7 +290,7 @@ public class DemoScene extends AbstractScene {
         }
     }
 
-    private void reducePlayerEnergy(Application app, Entity player, Entity e) {
+    public void reducePlayerEnergy(Application app, Entity player, Entity e) {
         int hurt = (int) e.getAttribute("hurt", 0);
         int energy = (int) player.getAttribute("energy", 0);
         energy -= hurt;
@@ -351,7 +311,7 @@ public class DemoScene extends AbstractScene {
 
     private void generateAllPlatforms(Application app, int nbPf) {
         java.util.List<Entity> platforms = new ArrayList<>();
-        Material matPF = new Material("matPF", 1.0, 0.2, 0.90);
+        Material matPF = new Material("matPF", 1.0, 0.2, 0.20);
         Entity pf;
         boolean found = false;
         for (int i = 0; i < nbPf; i++) {

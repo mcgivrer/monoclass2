@@ -2,43 +2,39 @@
 
 A **MonoClass 2** project test.
 
-**UPDATE 2022-JULY-01**
-The project evolves to a too big number of feature, and debugging a monoclass is annoying; I reach the point of "class splitting", or refactoring.
-I'e also introduce Maven to perform a better build.
+## UPDATE 2022-JULY-01
+
+The project evolves to a too big number of feature, and debugging a `monoclass` is annoying; I reach the point of "class
+splitting", or refactoring.
+I've also introduced Maven to perform a better build (see [pom.xml](./pom.xml "open the maven build file"))
 As for now, the project _small_ is now _standard_ and need standard tools and classes.
 
 the project is now structured through multiple packages :
 
 ```text
-com.demoing.app
-|_core
-|  |_  behavior
-|  |_  config
-|  |_  entity
-|  |_  gfx
-|  |_  io
-|  |_  math
-|  |_  scene
-|  |_  services
-|  |   |_  collision
-|  |   |_  monitor
-|  |   |_  physic
-|  |   |_  render
-|  |_  utils
-|_ demo
-     |_ scenes
+[com.demoing.app]
+  |_core
+  |  |_  behavior
+  |  |_  config
+  |  |_  entity
+  |  |_  gfx
+  |  |_  io
+  |  |_  math
+  |  |_  scene
+  |  |_  services
+  |  |   |_  collision
+  |  |   |_  monitor
+  |  |   |_  physic
+  |  |   |_  render
+  |  |_  utils
+  |_ demo
+       |_ scenes
 ```
 
 Root package is `com.demoing.app`, and sub-packages are
 
 - `core` is the game framework,
-- and `demo` ... the Demo !
-
-~~This _small_ Java project with only one (master) class is a proof-of-concept of an over simplified java program to
-deliver maximum feature in a minimum number lines of code, and WITHOUT dependencies out of the JDK itself.~~
-
-~~A second challenge is in the no use for a build tool (maven or gradle) but nothing else than the JDK compiler tool and
-the magic of a bash script (Back to Roots !).~~
+- and `demo` ... the Demo project !
 
 ![2022 Gitkraken Project Timeline](docs/images/project-timeline-2022.png "2022 Gitkraken Project Timeline")
 
@@ -48,11 +44,12 @@ Have fun discover this beast of code, to learn and take benefits of some latest 
 the [pattern matching for switch](https://openjdk.java.net/jeps/406 "ssee the official specification")), and moreover,
 overuse of lambda and stream each time this was possible.
 
-> :blue_book: _**NOTE**_[^1]
-> _If your are curious, just visit
-the "[Java Language Updates](https://docs.oracle.com/en/java/javase/18/language/java-language-changes.html "go to official source of information for Java evolution")"
-page from Oracle, you will discover accross release from 9 to 18, the list of new introduced features._
->
+> :blue_book: _**NOTE**_ [^1]<br/>
+> _If you are curious, just visit
+the "[Java Language Updates](https://docs.oracle.com/en/java/javase/18/language/java-language-changes.html 
+> "go to official source of information for Java evolution")"
+page from Oracle, you will discover across release from 9 to 18, the list of new introduced features._
+
 
 ## More Doc sir ?
 

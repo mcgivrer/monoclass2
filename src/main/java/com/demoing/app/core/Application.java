@@ -46,7 +46,7 @@ public class Application extends JPanel implements KeyListener {
     public static final int FPS_DEFAULT = 60;
 
     /**
-     * Display MOde for the application window.
+     * Display Mode for the application window.
      */
     private DisplayModeEnum displayMode;
 
@@ -61,12 +61,12 @@ public class Application extends JPanel implements KeyListener {
     private boolean keyShiftPressed;
 
     public Configuration config;
+
     public Render render;
     public SceneManager sceneMgr;
     private PhysicEngine physicEngine;
     private CollisionDetector collisionDetect;
     public ActionHandler actionHandler;
-
 
     private AppStatus appStats;
 
@@ -74,11 +74,10 @@ public class Application extends JPanel implements KeyListener {
 
     private long computationTime = 0;
 
-    private Map<String, Entity> entities = new HashMap<>();
+    private final Map<String, Entity> entities = new HashMap<>();
     public Map<String, Object> attributes = new HashMap<>();
 
     public World world;
-
 
     private JFrame frame;
 
@@ -230,7 +229,9 @@ public class Application extends JPanel implements KeyListener {
             Entity.entityIndex = 0;
             sceneMgr.createScene();
         } catch (Exception e) {
-            Logger.log(Logger.ERROR, this.getClass(), "ERR: Reset scene issue: " + e.getLocalizedMessage());
+            Logger.log(Logger.ERROR, this.getClass(),
+                    "ERR: Reset scene issue: ",
+                    e.getLocalizedMessage());
         }
     }
 
@@ -259,7 +260,9 @@ public class Application extends JPanel implements KeyListener {
         }
 
         frame = new JFrame(I18n.get("app.title"));
-        frame.setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/sg-logo-image.png")));
+        frame.setIconImage(Toolkit.getDefaultToolkit()
+                .getImage(getClass()
+                        .getResource("/images/sg-logo-image.png")));
         frame.setContentPane(this);
 
         displayMode = fullScreenMode ? DisplayModeEnum.DISPLAY_MODE_FULLSCREEN : DisplayModeEnum.DISPLAY_MODE_WINDOWED;
@@ -291,6 +294,74 @@ public class Application extends JPanel implements KeyListener {
 
     public void requestExit() {
         exit = true;
+    }
+
+    private void loop() {
+        long timeFrame = 0, frames = 0;
+        long previous = System.currentTimeMillis();
+        while (!exit) {
+
+            long start = System.currentTimeMillis();
+            double elapsed = start - previous;
+
+            input();
+            update(elapsed);
+            render.draw(realFps);
+
+            // wait at least 1ms.
+            computationTime = System.currentTimeMillis() - start;
+            long waitTime = (config.frameTime > computationTime) ? config.frameTime - computationTime : 1;
+
+            timeFrame += elapsed;
+            frames += 1;
+            if (timeFrame > 1000) {
+                timeFrame = 0;
+                realFps = frames;
+                frames = 0;
+            }
+            try {
+                Thread.sleep(waitTime);
+            } catch (InterruptedException ie) {
+                Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to wait for " + waitTime + ": " + ie.getLocalizedMessage());
+            }
+
+            // Update JMX metrics
+            appStats.update(this);
+
+            previous = start;
+        }
+    }
+
+    private void input() {
+        sceneMgr.getActiveScene().input(this);
+    }
+
+    private synchronized void update(double elapsed) {
+        if (!pause) {
+            double maxElapsedTime = Math.min(elapsed, config.frameTime);
+            physicEngine.update(maxElapsedTime);
+            collisionDetect.update(maxElapsedTime);
+            if (sceneMgr.isSceneReady()) {
+                sceneMgr.getActiveScene().update(this, elapsed);
+            }
+        }
+    }
+
+    @Override
+    public void paint(Graphics g) {
+        super.paint(g);
+        render.draw(realFps);
+    }
+
+    public void dispose() {
+        if (Optional.ofNullable(frame).isPresent()) {
+            frame.dispose();
+        }
+    }
+
+    public void quit() {
+        render.dispose();
+        physicEngine.dispose();
     }
 
     public void addEntity(Entity entity) {
@@ -335,60 +406,6 @@ public class Application extends JPanel implements KeyListener {
         return this;
     }
 
-    public Object getAttribute(String attrName, Object defaultValue) {
-        return (this.attributes.getOrDefault(attrName, defaultValue));
-    }
-
-    private void loop() {
-        long timeFrame = 0, frames = 0;
-        long previous = System.currentTimeMillis();
-        while (!exit) {
-
-            long start = System.currentTimeMillis();
-            double elapsed = start - previous;
-
-            input();
-            update(elapsed);
-            render.draw(realFps);
-
-            // wait at least 1ms.
-            computationTime = System.currentTimeMillis() - start;
-            long waitTime = (config.frameTime > computationTime) ? config.frameTime - (long) computationTime : 1;
-
-            timeFrame += elapsed;
-            frames += 1;
-            if (timeFrame > 1000) {
-                timeFrame = 0;
-                realFps = frames;
-                frames = 0;
-            }
-            try {
-                Thread.sleep(waitTime);
-            } catch (InterruptedException ie) {
-                Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to wait for " + waitTime + ": " + ie.getLocalizedMessage());
-            }
-
-            // Update JMX metrics
-            appStats.update(this);
-
-            previous = start;
-        }
-    }
-
-    private void input() {
-        sceneMgr.getActiveScene().input(this);
-    }
-
-    private synchronized void update(double elapsed) {
-        if (!pause) {
-            double maxElapsedTime = Math.min(elapsed, config.frameTime);
-            physicEngine.update(maxElapsedTime);
-            collisionDetect.update(maxElapsedTime);
-            if (sceneMgr.isSceneReady()) {
-                sceneMgr.getActiveScene().update(this, elapsed);
-            }
-        }
-    }
 
     public boolean isCtrlPressed() {
         return keyCtrlPressed;
@@ -398,22 +415,6 @@ public class Application extends JPanel implements KeyListener {
         return keyShiftPressed;
     }
 
-    @Override
-    public void paint(Graphics g) {
-        super.paint(g);
-        render.draw(realFps);
-    }
-
-    public void dispose() {
-        if (Optional.ofNullable(frame).isPresent()) {
-            frame.dispose();
-        }
-    }
-
-    public void quit() {
-        render.dispose();
-        physicEngine.dispose();
-    }
 
     @Override
     public void keyTyped(KeyEvent e) {
@@ -489,12 +490,18 @@ public class Application extends JPanel implements KeyListener {
         return computationTime;
     }
 
+    public Object getAttribute(String attrName, Object defaultValue) {
+        return (this.attributes.getOrDefault(attrName, defaultValue));
+    }
+
     public static void main(String[] args) {
         try {
             Application app = new Application(args);
             app.run();
         } catch (Exception e) {
-            Logger.log(Logger.ERROR, Application.class, "ERR: Unable to run application: %s",
+            Logger.log(Logger.ERROR,
+                    Application.class,
+                    "ERR: Unable to run application: %s",
                     e.getLocalizedMessage());
             e.printStackTrace();
         }
