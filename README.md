@@ -1,6 +1,6 @@
 # README
 
-A **MonoClass 2** project test.
+A **MonoClass 2** v1.0.5 project test.
 
 This _small_ Java project with only one (master) class is a proof-of-concept of an over simplified java program to
 deliver maximum feature in a minimum number lines of code, and WITHOUT dependencies out of the JDK itself.
