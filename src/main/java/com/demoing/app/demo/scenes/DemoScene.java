@@ -1,7 +1,9 @@
 package com.demoing.app.demo.scenes;
 
 import com.demoing.app.core.behavior.Behavior;
+import com.demoing.app.core.gfx.Window;
 import com.demoing.app.core.io.Resources;
+import com.demoing.app.core.service.physic.World;
 import com.demoing.app.core.service.physic.material.Material;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.math.Vec2d;
@@ -26,10 +28,12 @@ import static com.demoing.app.core.entity.TextAlign.CENTER;
 
 public class DemoScene extends AbstractScene {
 
-    Font wlcFont;
+    private World world;
+
+    private Font wlcFont;
 
     private boolean gameOver;
-    BufferedImage[] figs;
+    private BufferedImage[] figs;
 
     public DemoScene(String name) {
         super(name);
@@ -45,8 +49,9 @@ public class DemoScene extends AbstractScene {
     public boolean create(Application app) throws IOException, FontFormatException {
 
         gameOver = false;
+        world = app.getPhysicEngine().getWorld();
         // define default world friction (air resistance ?)
-        app.world.setMaterial(
+        world.setMaterial(
                 new Material(
                         "world",
                         1.0,
@@ -63,8 +68,8 @@ public class DemoScene extends AbstractScene {
                 .setType(RECTANGLE)
                 .setPhysicType(STATIC)
                 .setColor(Color.LIGHT_GRAY)
-                .setPosition(32, app.world.area.getHeight() - 16)
-                .setSize(app.world.area.getWidth() - 64, 16)
+                .setPosition(32, world.area.getHeight() - 16)
+                .setSize(world.area.getWidth() - 64, 16)
                 .setCollisionBox(0, 0, 0, 0)
                 .setMaterial(matFloor)
                 .setMass(10000);
@@ -74,7 +79,7 @@ public class DemoScene extends AbstractScene {
                 .setType(RECTANGLE)
                 .setPhysicType(STATIC)
                 .setColor(Color.YELLOW)
-                .setPosition(app.world.area.getWidth() - 48, app.world.area.getHeight() - 8)
+                .setPosition(world.area.getWidth() - 48, world.area.getHeight() - 8)
                 .setSize(48, 8)
                 .setCollisionBox(0, 0, 0, 0)
                 .setMaterial(matFloor)
@@ -86,7 +91,7 @@ public class DemoScene extends AbstractScene {
                 .setType(RECTANGLE)
                 .setPhysicType(STATIC)
                 .setColor(Color.YELLOW)
-                .setPosition(0, app.world.area.getHeight() - 8)
+                .setPosition(0, world.area.getHeight() - 8)
                 .setSize(48, 8)
                 .setCollisionBox(0, 0, 0, 0)
                 .setMaterial(matFloor)
@@ -109,8 +114,8 @@ public class DemoScene extends AbstractScene {
                 .setForce(new Vec2d(0.0, -0.19))
                 .setType(RECTANGLE)
                 .setMaterial(new Material("water", 0.6, 0, 0.05))
-                .setPosition(0.0, app.world.area.getHeight() - 200.0)
-                .setSize(app.world.area.getWidth(), 200.0)
+                .setPosition(0.0, world.area.getHeight() - 200.0)
+                .setSize(world.area.getWidth(), 200.0)
                 .setPhysicType(PhysicType.NONE)
                 .setColor(new Color(0.0f, 0.0f, 0.5f, .07f));
         app.addEntity(i1);
@@ -122,8 +127,8 @@ public class DemoScene extends AbstractScene {
         Entity player = new Entity("player")
                 .setType(IMAGE)
                 .setPosition(
-                        app.world.area.getWidth() * 0.5,
-                        app.world.area.getHeight() * 0.5)
+                        world.area.getWidth() * 0.5,
+                        world.area.getHeight() * 0.5)
                 .setSize(32.0, 32.0)
                 .setMaterial(
                         new Material("player_mat", 1.0, 0.3, 0.98))
@@ -234,7 +239,7 @@ public class DemoScene extends AbstractScene {
                                 "floor", Color.GRAY,
                                 "outPlatform", Color.YELLOW))
                 .setRefEntities(app.getEntities().values().stream().toList())
-                .setWorld(app.world)
+                .setWorld(world)
                 .setSize(48, 32)
                 .setPosition(10, app.config.screenHeight - 48);
         app.addEntity(mapEntity);
@@ -335,10 +340,10 @@ public class DemoScene extends AbstractScene {
 
     private Entity createOnePlatform(Application app, int i, Material matPF) {
         double pfWidth = ((int) (Math.random() * 5) + 4);
-        double maxCols = (app.world.area.getWidth() / 16.0);
+        double maxCols = (world.area.getWidth() / 16.0);
         // 48=height of 1 pf + 1 player, -(3 + 3) to prevent create platform too low and
         // too high
-        double maxRows = (app.world.area.getHeight() / 48) - 6;
+        double maxRows = (world.area.getHeight() / 48) - 6;
         double pfCol = (int) (Math.random() * (maxCols * (Math.random() > 0.5 ? 1.0 : 0.75)));
         pfCol = pfCol < maxCols ? pfCol : maxRows - pfWidth;
         double pfRow = (int) ((Math.random() * maxRows) + 2);
@@ -410,34 +415,35 @@ public class DemoScene extends AbstractScene {
 
     @Override
     public void input(Application app) {
+        Window win = app.getWindow();
         Entity p = app.getEntity("player");
         if (Optional.ofNullable(p).isPresent()) {
             double speed = (double) p.getAttribute("accStep", 0.05);
             double jumpFactor = (double) p.getAttribute("jumpFactor", 12.0);
             boolean action = (boolean) p.getAttribute("action", false);
-            if (app.isCtrlPressed()) {
+            if (win.isCtrlPressed()) {
                 speed *= 2;
             }
-            if (app.isShiftPressed()) {
+            if (win.isShiftPressed()) {
                 speed *= 4;
             }
             p.activateAnimation("idle");
-            if (app.getKeyPressed(KeyEvent.VK_LEFT)) {
+            if (win.isKeyPressed(KeyEvent.VK_LEFT)) {
                 p.activateAnimation("walk");
                 p.forces.add(new Vec2d(-speed, 0.0));
                 action = true;
             }
-            if (app.getKeyPressed(KeyEvent.VK_RIGHT)) {
+            if (win.isKeyPressed(KeyEvent.VK_RIGHT)) {
                 p.activateAnimation("walk");
                 p.forces.add(new Vec2d(speed, 0.0));
                 action = true;
             }
-            if (app.getKeyPressed(KeyEvent.VK_UP)) {
+            if (win.isKeyPressed(KeyEvent.VK_UP)) {
                 p.activateAnimation("jump");
                 p.forces.add(new Vec2d(0.0, -jumpFactor * speed));
                 action = true;
             }
-            if (app.getKeyPressed(KeyEvent.VK_DOWN)) {
+            if (win.isKeyPressed(KeyEvent.VK_DOWN)) {
                 p.forces.add(new Vec2d(0.0, speed));
                 action = true;
             }
@@ -477,8 +483,8 @@ public class DemoScene extends AbstractScene {
             Entity e = new Entity(namePrefix + Entity.getEntityIndex())
                     .setType(ELLIPSE)
                     .setSize(8, 8)
-                    .setPosition(Math.random() * app.world.area.getWidth(),
-                            Math.random() * (app.world.area.getHeight() - 48))
+                    .setPosition(Math.random() * world.area.getWidth(),
+                            Math.random() * (world.area.getHeight() - 48))
                     .setColor(Color.RED)
                     .setInitialDuration((int) ((Math.random() * 5) + 5) * 5000)
                     .setMaterial(matEnt)

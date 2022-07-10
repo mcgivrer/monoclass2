@@ -3,6 +3,7 @@ package com.demoing.app.core;
 import com.demoing.app.core.config.Configuration;
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.gfx.DisplayModeEnum;
+import com.demoing.app.core.gfx.Window;
 import com.demoing.app.core.io.ActionHandler;
 import com.demoing.app.core.math.Vec2d;
 import com.demoing.app.core.service.collision.CollisionDetector;
@@ -38,29 +39,15 @@ import java.util.*;
  * @author Frédéric Delorme
  * @since 1.0.0
  */
-public class Application extends JPanel implements KeyListener {
-
-    /**
-     * The Frame per Second rendering rate default value
-     */
-    public static final int FPS_DEFAULT = 60;
-
-    /**
-     * Display Mode for the application window.
-     */
-    private DisplayModeEnum displayMode;
+public class Application extends JPanel {
 
     public boolean exit = false;
 
     public boolean pause = false;
 
-    private final boolean[] prevKeys = new boolean[65536];
-    private final boolean[] keys = new boolean[65536];
-    private boolean anyKeyPressed;
-    private boolean keyCtrlPressed;
-    private boolean keyShiftPressed;
-
     public Configuration config;
+
+    public Window window;
 
     public Render render;
     public SceneManager sceneMgr;
@@ -77,13 +64,8 @@ public class Application extends JPanel implements KeyListener {
     private final Map<String, Entity> entities = new HashMap<>();
     public Map<String, Object> attributes = new HashMap<>();
 
-    public World world;
-
-    private JFrame frame;
-
     public Application(String[] args) {
-        NumberFormat.getInstance(Locale.ROOT);
-        initialize(args);
+        this(args, "/app.properties");
     }
 
     /**
@@ -105,17 +87,6 @@ public class Application extends JPanel implements KeyListener {
     }
 
     /**
-     * Initialize the Application with the default configuration file (app.proprerties)
-     * and parse java CLI arguments.
-     *
-     * @param args the array of arguments from java CLI
-     * @see Application#initialize(String[], String)
-     */
-    public void initialize(String[] args) {
-        initialize(args, "/app.properties");
-    }
-
-    /**
      * Initialize the application by setting Configuration instance by loading
      * data from <code>configFileName</code>  and parsing java CLI arguments <code>args</code>.
      *
@@ -126,9 +97,6 @@ public class Application extends JPanel implements KeyListener {
     public void initialize(String[] args, String configFileName) {
         config = new Configuration(configFileName).parseArgs(args);
         I18n.setLanguage(config);
-        world = new World()
-                .setArea(config.worldWidth, config.worldHeight)
-                .setGravity(new Vec2d(0.0, config.worldGravity));
     }
 
     /**
@@ -144,8 +112,12 @@ public class Application extends JPanel implements KeyListener {
      */
     private boolean start() {
         try {
+
+            // create window.
+            window = new Window(this);
+
             initializeServices();
-            createWindow();
+
             if (sceneMgr.loadScenes()) {
                 initDefaultActions();
                 // prepare services
@@ -195,7 +167,7 @@ public class Application extends JPanel implements KeyListener {
                     return this;
                 },
                 KeyEvent.VK_F11, o -> {
-                    setWindowMode(!config.fullScreen);
+                    window.setWindowMode(!config.fullScreen);
                     return this;
                 }
         ));
@@ -209,10 +181,12 @@ public class Application extends JPanel implements KeyListener {
      * @since 1.0.5
      */
     public void initializeServices() {
-        render = new Render(this, config, world);
+
         sceneMgr = new SceneManager(this, config);
-        physicEngine = new PhysicEngine(this, config, world);
-        collisionDetect = new CollisionDetector(this, config, world);
+        physicEngine = new PhysicEngine(this, config);
+        render = new Render(this, physicEngine.getWorld());
+        collisionDetect = new CollisionDetector(this, config, physicEngine.getWorld());
+
         actionHandler = new ActionHandler(this);
     }
 
@@ -232,63 +206,6 @@ public class Application extends JPanel implements KeyListener {
             Logger.log(Logger.ERROR, this.getClass(),
                     "ERR: Reset scene issue: ",
                     e.getLocalizedMessage());
-        }
-    }
-
-    private void createWindow() {
-        setWindowMode(config.fullScreen);
-    }
-
-    /**
-     * Create the JFrame window in fullscreen or windowed mode (according to fullScreenMode boolean value).
-     *
-     * @param fullScreenMode the display mode to be set:
-     *                       <ul>
-     *                       <li>true = DISPLAY_MODE_FULLSCREEN,</li>
-     *                       <li>false = DISPLAY_MODE_WINDOWED</li>
-     *                       </ul>
-     */
-    private void setWindowMode(boolean fullScreenMode) {
-        GraphicsEnvironment graphics =
-                GraphicsEnvironment.getLocalGraphicsEnvironment();
-
-        GraphicsDevice device = graphics.getDefaultScreenDevice();
-
-        if (Optional.ofNullable(frame).isPresent() && frame.isVisible()) {
-            frame.setVisible(false);
-            frame.dispose();
-        }
-
-        frame = new JFrame(I18n.get("app.title"));
-        frame.setIconImage(Toolkit.getDefaultToolkit()
-                .getImage(getClass()
-                        .getResource("/images/sg-logo-image.png")));
-        frame.setContentPane(this);
-
-        displayMode = fullScreenMode ? DisplayModeEnum.DISPLAY_MODE_FULLSCREEN : DisplayModeEnum.DISPLAY_MODE_WINDOWED;
-
-        if (displayMode.equals(DisplayModeEnum.DISPLAY_MODE_FULLSCREEN)) {
-            frame.setUndecorated(true);
-            device.setFullScreenWindow(frame);
-        } else {
-            Dimension dim = new Dimension((int) (config.screenWidth * config.displayScale),
-                    (int) (config.screenHeight * config.displayScale));
-            frame.setSize(dim);
-            frame.setPreferredSize(dim);
-            frame.setMaximumSize(dim);
-            frame.setLocationRelativeTo(null);
-            frame.setUndecorated(false);
-        }
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setFocusTraversalKeysEnabled(true);
-
-        frame.addKeyListener(this);
-        frame.addKeyListener(actionHandler);
-
-        frame.pack();
-        frame.setVisible(true);
-        if (Optional.ofNullable(frame.getBufferStrategy()).isEmpty()) {
-            frame.createBufferStrategy(config.numberOfBuffer);
         }
     }
 
@@ -354,8 +271,8 @@ public class Application extends JPanel implements KeyListener {
     }
 
     public void dispose() {
-        if (Optional.ofNullable(frame).isPresent()) {
-            frame.dispose();
+        if (Optional.ofNullable(window).isPresent()) {
+            window.dispose();
         }
     }
 
@@ -406,51 +323,13 @@ public class Application extends JPanel implements KeyListener {
         return this;
     }
 
-
-    public boolean isCtrlPressed() {
-        return keyCtrlPressed;
+    public Configuration getConfiguration() {
+        return this.config;
     }
 
-    public boolean isShiftPressed() {
-        return keyShiftPressed;
+    public Render getRender() {
+        return render;
     }
-
-
-    @Override
-    public void keyTyped(KeyEvent e) {
-
-    }
-
-    @Override
-    public void keyPressed(KeyEvent e) {
-        prevKeys[e.getKeyCode()] = keys[e.getKeyCode()];
-        keys[e.getKeyCode()] = true;
-        anyKeyPressed = true;
-        this.keyCtrlPressed = e.isControlDown();
-        this.keyShiftPressed = e.isShiftDown();
-    }
-
-    @Override
-    public void keyReleased(KeyEvent e) {
-        prevKeys[e.getKeyCode()] = keys[e.getKeyCode()];
-        keys[e.getKeyCode()] = false;
-        anyKeyPressed = false;
-        this.keyCtrlPressed = e.isControlDown();
-        this.keyShiftPressed = e.isShiftDown();
-    }
-
-    public boolean getKeyPressed(int keyCode) {
-        assert (keyCode < keys.length);
-        return this.keys[keyCode];
-    }
-
-    public boolean getKeyReleased(int keyCode) {
-        assert (keyCode < keys.length);
-        boolean status = !this.keys[keyCode] && prevKeys[keyCode];
-        prevKeys[keyCode] = false;
-        return status;
-    }
-
 
     public SceneManager getSceneManager() {
         return this.sceneMgr;
@@ -464,21 +343,16 @@ public class Application extends JPanel implements KeyListener {
         return collisionDetect;
     }
 
+    public Window getWindow() {
+        return this.window;
+    }
+
+    public ActionHandler getActionHandler() {
+        return actionHandler;
+    }
+
     public Map<String, Entity> getEntities() {
         return entities;
-    }
-
-    public World getWorld() {
-        return world;
-    }
-
-    public Render getRender() {
-        return render;
-    }
-
-
-    public JFrame getFrame() {
-        return frame;
     }
 
 

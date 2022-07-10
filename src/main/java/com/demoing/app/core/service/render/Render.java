@@ -3,6 +3,7 @@ package com.demoing.app.core.service.render;
 import com.demoing.app.core.Application;
 import com.demoing.app.core.config.Configuration;
 import com.demoing.app.core.entity.*;
+import com.demoing.app.core.gfx.Window;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.World;
 import com.demoing.app.core.utils.Logger;
@@ -33,30 +34,26 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * display buffer,  and then copy the buffer to the application window (see {@link JFrame}.
  */
 public class Render {
-    /**
-     * A reference to the Application configuration.
-     */
-    private final Configuration config;
+
     /**
      * The World object defining the play area limit.
      */
     private final World world;
-    /**
-     * The Parent App.
-     */
-    Application app;
+    private final com.demoing.app.core.gfx.Window window;
+    private final Configuration config;
+
     /**
      * The internal rendering graphics buffer.
      */
-    BufferedImage buffer;
+    private BufferedImage buffer;
     /**
      * The debug font to be used to display debug level information.
      */
     private Font debugFont;
     /**
-     * Intrenal metric to measure rendering time.
+     * Internal metric to measure rendering time.
      */
-    long renderingTime = 0;
+    public long renderingTime = 0;
     /**
      * The list of object to be rendered: the rendering pipeline.
      */
@@ -76,14 +73,13 @@ public class Render {
     /**
      * Initialize the Render service with the parent Application, the current Configuration, and its World object.
      *
-     * @param a the parent Application
-     * @param c the Configuration object for this instance.
-     * @param w the World object defining the play area limits.
+     * @param app   the parent application of this Render service.
+     * @param world the World object defining the play area limits.
      */
-    public Render(Application a, Configuration c, World w) {
-        this.app = a;
-        this.config = c;
-        this.world = w;
+    public Render(Application app, World world) {
+        this.config = app.getConfiguration();
+        this.window = app.getWindow();
+        this.world = world;
         buffer = new BufferedImage((int) config.screenWidth, (int) config.screenHeight,
                 BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = buffer.createGraphics();
@@ -186,9 +182,6 @@ public class Render {
 
     private void drawLightArea(Graphics2D g, Light l) {
 
-        Camera cam = app.render.activeCamera;
-        Configuration conf = app.config;
-
         final Area ambientArea = new Area(new Rectangle2D.Double(l.pos.x, l.pos.y, l.width, l.height));
         g.setColor(l.color);
         Composite c = g.getComposite();
@@ -198,10 +191,10 @@ public class Render {
     }
 
     private void drawAmbiantLight(Graphics2D g, Light l) {
-        Camera cam = app.render.activeCamera;
-        Configuration conf = app.config;
-
-        final Area ambientArea = new Area(new Rectangle2D.Double(cam.pos.x, cam.pos.y, conf.screenWidth, conf.screenHeight));
+        final Area ambientArea = new Area(
+                new Rectangle2D.Double(
+                        activeCamera.pos.x, activeCamera.pos.y,
+                        config.screenWidth, config.screenHeight));
         g.setColor(l.color);
         Composite c = g.getComposite();
         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) l.energy));
@@ -343,7 +336,6 @@ public class Render {
      * @param e the Entity to be displayed info to.
      */
     private void drawDebugInfo(Graphics2D g, Entity e) {
-
         if (config.debug > 0) {
             // display bounding box
             if (Optional.ofNullable(e.box).isPresent()) {
@@ -369,8 +361,8 @@ public class Render {
                 // display colliding box
                 g.setColor(
                         e.collide && e.physicType == PhysicType.DYNAMIC
-                        ? new Color(1.0f, 0.0f, 0.0f, 0.4f)
-                        : new Color(0.0f, 0.0f, 1.0f, 0.3f));
+                                ? new Color(1.0f, 0.0f, 0.0f, 0.4f)
+                                : new Color(0.0f, 0.0f, 1.0f, 0.3f));
                 g.fill(e.cbox);
                 if (config.debugObjectFilter.contains(e.name) && config.debug > 2) {
                     // display 2D parameters
@@ -384,7 +376,7 @@ public class Render {
                                 offsetY + (lineHeight * 4));
                         g.drawString(String.format(Locale.ROOT, "acc:%03.2f,%03.2f", e.acc.x, e.acc.y), offsetX,
                                 offsetY + (lineHeight * 5));
-                        if(Optional.ofNullable(e.material).isPresent()) {
+                        if (Optional.ofNullable(e.material).isPresent()) {
                             g.drawString(String.format(Locale.ROOT, "mat[e:%03.2f f:%03.2f]", e.elasticity, e.friction), offsetX,
                                     offsetY + (lineHeight * 6));
                         }
@@ -473,7 +465,7 @@ public class Render {
      * @param realFps the measured frame rate per seconds
      */
     public void renderToScreen(long realFps) {
-        JFrame frame = app.getFrame();
+        JFrame frame = window.getFrame();
         Graphics2D g2 = (Graphics2D) frame.getBufferStrategy().getDrawGraphics();
         g2.drawImage(
                 buffer,
@@ -497,7 +489,7 @@ public class Render {
                             gPipeline.size(),
                             world.gravity.y * 1000.0,
                             world.area.getWidth(), world.area.getHeight()),
-                    20, (int) app.getHeight() - 20);
+                    20, (int) window.getHeight() - 20);
         }
 
     }
