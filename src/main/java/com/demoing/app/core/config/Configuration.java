@@ -154,7 +154,7 @@ public class Configuration {
         colSpeedMinValue = parseDouble(appProps.getProperty("app.collision.speed.min", "0.1"));
         colSpeedMaxValue = parseDouble(appProps.getProperty("app.collision.speed.max", "8.0"));
 
-        fps = parseInt(appProps.getProperty("app.screen.fps", "" + Application.FPS_DEFAULT));
+        fps = parseInt(appProps.getProperty("app.screen.fps", "60"));
         frameTime = (long) (1000 / fps);
         convertStringToBoolean(appProps.getProperty("app.window.mode.fullscreen", "false"));
 

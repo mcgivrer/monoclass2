@@ -2,7 +2,10 @@ package com.demoing.app.core.scene;
 
 import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
+import com.demoing.app.core.config.Configuration;
 import com.demoing.app.core.entity.Light;
+import com.demoing.app.core.math.Vec2d;
+import com.demoing.app.core.service.physic.World;
 
 import java.util.ArrayList;
 import java.util.List;

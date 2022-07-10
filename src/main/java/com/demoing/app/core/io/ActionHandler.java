@@ -30,8 +30,11 @@ public class ActionHandler implements KeyListener {
      */
     public ActionHandler(Application a) {
         this.app = a;
+        // register this listener to the Window
+        app.getWindow().addListener(this);
+        // register the Screenshot action to the Action mapping.
         this.actionMapping.put(KeyEvent.VK_F3, (e) -> {
-            app.render.saveScreenshot();
+            app.getRender().saveScreenshot();
             return this;
         });
     }

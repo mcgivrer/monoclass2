@@ -36,12 +36,13 @@ public class PhysicEngine {
      *
      * @param a the parent Application
      * @param c the Configuration where to find Physic Engine initialization parameters
-     * @param w the World where the Entities will evolve in.
      */
-    public PhysicEngine(Application a, Configuration c, World w) {
+    public PhysicEngine(Application a, Configuration c) {
         this.app = a;
         this.config = c;
-        this.world = w;
+        this.world = new World()
+                .setArea(config.worldWidth, config.worldHeight)
+                .setGravity(new Vec2d(0.0, config.worldGravity));
     }
 
     /**
@@ -151,14 +152,14 @@ public class PhysicEngine {
         double collisionFriction = e.colliders.stream()
                 .filter(c -> c.collide)
                 .mapToDouble(c -> c.material.friction)
-                .reduce(m.friction, (a,b)->a*b);
+                .reduce(m.friction, (a, b) -> a * b);
         e.friction = Double.min(collisionFriction, world.getMaterial().friction);
 
         // compute resulting elasticity
         double collisionElasticity = e.colliders.stream()
                 .filter(c -> c.collide)
                 .mapToDouble(c -> c.material.elasticity)
-                .reduce(m.elasticity, (a,b)->a*b);
+                .reduce(m.elasticity, (a, b) -> a * b);
         e.elasticity = Double.max(collisionElasticity, world.getMaterial().elasticity);
 
         e.vel.add(e.acc
@@ -232,5 +233,9 @@ public class PhysicEngine {
                 .stream()
                 .filter(e -> e instanceof Influencer)
                 .collect(Collectors.toMap(e -> e.name, e -> (Influencer) e));
+    }
+
+    public World getWorld() {
+        return this.world;
     }
 }

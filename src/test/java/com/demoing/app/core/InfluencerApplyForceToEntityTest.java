@@ -5,6 +5,7 @@ import com.demoing.app.core.entity.Influencer;
 import com.demoing.app.core.math.Vec2d;
 import com.demoing.app.core.entity.EntityType;
 import com.demoing.app.core.service.physic.PhysicType;
+import com.demoing.app.core.service.physic.World;
 import com.demoing.app.core.service.physic.material.DefaultMaterial;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,14 +47,15 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
 
     @Test
     public void addOneEntityUnderInfluencerAction() {
+        World w = app.getPhysicEngine().getWorld();
         // stop gravity effect on the application's World instance.
-        app.getWorld().setGravity(new Vec2d(0.0, 0.0)).setMaterial(DefaultMaterial.DEFAULT.get());
+        w.setGravity(new Vec2d(0.0, 0.0)).setMaterial(DefaultMaterial.DEFAULT.get());
 
         // Create an Influencer in the initialized app World
         Influencer i = (Influencer) new Influencer("influencer_1")
                 .setForce(new Vec2d(1.0, 0.0))
-                .setPosition(0.0, app.world.area.getHeight() - 200.0)
-                .setSize(app.world.area.getWidth(), 200.0)
+                .setPosition(0.0, w.area.getHeight() - 200.0)
+                .setSize(w.area.getWidth(), 200.0)
                 .setPhysicType(PhysicType.NONE)
                 .setColor(new Color(0.0f, 0.0f, 0.5f, .07f));
         app.addEntity(i);
@@ -71,10 +73,10 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
             app.getPhysicEngine().update(16.0);
         }
 
-        assertTrue(e1.pos.x > 10.0,
+        assertTrue(e1.pos.x != 10.0,
                 "The Entity has not been updated by the Influencer force on the X axis");
         assertTrue(
-                e1.pos.y > 10.0,
+                e1.pos.y != 10.0,
                 "The Entity has not been updated by the Influencer force on the Y axis");
     }
 
