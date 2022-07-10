@@ -36,6 +36,11 @@ public class Configuration {
      * (level from 0 =No debug to 5 max level debug info).
      */
     public int debug;
+    /**
+     * String coma separated of objects named to activate details debug display information for.
+     * <code>debug.</code>
+     */
+    public String debugObjectFilter;
 
     /**
      * Level for logger output.
@@ -129,6 +134,7 @@ public class Configuration {
      */
     private void loadConfig() {
         debug = parseInt(appProps.getProperty("app.debug.level", "0"));
+        debugObjectFilter = appProps.getProperty("app.debug.objectFilter", "");
         logLevel = parseInt(appProps.getProperty("app.logger.level", "0"));
 
         screenWidth = parseDouble(appProps.getProperty("app.screen.width", "320.0"));
@@ -196,20 +202,27 @@ public class Configuration {
                     case "h", "height" -> screenHeight = parseDouble(argSplit[1]);
                     case "s", "scale" -> displayScale = parseDouble(argSplit[1]);
                     case "b", "buffers" -> numberOfBuffer = parseInt(argSplit[1]);
+
                     case "d", "debug" -> debug = parseInt(argSplit[1]);
-                    case "t", "log" -> logLevel = parseInt(argSplit[1]);
+                    case "of", "objectFilter" -> debugObjectFilter = argSplit[1];
+                    case "ll", "logLevel" -> logLevel = parseInt(argSplit[1]);
+
                     case "ww", "worldWidth" -> worldWidth = parseDouble(argSplit[1]);
                     case "wh", "worldHeight" -> worldHeight = parseDouble(argSplit[1]);
                     case "wg", "worldGravity" -> worldGravity = parseDouble(argSplit[1]);
+
                     case "spmin" -> speedMinValue = parseDouble(argSplit[1]);
                     case "spmax" -> speedMaxValue = parseDouble(argSplit[1]);
                     case "accmin" -> accMinValue = parseDouble(argSplit[1]);
                     case "accmax" -> accMaxValue = parseDouble(argSplit[1]);
                     case "cspmin" -> colSpeedMinValue = parseDouble(argSplit[1]);
                     case "cspmax" -> colSpeedMaxValue = parseDouble(argSplit[1]);
+
                     case "fps" -> fps = parseDouble(argSplit[1]);
                     case "f", "fullScreen" -> convertStringToBoolean(argSplit[1]);
+
                     case "scene" -> defaultScene = argSplit[1];
+
                     case "l", "language", "lang" -> defaultLanguage = argSplit[1];
                     default -> Logger.log(Logger.ERROR, this.getClass(), "ERR : Unknown argument %s\n", arg);
                 }

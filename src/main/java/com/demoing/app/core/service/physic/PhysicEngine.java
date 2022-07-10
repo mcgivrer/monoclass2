@@ -109,7 +109,7 @@ public class PhysicEngine {
      * @return Material out from Influencer's and Entity.
      */
     private Material applyWorldInfluencers(Entity e) {
-        Material m = DefaultMaterial.DEFAULT.get();
+        Material m = e.material;
         Vec2d g = new Vec2d(world.gravity.x, e.mass * world.gravity.y);
         for (Influencer i : getInfluencers().values()) {
             if (i.box.intersects(e.box)) {
@@ -147,19 +147,23 @@ public class PhysicEngine {
         e.acc = new Vec2d(0.0, 0.0);
         e.acc.add(e.forces);
 
-        // TODO fix the friction issue :
-        // TODO here it is but don't already find the right way to fix it !
+        // compute resulting friction
         double collisionFriction = e.colliders.stream()
                 .filter(c -> c.collide)
                 .mapToDouble(c -> c.material.friction)
-                .reduce(m.friction, Double::sum);
-        double friction = e.collide
-                ? collisionFriction * m.friction * world.getMaterial().friction
-                : world.getMaterial().friction;
+                .reduce(m.friction, (a,b)->a*b);
+        e.friction = Double.min(collisionFriction, world.getMaterial().friction);
+
+        // compute resulting elasticity
+        double collisionElasticity = e.colliders.stream()
+                .filter(c -> c.collide)
+                .mapToDouble(c -> c.material.elasticity)
+                .reduce(m.elasticity, (a,b)->a*b);
+        e.elasticity = Double.max(collisionElasticity, world.getMaterial().elasticity);
 
         e.vel.add(e.acc
                 .minMax(config.accMinValue, config.accMaxValue)
-                .multiply(0.5 * elapsed * friction * m.density));
+                .multiply(0.5 * elapsed * e.friction * m.density));
 
         e.vel.minMax(config.speedMinValue, config.speedMaxValue);
 

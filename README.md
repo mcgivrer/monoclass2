@@ -46,10 +46,9 @@ overuse of lambda and stream each time this was possible.
 
 > :blue_book: _**NOTE**_ [^1]<br/>
 > _If you are curious, just visit
-the "[Java Language Updates](https://docs.oracle.com/en/java/javase/18/language/java-language-changes.html 
+the "[Java Language Updates](https://docs.oracle.com/en/java/javase/18/language/java-language-changes.html
 > "go to official source of information for Java evolution")"
 page from Oracle, you will discover across release from 9 to 18, the list of new introduced features._
-
 
 ## More Doc sir ?
 
@@ -109,34 +108,43 @@ Here are all the keys and their corresponding action
 
 ### CLI arguments
 
-You can configure dynamically some of the internal parameters:
+#### Common arguments
 
-| Argument                | Configuration key | Description                                                                                         | Default   |
-| :---------------------- | :---------------- | :-------------------------------------------------------------------------------------------------- | :-------- |
-| `w`, `width`            | screenWidth       | The width of the game window                                                                        | 320       |
-| `h`, `height`           | screenHeight      | The height of the game window                                                                       | 240       |
-| `s`, `scale`            | displayScale      | The the pixel scale                                                                                 | 2         |
-| `d`, `debug`            | debug             | the debug level of display mode                                                                     | 1         |
-| `ww`, `worldwidth`      | worldWidth        | The width of the world play area                                                                    | 800       |
-| `wh`, `worldheight`     | worldHeight       | The height of the world play area                                                                   | 600       |
-| `wg`, `worldgravity`    | worldGravity      | The gravity in the world play area                                                                  | 0.981     |
-| `spmin`                 | speedMinValue     | Physic Engine threshold object minimum speed to 0                                                   |           |
-| `spmax`                 | speedMaxValue     | Physic Engine maximum object speed                                                                  |           |
-| `accmin`                | accMinValue       | Physic Engine threshold object minimum acceleration to 0                                            |           |
-| `accmax`                | accMaxValue       | Physic Engine maximum object acceleration                                                           |           |
-| `cspmin`                | colSpeedMinValue  | Collision Detector threshold object minimum speed to 0                                              |           |
-| `cspmax`                | colSpeedMaxValue  | Collision Detector maximum object speed                                                             |           |
-| `fps`                   | fps               | Frame Per Second                                                                                    | 60        |
-| `f`, `fullScreen`       | fullScreen        | Switch game window to fullscreen mode                                                               | false[^2] |
-| `scene`                 | defaultScene      | the default scene to be activated (must be listed in the `app.scenes` in the `app.properties` file) | N/A       |
-| `l`, `language`, `lang` | defaultLanguage   | select the preferred language  (existing values are en_EN, fr_FR, es_ES or de_DE).                  | en_EN     |
+You can configure dynamically some internal parameters:
+
+| Argument                | Configuration key           | Description                                                                                         | Default   |
+| :---------------------- |:----------------------------| :-------------------------------------------------------------------------------------------------- |:----------|
+| `w`, `width`            | app.screen.width            | The width of the game window                                                                        | 320       |
+| `h`, `height`           | app.screen.height           | The height of the game window                                                                       | 240       |
+| `s`, `scale`            | app.screen.scale            | The the pixel scale                                                                                 | 2         |
+| `fps`                   | app.screen.fps              | Frame Per Second                                                                                    | 60        |
+| `f`, `fullScreen`       | app.window.mode.fullscreen  | Switch game window to fullscreen mode                                                               | false[^2] |
+| `ww`, `worldwidth`      | app.world.area.width        | The width of the world play area                                                                    | 800       |
+| `wh`, `worldheight`     | app.world.area.height       | The height of the world play area                                                                   | 600       |
+| `wg`, `worldgravity`    | app.world.gravity           | The gravity in the world play area                                                                  | 0.981     |
+| `spmin`                 | app.physic.speed.min        | Physic Engine threshold object minimum speed to 0                                                   | 0.1       |
+| `spmax`                 | app.physic.speed.max        | Physic Engine maximum object speed                                                                  | 3.2       |
+| `accmin`                | app.physic.acceleration.min | Physic Engine threshold object minimum acceleration to 0                                            | 0.01      |
+| `accmax`                | app.physic.acceleration.max | Physic Engine maximum object acceleration                                                           | 3.5       |
+| `cspmin`                | app.collision.speed.min     | Collision Detector threshold object minimum speed to 0                                              | 0.1       |
+| `cspmax`                | app.collision.speed.max     | Collision Detector maximum object speed                                                             | 3.2       |
+| `scene`                 | app.scene.default           | the default scene to be activated (must be listed in the `app.scenes` in the `app.properties` file) | N/A       |
+| `l`, `language`, `lang` | app.language.default        | select the preferred language  (existing values are en_EN, fr_FR, es_ES or de_DE).                  | en_EN     |
+
+#### Debug specific arguments
+
+| Argument             | Configuration key      | Description                                                                                                         | Default |
+|:---------------------|:-----------------------|:--------------------------------------------------------------------------------------------------------------------|:--------|
+| `d`, `debug`         | app.debug.level        | Debug level (0=no debug to 5=max debut)                                                                             | 0       |
+| `of`, `objectFilter` | app.debug.objectFilter | String coma separated of objects named to activate details debug display information for.                           | ""      |
+| `ll`, `logLevel`     | app.logger.level       | Logger level (0=none, 5=all)                                                                                        | 0       |
 
 ### Usage example
 
 1. Change the size of the opened window :
 
 ```shell
-$ java ---enable-preview \
+$ java --enable-preview \
  -jar target/monoclass2-{project.version}.jar \
  w=600 h=400
 ```
@@ -144,7 +152,7 @@ $ java ---enable-preview \
 2. set the preferred language to English at start :
 
 ```shell
-$ java ---enable-preview \
+$ java --enable-preview \
  -jar target/monoclass2-{project.version}.jar \
  language=en_EN
 ```
@@ -152,9 +160,9 @@ $ java ---enable-preview \
 3. set the preferred language to French and change the pixel scale :
 
 ```shell
-$ java ---enable-preview \
- -jar target/monoclass2-{project.version}.jar\
- language=fr_FR s=2.0
+$ java --enable-preview \
+ -jar target/monoclass2-{project.version}.jar \
+ -Dlanguage=fr_FR s=2.0
 ```
 
 ## Contribute

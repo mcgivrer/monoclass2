@@ -93,16 +93,18 @@ public class CollisionDetector {
         } else {
             if (e1.physicType == PhysicType.DYNAMIC && e2.physicType == PhysicType.STATIC) {
                 e1.colliders.add(e2);
-                // 4 = nb min pixel to authorise going upper e2 object.
-                if (e1.pos.y + e1.height > e2.pos.y && vp.y > 0) {
-                    e1.pos.y = e2.pos.y - e1.height;
-                    e1.acc.y = -e1.acc.y * e1.material.elasticity * e1.material.friction;
-                } else {
-                    e1.acc.y = -e1.acc.y * e1.material.elasticity * e1.material.friction;
-                    e1.pos.y = e2.pos.y + e2.height;
+                if (e2.material.elasticity > 0) {
+                    // 4 = nb min pixel to authorise going upper e2 object.
+                    if (e1.pos.y + e1.height > e2.pos.y && vp.y > 0) {
+                        e1.pos.y = e2.pos.y - e1.height;
+                        e1.acc.y = -e1.acc.y * e1.elasticity * e2.material.density;
+                    } else {
+                        e1.acc.y = -e1.acc.y * e1.elasticity * e2.material.density;
+                        e1.pos.y = e2.pos.y + e2.height;
+                    }
+                    if (e1.name.equals("player"))
+                        Logger.log(Logger.DETAILED, this.getClass(), "e1.%s collides static e2.%s\n", e1.name, e2.name);
                 }
-                if(e1.name.equals("player"))
-                Logger.log(Logger.DETAILED, this.getClass(), "e1.%s collides static e2.%s\n", e1.name, e2.name);
             }
         }
         e1.update(1);

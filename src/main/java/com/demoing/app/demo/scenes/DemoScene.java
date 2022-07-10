@@ -106,9 +106,9 @@ public class DemoScene extends AbstractScene {
 
         // Create an Influencer in the initialized app World
         Influencer i1 = (Influencer) new Influencer("if_1_water")
-                .setForce(new Vec2d(0.0, -0.18))
+                .setForce(new Vec2d(0.0, -0.19))
                 .setType(RECTANGLE)
-                .setMaterial(new Material("water", 0.6, 0.0, 0.9))
+                .setMaterial(new Material("water", 0.6, 0, 0.05))
                 .setPosition(0.0, app.world.area.getHeight() - 200.0)
                 .setSize(app.world.area.getWidth(), 200.0)
                 .setPhysicType(PhysicType.NONE)

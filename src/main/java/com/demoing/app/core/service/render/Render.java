@@ -372,7 +372,7 @@ public class Render {
                         ? new Color(1.0f, 0.0f, 0.0f, 0.4f)
                         : new Color(0.0f, 0.0f, 1.0f, 0.3f));
                 g.fill(e.cbox);
-                if (config.debug > 2) {
+                if (config.debugObjectFilter.contains(e.name) && config.debug > 2) {
                     // display 2D parameters
                     g.setColor(Color.ORANGE);
                     g.drawString(String.format(Locale.ROOT, "name:%s", e.name), offsetX, offsetY + lineHeight);
@@ -384,11 +384,15 @@ public class Render {
                                 offsetY + (lineHeight * 4));
                         g.drawString(String.format(Locale.ROOT, "acc:%03.2f,%03.2f", e.acc.x, e.acc.y), offsetX,
                                 offsetY + (lineHeight * 5));
+                        if(Optional.ofNullable(e.material).isPresent()) {
+                            g.drawString(String.format(Locale.ROOT, "mat[e:%03.2f f:%03.2f]", e.elasticity, e.friction), offsetX,
+                                    offsetY + (lineHeight * 6));
+                        }
                         if (e.getAnimations()) {
                             g.drawString(String.format("anim:%s/%d",
                                             e.animations.currentAnimationSet,
                                             e.animations.currentFrame),
-                                    offsetX, offsetY + (lineHeight * 6));
+                                    offsetX, offsetY + (lineHeight * 7));
                         }
                     }
                 }
