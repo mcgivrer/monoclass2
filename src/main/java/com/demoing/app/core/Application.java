@@ -296,9 +296,9 @@ public class Application extends JPanel implements KeyListener {
                 ObjectName objectName = new ObjectName("com.demoing.app:name=" + programName);
                 platformMBeanServer.registerMBean(this, objectName);
             } catch (InstanceAlreadyExistsException
-                    | MBeanRegistrationException
-                    | NotCompliantMBeanException
-                    | MalformedObjectNameException e) {
+                     | MBeanRegistrationException
+                     | NotCompliantMBeanException
+                     | MalformedObjectNameException e) {
                 e.printStackTrace();
             }
         }
@@ -397,6 +397,7 @@ public class Application extends JPanel implements KeyListener {
      * Based on a simple {@link Properties} java class, it eases the initialization of the {@link Application}.
      */
     public static class Configuration {
+        public int logLevel = 0;
         Properties appProps = new Properties();
         /**
          * default width of the screen
@@ -504,6 +505,9 @@ public class Application extends JPanel implements KeyListener {
          * Map Properties attributes values to Configuration attributes.
          */
         private void loadConfig() {
+            debug = parseInt(appProps.getProperty("app.debug.level", "0"));
+            logLevel = parseInt(appProps.getProperty("app.logger.level", "0"));
+
             screenWidth = parseDouble(appProps.getProperty("app.screen.width", "320.0"));
             screenHeight = parseDouble(appProps.getProperty("app.screen.height", "200.0"));
             displayScale = parseDouble(appProps.getProperty("app.screen.scale", "2.0"));
@@ -523,7 +527,7 @@ public class Application extends JPanel implements KeyListener {
 
             fps = parseInt(appProps.getProperty("app.screen.fps", "" + FPS_DEFAULT));
             frameTime = (long) (1000 / fps);
-            debug = parseInt(appProps.getProperty("app.debug.level", "0"));
+
             convertStringToBoolean(appProps.getProperty("app.window.mode.fullscreen", "false"));
 
             scenes = appProps.getProperty("app.scene.list");
@@ -571,6 +575,7 @@ public class Application extends JPanel implements KeyListener {
                         case "s", "scale" -> displayScale = parseDouble(argSplit[1]);
                         case "b", "buffers" -> numberOfBuffer = parseInt(argSplit[1]);
                         case "d", "debug" -> debug = parseInt(argSplit[1]);
+                        case "t", "log" -> logLevel = parseInt(argSplit[1]);
                         case "ww", "worldwidth" -> worldWidth = parseDouble(argSplit[1]);
                         case "wh", "worldheight" -> worldHeight = parseDouble(argSplit[1]);
                         case "wg", "worldgravity" -> worldGravity = parseDouble(argSplit[1]);
@@ -1210,7 +1215,13 @@ public class Application extends JPanel implements KeyListener {
         public static final int DETAILED = 4;
         public static final int ALL = 5;
 
+        private static int logLevel = 0;
+
         private static DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+
+        public Logger(Configuration c) {
+            logLevel = c.logLevel;
+        }
 
         /**
          * <p>Write a log message to the system out stream with a <code>level</code> of trace,
@@ -1223,8 +1234,14 @@ public class Application extends JPanel implements KeyListener {
          * @param args      arguments array to format the correct message.
          */
         public static void log(int level, Class className, String message, Object... args) {
-            ZonedDateTime ldt = ZonedDateTime.now();
-            System.out.printf("[%s] %s : %s - %s\n", ldt.format(dtf), className, level, String.format(message, args));
+            if (logLevel >= level) {
+                ZonedDateTime ldt = ZonedDateTime.now();
+                System.out.printf("[%s] %s : %s - %s\n", ldt.format(dtf), className, level, String.format(message, args));
+            }
+        }
+
+        public static void setLevel(int level) {
+            Logger.logLevel = level;
         }
     }
 
@@ -3017,7 +3034,7 @@ public class Application extends JPanel implements KeyListener {
                 scenes.put(sceneStr[0], s);
                 activateScene(config.defaultScene);
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                    InvocationTargetException e) {
+                     InvocationTargetException e) {
                 Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to load scene from configuration file:"
                         + e.getLocalizedMessage()
                         + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
