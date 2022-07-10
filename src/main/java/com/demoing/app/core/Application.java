@@ -112,10 +112,6 @@ public class Application extends JPanel {
      */
     private boolean start() {
         try {
-
-            // create window.
-            window = new Window(this);
-
             initializeServices();
 
             if (sceneMgr.loadScenes()) {
@@ -181,6 +177,9 @@ public class Application extends JPanel {
      * @since 1.0.5
      */
     public void initializeServices() {
+
+        // create window.
+        window = new Window(this);
 
         sceneMgr = new SceneManager(this, config);
         physicEngine = new PhysicEngine(this, config);

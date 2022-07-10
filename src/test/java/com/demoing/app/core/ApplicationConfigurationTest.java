@@ -1,6 +1,7 @@
 package com.demoing.app.core;
 
 
+import io.cucumber.java.nl.Stel;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,5 +49,12 @@ public class ApplicationConfigurationTest extends AbstractApplicationTest {
         Assertions.assertEquals(960.0, app.config.worldWidth, 0.1, "The World area Width configuration has not been set");
         Assertions.assertEquals(600.0, app.config.worldHeight, 0.1, "The World area height configuration has not been set");
         Assertions.assertEquals(-0.008, app.config.worldGravity, 0.0001, "The World default gravity configuration has not been set");
+    }
+
+    @Test
+    public void testDebugAndLogConfiguration() {
+        Assertions.assertEquals(1, app.config.debug, 0, "The debug level has not been set");
+        Assertions.assertEquals("test_ent_", app.config.debugObjectFilter, "The debug object filter level has not been set");
+        Assertions.assertEquals(2, app.config.logLevel, 0, "The logger level has not been set");
     }
 }
