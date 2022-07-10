@@ -113,19 +113,25 @@ You can configure dynamically some of the internal parameters:
 1. Change the size of the opened window :
 
 ```shell
-$ java ---enable-preview -jar target/monoclass2-x.y.z.jar w=600 h=400
+$ java ---enable-preview \
+ -jar target/monoclass2-x.y.z.jar \
+ w=600 h=400
 ```
 
 2. set the preferred language to English at start :
 
 ```shell
-$ java ---enable-preview -jar target/monoclass2-x.y.z.jar language=en_EN
+$ java ---enable-preview \
+ -jar target/monoclass2-x.y.z.jar \
+ language=en_EN
 ```
 
 3. set the preferred language to French and change the pixel scale :
 
 ```shell
-$ java ---enable-preview -jar target/monoclass2-x.y.z.jar language=fr_FR s=2.0
+$ java ---enable-preview \
+ -jar target/monoclass2-x.y.z.jar\
+ language=fr_FR s=2.0
 ```
 
 
