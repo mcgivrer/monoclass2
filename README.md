@@ -1,6 +1,6 @@
 # README
 
-A **MonoClass 2** project test.
+A **MonoClass 2** v1.0.5 project test.
 
 ## UPDATE 2022-JULY-01
 

@@ -1,5 +1,8 @@
 package com.demoing.app.core.utils;
 
+import com.demoing.app.core.Application;
+import com.demoing.app.core.config.Configuration;
+
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -17,7 +20,13 @@ public class Logger {
     public static final int DETAILED = 4;
     public static final int ALL = 5;
 
+    private static int logLevel = 0;
+
     private static DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+
+    public Logger(Configuration c) {
+        logLevel = c.logLevel;
+    }
 
     /**
      * <p>Write a log message to the system out stream with a <code>level</code> of trace,
@@ -30,7 +39,13 @@ public class Logger {
      * @param args      arguments array to format the correct message.
      */
     public static void log(int level, Class className, String message, Object... args) {
-        ZonedDateTime ldt = ZonedDateTime.now();
-        System.out.printf("[%s] %s : %s - %s\n", ldt.format(dtf), className, level, String.format(message, args));
+        if (logLevel >= level) {
+            ZonedDateTime ldt = ZonedDateTime.now();
+            System.out.printf("[%s] %s : %s - %s\n", ldt.format(dtf), className, level, String.format(message, args));
+        }
+    }
+
+    public static void setLevel(int level) {
+        Logger.logLevel = level;
     }
 }

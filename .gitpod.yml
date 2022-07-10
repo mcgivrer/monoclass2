@@ -1,4 +1,4 @@
-# Docker image base for this gitpod
+# STart with a VNC service with a new dedicated Docker image
 image:
   file: .gitpod.Dockerfile
 

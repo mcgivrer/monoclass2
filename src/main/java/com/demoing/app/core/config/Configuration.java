@@ -37,6 +37,13 @@ public class Configuration {
      */
     public int debug;
 
+    /**
+     * Level for logger output.
+     * (level from 0=none, to 5=max details)
+     *
+     * @see Logger
+     */
+    public int logLevel = 0;
     public long frameTime = 0;
 
     /**
@@ -121,6 +128,9 @@ public class Configuration {
      * Map Properties attributes values to Configuration attributes.
      */
     private void loadConfig() {
+        debug = parseInt(appProps.getProperty("app.debug.level", "0"));
+        logLevel = parseInt(appProps.getProperty("app.logger.level", "0"));
+
         screenWidth = parseDouble(appProps.getProperty("app.screen.width", "320.0"));
         screenHeight = parseDouble(appProps.getProperty("app.screen.height", "200.0"));
         displayScale = parseDouble(appProps.getProperty("app.screen.scale", "2.0"));
@@ -140,7 +150,6 @@ public class Configuration {
 
         fps = parseInt(appProps.getProperty("app.screen.fps", "" + Application.FPS_DEFAULT));
         frameTime = (long) (1000 / fps);
-        debug = parseInt(appProps.getProperty("app.debug.level", "0"));
         convertStringToBoolean(appProps.getProperty("app.window.mode.fullscreen", "false"));
 
         scenes = appProps.getProperty("app.scene.list");
@@ -188,9 +197,10 @@ public class Configuration {
                     case "s", "scale" -> displayScale = parseDouble(argSplit[1]);
                     case "b", "buffers" -> numberOfBuffer = parseInt(argSplit[1]);
                     case "d", "debug" -> debug = parseInt(argSplit[1]);
-                    case "ww", "worldwidth" -> worldWidth = parseDouble(argSplit[1]);
-                    case "wh", "worldheight" -> worldHeight = parseDouble(argSplit[1]);
-                    case "wg", "worldgravity" -> worldGravity = parseDouble(argSplit[1]);
+                    case "t", "log" -> logLevel = parseInt(argSplit[1]);
+                    case "ww", "worldWidth" -> worldWidth = parseDouble(argSplit[1]);
+                    case "wh", "worldHeight" -> worldHeight = parseDouble(argSplit[1]);
+                    case "wg", "worldGravity" -> worldGravity = parseDouble(argSplit[1]);
                     case "spmin" -> speedMinValue = parseDouble(argSplit[1]);
                     case "spmax" -> speedMaxValue = parseDouble(argSplit[1]);
                     case "accmin" -> accMinValue = parseDouble(argSplit[1]);
@@ -201,8 +211,7 @@ public class Configuration {
                     case "f", "fullScreen" -> convertStringToBoolean(argSplit[1]);
                     case "scene" -> defaultScene = argSplit[1];
                     case "l", "language", "lang" -> defaultLanguage = argSplit[1];
-                    default ->
-                            Logger.log(Logger.ERROR, this.getClass(), "ERR : Unknown argument %s\n", arg);
+                    default -> Logger.log(Logger.ERROR, this.getClass(), "ERR : Unknown argument %s\n", arg);
                 }
             });
         }
