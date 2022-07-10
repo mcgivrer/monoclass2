@@ -6,11 +6,14 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.geom.Area;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
+import java.awt.image.RescaleOp;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -21,10 +24,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.CodeSource;
 import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -46,7 +54,7 @@ import static com.demoing.app.core.Application.EntityType.*;
  * @author Frédéric Delorme
  * @since 1.0.0
  */
-public class Application extends JFrame implements KeyListener {
+public class Application extends JPanel implements KeyListener {
 
     /**
      * The Frame per Second rendering rate default value
@@ -66,14 +74,45 @@ public class Application extends JFrame implements KeyListener {
      */
     private boolean sceneReady;
 
+    /**
+     * Display MOde for the application window.
+     */
+    private DisplayModeEnum displayMode;
+
+    /**
+     * The possible display mode for the {@link Application} window.
+     */
+    public enum DisplayModeEnum {
+        /**
+         * The {@link Render} will display the {@link Application} window (see {@link JFrame}) in a Full screen mode.
+         */
+        DISPLAY_MODE_FULLSCREEN,
+        /**
+         * The {@link Render} will display the {@link Application} window (see {@link JFrame}) as a normal window with a title bar.
+         */
+        DISPLAY_MODE_WINDOWED,
+    }
 
     /**
      * The {@link EntityType} define the type of rendered entity, a RECTANGLE, an ELLIPSE or an IMAGE (see {@link BufferedImage}.
      */
     public enum EntityType {
+        /**
+         * An {@link Entity} having a {@link EntityType#RECTANGLE} type will be drawn as a rectangle with the {@link Rectangle2D} shape.
+         */
         RECTANGLE,
+        /**
+         * An {@link Entity} having a {@link EntityType#ELLIPSE} type will be drawn as an ellipse with the {@link Ellipse2D} share.
+         */
         ELLIPSE,
-        IMAGE
+        /**
+         * An {@link Entity} having a {@link EntityType#IMAGE} type will be drawn as a {@link BufferedImage}.
+         */
+        IMAGE,
+        /**
+         * for any Entity that are not visible.
+         */
+        NONE;
     }
 
     /**
@@ -81,8 +120,18 @@ public class Application extends JFrame implements KeyListener {
      * It can be STATIC for static object like static platform, or DYNAMIC for moving objects.
      */
     public enum PhysicType {
+        /**
+         * An {@link Entity} with a {@link PhysicType#DYNAMIC} physic type will be managed by the {@link PhysicEngine} as a dynamic object,
+         */
         DYNAMIC,
-        STATIC
+        /**
+         * An {@link Entity} with a {@link PhysicType#STATIC} physic type will not be modified by the {@link PhysicEngine}.
+         */
+        STATIC,
+        /**
+         * An Entity with a {@link PhysicType#NONE} physic type will not be manage in any way by the physic engine.
+         */
+        NONE
     }
 
     /**
@@ -90,8 +139,17 @@ public class Application extends JFrame implements KeyListener {
      * Possible values are LEFT, CENTER and RIGHT.
      */
     public enum TextAlign {
+        /**
+         * The text provided for the {@link TextEntity} will be justified on LEFT side of the text rectangle position.
+         */
         LEFT,
+        /**
+         * The text provided for the {@link TextEntity} will be centered on its current position.
+         */
         CENTER,
+        /**
+         * The text provided for the {@link TextEntity} will be justified on RIGHT side of the text rectangle position.
+         */
         RIGHT
     }
 
@@ -212,11 +270,23 @@ public class Application extends JFrame implements KeyListener {
         private long realFPS, timeRendering, timeUpdate, computationTime;
         private String programName;
 
+        /**
+         * Creating the AppStatus object to full feed all the {@link AppStatusMBean} attributes with the
+         * {@link Application} and other services measures.
+         *
+         * @param app  The parent {@link Application} this {@link AppStatus} belongs to.
+         * @param name the name for this AppStatus object displayed by the JMX client.
+         */
         public AppStatus(Application app, String name) {
             this.programName = name;
             this.nbEntities = 0;
         }
 
+        /**
+         * Registering the Application into the JMX API.
+         *
+         * @param app the parent {@link Application} this AppStatus will be feed with.
+         */
         public void register(Application app) {
 
             this.app = app;
@@ -233,6 +303,11 @@ public class Application extends JFrame implements KeyListener {
             }
         }
 
+        /**
+         * The update mechanism to retrieve metrics values.
+         *
+         * @param app the parent {@link Application} this {@link AppStatus} belongs to.
+         */
         public synchronized void update(Application app) {
             nbEntities = app.entities.size();
             realFPS = app.realFps;
@@ -296,25 +371,21 @@ public class Application extends JFrame implements KeyListener {
         @Override
         public synchronized void requestQuit() {
             app.exit = true;
-
         }
 
-        /**
-         *
-         */
         @Override
         @Deprecated
         public synchronized void requestAddEntity(Integer nbEntity) {
         }
 
-        /**
-         *
-         */
         @Override
         @Deprecated
         public synchronized void requestRemoveEntity(Integer nbEntity) {
         }
 
+        /**
+         * Action to request the reset of the {@link Application} to restart the current game level.
+         */
         @Override
         public synchronized void requestReset() {
             app.reset();
@@ -368,6 +439,8 @@ public class Application extends JFrame implements KeyListener {
          */
         public boolean fullScreen = false;
 
+        public int numberOfBuffer = 2;
+
         /**
          * Default minimum speed for PhysicEngine. under this value, considere 0.
          */
@@ -419,10 +492,11 @@ public class Application extends JFrame implements KeyListener {
          */
         public Configuration(String fileName) {
             try {
-                appProps.load(this.getClass().getResourceAsStream(fileName));
+                InputStream is = this.getClass().getResourceAsStream(fileName);
+                appProps.load(is);
                 loadConfig();
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                System.err.printf("ERR: Unable to read the configuration file %s : %s\n", fileName, e.getLocalizedMessage());
             }
         }
 
@@ -433,6 +507,8 @@ public class Application extends JFrame implements KeyListener {
             screenWidth = parseDouble(appProps.getProperty("app.screen.width", "320.0"));
             screenHeight = parseDouble(appProps.getProperty("app.screen.height", "200.0"));
             displayScale = parseDouble(appProps.getProperty("app.screen.scale", "2.0"));
+            numberOfBuffer = parseInt(appProps.getProperty("app.render.buffers", "2"));
+
             worldWidth = parseDouble(appProps.getProperty("app.world.area.width", "640.0"));
             worldHeight = parseDouble(appProps.getProperty("app.world.area.height", "400.0"));
             worldGravity = parseDouble(appProps.getProperty("app.world.gravity", "400.0"));
@@ -448,9 +524,9 @@ public class Application extends JFrame implements KeyListener {
             fps = parseInt(appProps.getProperty("app.screen.fps", "" + FPS_DEFAULT));
             frameTime = (long) (1000 / fps);
             debug = parseInt(appProps.getProperty("app.debug.level", "0"));
-            convertStringToBoolean(appProps.getProperty("app.screen.full", "false"));
+            convertStringToBoolean(appProps.getProperty("app.window.mode.fullscreen", "false"));
 
-            scenes = appProps.getProperty("app.scenes");
+            scenes = appProps.getProperty("app.scene.list");
             defaultScene = appProps.getProperty("app.scene.default");
 
             defaultLanguage = appProps.getProperty("app.language.default", "en_EN");
@@ -484,30 +560,34 @@ public class Application extends JFrame implements KeyListener {
          * @return the updated Configuration object.
          */
         private Configuration parseArgs(String[] args) {
-            Arrays.asList(args).forEach(arg -> {
-                String[] argSplit = arg.split("=");
-                System.out.println("- arg:" + argSplit[0] + "=" + argSplit[1]);
-                switch (argSplit[0].toLowerCase()) {
-                    case "w", "width" -> screenWidth = parseDouble(argSplit[1]);
-                    case "h", "height" -> screenHeight = parseDouble(argSplit[1]);
-                    case "s", "scale" -> displayScale = parseDouble(argSplit[1]);
-                    case "d", "debug" -> debug = parseInt(argSplit[1]);
-                    case "ww", "worldwidth" -> worldWidth = parseDouble(argSplit[1]);
-                    case "wh", "worldheight" -> worldHeight = parseDouble(argSplit[1]);
-                    case "wg", "worldgravity" -> worldGravity = parseDouble(argSplit[1]);
-                    case "spmin" -> speedMinValue = parseDouble(argSplit[1]);
-                    case "spmax" -> speedMaxValue = parseDouble(argSplit[1]);
-                    case "accmin" -> accMinValue = parseDouble(argSplit[1]);
-                    case "accmax" -> accMaxValue = parseDouble(argSplit[1]);
-                    case "cspmin" -> colSpeedMinValue = parseDouble(argSplit[1]);
-                    case "cspmax" -> colSpeedMaxValue = parseDouble(argSplit[1]);
-                    case "fps" -> fps = parseDouble(argSplit[1]);
-                    case "f", "fullScreen" -> convertStringToBoolean(argSplit[1]);
-                    case "scene" -> defaultScene = argSplit[1];
-                    case "l", "language", "lang" -> defaultLanguage = argSplit[1];
-                    default -> System.out.printf("\nERR : Unknown argument %s\n", arg);
-                }
-            });
+            // args not null and not empty ? parse it !
+            if (Optional.ofNullable((args)).isPresent() && args.length > 0) {
+                Arrays.asList(args).forEach(arg -> {
+                    String[] argSplit = arg.split("=");
+                    Logger.log(Logger.ERROR, this.getClass(), "arg: %s=%s", argSplit[0], argSplit[1]);
+                    switch (argSplit[0].toLowerCase()) {
+                        case "w", "width" -> screenWidth = parseDouble(argSplit[1]);
+                        case "h", "height" -> screenHeight = parseDouble(argSplit[1]);
+                        case "s", "scale" -> displayScale = parseDouble(argSplit[1]);
+                        case "b", "buffers" -> numberOfBuffer = parseInt(argSplit[1]);
+                        case "d", "debug" -> debug = parseInt(argSplit[1]);
+                        case "ww", "worldwidth" -> worldWidth = parseDouble(argSplit[1]);
+                        case "wh", "worldheight" -> worldHeight = parseDouble(argSplit[1]);
+                        case "wg", "worldgravity" -> worldGravity = parseDouble(argSplit[1]);
+                        case "spmin" -> speedMinValue = parseDouble(argSplit[1]);
+                        case "spmax" -> speedMaxValue = parseDouble(argSplit[1]);
+                        case "accmin" -> accMinValue = parseDouble(argSplit[1]);
+                        case "accmax" -> accMaxValue = parseDouble(argSplit[1]);
+                        case "cspmin" -> colSpeedMinValue = parseDouble(argSplit[1]);
+                        case "cspmax" -> colSpeedMaxValue = parseDouble(argSplit[1]);
+                        case "fps" -> fps = parseDouble(argSplit[1]);
+                        case "f", "fullScreen" -> convertStringToBoolean(argSplit[1]);
+                        case "scene" -> defaultScene = argSplit[1];
+                        case "l", "language", "lang" -> defaultLanguage = argSplit[1];
+                        default -> Logger.log(Logger.ERROR, this.getClass(), "ERR : Unknown argument %s\n", arg);
+                    }
+                });
+            }
             return this;
         }
 
@@ -584,7 +664,7 @@ public class Application extends JFrame implements KeyListener {
                                 Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
                         .deriveFont(9.0f);
             } catch (FontFormatException | IOException e) {
-                System.out.println("ERR: Unable to initialize Render: " + e.getLocalizedMessage());
+                Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to initialize Render: " + e.getLocalizedMessage());
             }
         }
 
@@ -608,14 +688,15 @@ public class Application extends JFrame implements KeyListener {
             moveCamera(g, activeCamera, -1);
             drawGrid(g, world, 16, 16);
             moveCamera(g, activeCamera, 1);
-            gPipeline.stream().filter(e -> e.isAlive() || e.isPersistent())
+            gPipeline.stream()
+                    .filter(e -> !(e instanceof Light)
+                            && e.isAlive() || e.isPersistent())
                     .forEach(e -> {
                         if (e.isNotStickToCamera()) {
                             moveCamera(g, activeCamera, -1);
                         }
                         g.setColor(e.color);
                         switch (e) {
-
                             // This is a TextEntity
                             case TextEntity te -> {
                                 drawText(g, e, te);
@@ -628,8 +709,13 @@ public class Application extends JFrame implements KeyListener {
                             case ValueEntity se -> {
                                 drawValue(g, se);
                             }
+                            // This is a MapEntity
                             case MapEntity me -> {
                                 drawMapEntity(g, me);
+                            }
+                            // This is an Influencer
+                            case Influencer ie -> {
+                                drawInfluencer(g, ie);
                             }
                             // This is a basic entity
                             case Entity ee -> {
@@ -641,9 +727,102 @@ public class Application extends JFrame implements KeyListener {
                             moveCamera(g, activeCamera, 1);
                         }
                     });
+            // Draw all lights
+            gPipeline.stream().filter(e -> e instanceof Light).forEach(l -> {
+                if (l.isNotStickToCamera()) {
+                    moveCamera(g, activeCamera, -1);
+                }
+                drawLight(g, (Light) l);
+                if (l.isNotStickToCamera()) {
+                    moveCamera(g, activeCamera, 1);
+                }
+            });
             g.dispose();
             renderToScreen(realFps);
             renderingTime = System.nanoTime() - startTime;
+        }
+
+        private void drawInfluencer(Graphics2D g, Influencer ie) {
+            drawEntity(g, ie);
+        }
+
+        private void drawLight(Graphics2D g, Light l) {
+            switch (l.lightType) {
+                case SPOT -> drawSpotLight(g, l);
+                case SPHERICAL -> drawSphericalLight(g, l);
+                case AMBIENT -> drawAmbiantLight(g, l);
+                case AREA_RECTANGLE -> drawLightArea(g, l);
+            }
+        }
+
+        private void drawLightArea(Graphics2D g, Light l) {
+
+            Camera cam = app.render.activeCamera;
+            Configuration conf = app.config;
+
+            final Area ambientArea = new Area(new Rectangle2D.Double(l.pos.x, l.pos.y, l.width, l.height));
+            g.setColor(l.color);
+            Composite c = g.getComposite();
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) l.energy));
+            g.fill(ambientArea);
+            g.setComposite(c);
+        }
+
+        private void drawAmbiantLight(Graphics2D g, Light l) {
+            Camera cam = app.render.activeCamera;
+            Configuration conf = app.config;
+
+            final Area ambientArea = new Area(new Rectangle2D.Double(cam.pos.x, cam.pos.y, conf.screenWidth, conf.screenHeight));
+            g.setColor(l.color);
+            Composite c = g.getComposite();
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) l.energy));
+            g.fill(ambientArea);
+            g.setComposite(c);
+        }
+
+        private void drawSphericalLight(Graphics2D g, Light l) {
+            l.color = brighten(l.color, l.energy);
+            Color medColor = brighten(l.color, l.energy * 0.5);
+            Color endColor = new Color(0.0f, 0.0f, 0.0f, 0.2f);
+
+            l.colors = new Color[]{l.color,
+                    medColor,
+                    endColor};
+            l.dist = new float[]{0.0f, 0.05f, 0.5f};
+            l.rgp = new RadialGradientPaint(
+                    new Point(
+                            (int) (l.pos.x + (l.width * 0.5) + (10 * Math.random() * l.glitterEffect)),
+                            (int) (l.pos.y + (l.width * 0.5) + (10 * Math.random() * l.glitterEffect))),
+                    (int) (l.width),
+                    l.dist,
+                    l.colors);
+            g.setPaint(l.rgp);
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) l.energy));
+            g.fill(new Ellipse2D.Double(l.pos.x, l.pos.y, l.width, l.width));
+        }
+
+        private void drawSpotLight(Graphics2D g, Light l) {
+
+        }
+
+        /**
+         * Make a color brighten.
+         *
+         * @param color    Color to make brighten.
+         * @param fraction Darkness fraction.
+         * @return Lighter color.
+         * @link https://stackoverflow.com/questions/18648142/creating-brighter-color-java
+         */
+        public static Color brighten(Color color, double fraction) {
+
+            int red = (int) Math.round(Math.min(255, color.getRed() + 255 * fraction));
+            int green = (int) Math.round(Math.min(255, color.getGreen() + 255 * fraction));
+            int blue = (int) Math.round(Math.min(255, color.getBlue() + 255 * fraction));
+
+            int alpha = color.getAlpha();
+
+            return new Color(red, green, blue, alpha);
+
         }
 
         private void drawMapEntity(Graphics2D g, MapEntity me) {
@@ -672,19 +851,37 @@ public class Application extends JFrame implements KeyListener {
                 case RECTANGLE -> g.fillRect((int) ee.pos.x, (int) ee.pos.y, (int) ee.width, (int) ee.height);
                 case ELLIPSE -> g.fillArc((int) ee.pos.x, (int) ee.pos.y, (int) ee.width, (int) ee.height, 0, 360);
                 case IMAGE -> {
-                    BufferedImage sprite = (BufferedImage) (ee.getAnimations()
-                            ? ee.animations.getFrame()
-                            : ee.image);
                     if (ee.getDirection() > 0) {
-                        g.drawImage(sprite, (int) ee.pos.x, (int) ee.pos.y, null);
+                        g.drawImage(
+                                ee.getImage(),
+                                (int) ee.pos.x, (int) ee.pos.y,
+                                null);
                     } else {
-                        g.drawImage(sprite,
+                        g.drawImage(
+                                ee.getImage(),
                                 (int) (ee.pos.x + ee.width), (int) ee.pos.y,
                                 (int) (-ee.width), (int) ee.height,
                                 null);
                     }
                 }
+                case NONE -> {
+                }
             }
+        }
+
+        public BufferedImage setAlpha(BufferedImage sprite, float alpha) {
+
+            BufferedImage drawImage = new BufferedImage(
+                    sprite.getWidth(), sprite.getHeight(),
+                    BufferedImage.TYPE_INT_ARGB);
+
+            float[] scales = {1f, 1f, 1f, alpha};
+            float[] offsets = {0f, 0f, 0f, 0f};
+
+            RescaleOp rop = new RescaleOp(scales, offsets, null);
+            rop.filter(sprite, drawImage);
+
+            return drawImage;
         }
 
         private void drawText(Graphics2D g, Entity e, TextEntity te) {
@@ -741,7 +938,7 @@ public class Application extends JFrame implements KeyListener {
                 }
                 if (config.debug > 1) {
                     // display colliding box
-                    g.setColor(e.collide ? new Color(1.0f, 0.0f, 0.0f, 0.3f) : new Color(0.0f, 0.0f, 1.0f, 0.3f));
+                    g.setColor(e.collide ? new Color(1.0f, 0.0f, 0.0f, 0.7f) : new Color(0.0f, 0.0f, 1.0f, 0.3f));
                     g.fill(e.cbox);
                     if (config.debug > 2) {
                         // display 2D parameters
@@ -763,8 +960,6 @@ public class Application extends JFrame implements KeyListener {
                             }
                         }
                     }
-
-
                 }
             }
         }
@@ -788,10 +983,12 @@ public class Application extends JFrame implements KeyListener {
          * @param se ValueEntity object
          */
         private void drawValue(Graphics2D g, ValueEntity se) {
-            byte c[] = se.valueTxt.getBytes(StandardCharsets.US_ASCII);
-            for (int pos = 0; pos < se.valueTxt.length(); pos++) {
-                int v = c[pos];
-                drawFig(g, se, v - 48, se.pos.x + (pos * 8), se.pos.y);
+            String textValue = se.valueTxt.strip();
+            byte c[] = textValue.getBytes(StandardCharsets.US_ASCII);
+            for (int pos = 0; pos < textValue.length(); pos++) {
+                //convert character ascii value to number from 0 to 9.
+                int v = c[pos] - 48;
+                drawFig(g, se, v, se.pos.x + (pos * 8), se.pos.y);
             }
         }
 
@@ -806,7 +1003,7 @@ public class Application extends JFrame implements KeyListener {
         private void drawFig(Graphics2D g, ValueEntity se, int value, double x, double y) {
             assert (value > -1);
             assert (value < 10);
-            g.drawImage(se.figs[value], (int) x, (int) y, null);
+            g.drawImage(se.figures[value], (int) x, (int) y, null);
         }
 
         /**
@@ -840,24 +1037,33 @@ public class Application extends JFrame implements KeyListener {
          * @param realFps the measured frame rate per seconds
          */
         public void renderToScreen(long realFps) {
-            Graphics2D g2 = (Graphics2D) app.getGraphics();
+
+            Graphics2D g2 = (Graphics2D) app.frame.getBufferStrategy().getDrawGraphics();
             g2.drawImage(
                     buffer,
-                    0, 0, app.getWidth(), app.getHeight(),
+                    0, 0, (int) app.frame.getWidth(), (int) app.frame.getHeight(),
                     0, 0, (int) config.screenWidth, (int) config.screenHeight,
                     null);
+            drawDebugString(g2, realFps);
+            g2.dispose();
+            app.frame.getBufferStrategy().show();
+        }
+
+        public void drawDebugString(Graphics2D g, double realFps) {
             if (config.debug > 0) {
-                g2.setFont(debugFont.deriveFont(16.0f));
-                g2.setColor(Color.WHITE);
-                g2.drawString(String.format("[ dbg: %d| fps:%d | obj:%d | g:%f ]",
+                g.setFont(debugFont.deriveFont(16.0f));
+                g.setColor(Color.WHITE);
+                g.drawString(
+                        String.format(
+                                "[ dbg: %d | fps:%3.0f | obj:%d | {g:%1.03f, a(%3.0fx%3.0f) }]",
                                 config.debug,
                                 realFps,
                                 gPipeline.size(),
-                                world.gravity),
-
-                        20, app.getHeight() - 30);
+                                world.gravity.y * 1000.0,
+                                world.area.getWidth(), world.area.getHeight()),
+                        20, (int) app.getHeight() - 20);
             }
-            g2.dispose();
+
         }
 
         /**
@@ -934,9 +1140,9 @@ public class Application extends JFrame implements KeyListener {
                 File out = new File(filename);
                 ImageIO.write(buffer, "PNG", out);
 
-                System.out.printf("INFO: Write screenshot to %s\n", filename);
+                System.out.printf(" Write screenshot to %s\n", filename);
             } catch (IOException e) {
-                System.out.printf("Unable to write screenshot to %s: %s", filename, e.getMessage());
+                Logger.log(Logger.ERROR, this.getClass(), "Unable to write screenshot to %s: %s", filename, e.getMessage());
             }
         }
     }
@@ -991,10 +1197,42 @@ public class Application extends JFrame implements KeyListener {
     }
 
     /**
+     * A little Logger class helper to output some basc log to console for debug purpose.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.5
+     */
+    public static class Logger {
+        public static final int ERROR = 0;
+        public static final int INFO = 1;
+        public static final int DEBUG = 2;
+        public static final int FINED = 3;
+        public static final int DETAILED = 4;
+        public static final int ALL = 5;
+
+        private static DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+
+        /**
+         * <p>Write a log message to the system out stream with a <code>level</code> of trace,
+         * the <code>className</code> that emit the log and the <code>message</code> itself and its
+         * arguments <code>args</code> (if necessary).</p>
+         *
+         * @param level     Level of logging 0=ERR to 5=DETAILS
+         * @param className the class tha emitting the log message
+         * @param message   the message to be output
+         * @param args      arguments array to format the correct message.
+         */
+        public static void log(int level, Class className, String message, Object... args) {
+            ZonedDateTime ldt = ZonedDateTime.now();
+            System.out.printf("[%s] %s : %s - %s\n", ldt.format(dtf), className, level, String.format(message, args));
+        }
+    }
+
+    /**
      * A Physic computation engine to process Object moves according to their resulting process acceleration and speed
      * from the applied forces to each Entity.
      *
-     * @Author Frédéric Delorme
+     * @author Frédéric Delorme
      * @since 1.0.2
      */
     public static class PhysicEngine {
@@ -1002,6 +1240,7 @@ public class Application extends JFrame implements KeyListener {
         private final World world;
         private final Configuration config;
         public long updateTime;
+        private Map<String, Influencer> influencers = new ConcurrentHashMap<>();
 
         /**
          * Initialize the Physic Engine for the parent Application a, with the Configuration c
@@ -1021,28 +1260,33 @@ public class Application extends JFrame implements KeyListener {
          * Update and process physics attributes the Entity (acceleration, speed and position) from the
          * <code>app.entities map</code>, with  the elapsed time since previous call.
          *
-         * @param elapsed
+         * @param elapsed the elapsed time since previous call.
          */
         public synchronized void update(double elapsed) {
             long start = System.nanoTime();
+
             // update entities
             app.entities.values().forEach((e) -> {
                 if (e.physicType.equals(PhysicType.DYNAMIC)) {
                     updateEntity(e, elapsed);
                 }
                 e.update(elapsed);
+
                 // TODO update Entity Behavior
                 e.behaviors.values().stream()
-                        .filter(b -> b.filterOnEvent().contains(Behavior.updateEntity))
-                        .collect(Collectors.toList())
+                        .filter(b -> b.filterOnEvent()
+                                .contains(Behavior.updateEntity))
+                        .toList()
                         .forEach(b -> b.update(app, e, elapsed));
-
             });
+
             // TODO update Scene Behaviors
-            app.activeScene.getBehaviors().values().stream()
-                    .filter(b -> b.filterOnEvent().contains(Behavior.updateScene))
-                    .collect(Collectors.toList())
-                    .forEach(b -> b.update(app, elapsed));
+            if (Optional.ofNullable(app.activeScene.getBehaviors()).isPresent()) {
+                app.activeScene.getBehaviors().values().stream()
+                        .filter(b -> b.filterOnEvent().contains(Behavior.updateScene))
+                        .toList()
+                        .forEach(b -> b.update(app, elapsed));
+            }
             //  update active camera if presents.
             if (Optional.ofNullable(app.render.activeCamera).isPresent()) {
                 app.render.activeCamera.update(elapsed);
@@ -1061,6 +1305,27 @@ public class Application extends JFrame implements KeyListener {
             constrainsEntity(e);
         }
 
+        private Material applyWorldInfluencers(Entity e) {
+            Material m = e.material;
+            Vec2d g = new Vec2d(world.gravity.x, e.mass * world.gravity.y);
+            for (Influencer i : getInfluencers().values()) {
+                if (i.box.intersects(e.box)) {
+                    Logger.log(Logger.INFO, this.getClass(), "Entity named %s intersects Influencer %s", e.name, i.name);
+                    if (Optional.ofNullable(i.getGravity()).isPresent()) {
+                        g = new Vec2d(
+                                i.getGravity().x,
+                                e.mass * i.getGravity().y);
+                    }
+                    if (Optional.ofNullable(i.getForce()).isPresent()) {
+                        e.forces.add(i.getForce());
+                    }
+                    m = i.getMaterial();
+                }
+            }
+            e.forces.add(g);
+            return m;
+        }
+
         /**
          * Apply Physic computation on the Entity e for the elapsed time.
          *
@@ -1074,12 +1339,18 @@ public class Application extends JFrame implements KeyListener {
             // a small reduction of time
             elapsed *= 0.4;
 
-            e.forces.add(new Vec2d(0, e.mass * -world.gravity));
+            Material m = applyWorldInfluencers(e);
 
             e.acc = new Vec2d(0.0, 0.0);
             e.acc.add(e.forces);
 
-            e.vel.add(e.acc.minMax(config.accMinValue, config.accMaxValue).multiply(0.5 * elapsed * e.friction * world.friction));
+            double friction = e.collide ? m.friction * world.getMaterial().friction : world.getMaterial().friction;
+
+            Logger.log(Logger.FINED, this.getClass(), " Entity %s is colliding: %s", e.name, e.collide);
+            e.vel.add(e.acc
+                    .minMax(config.accMinValue, config.accMaxValue)
+                    .multiply(0.5 * elapsed * friction * m.density));
+
             e.vel.minMax(config.speedMinValue, config.speedMaxValue);
 
             e.pos.add(e.vel);
@@ -1140,6 +1411,267 @@ public class Application extends JFrame implements KeyListener {
         public void dispose() {
 
         }
+
+        public Map<String, Influencer> getInfluencers() {
+            return app.entities.values()
+                    .stream()
+                    .filter(e -> e instanceof Influencer)
+                    .collect(Collectors.toMap(e -> e.name, e -> (Influencer) e));
+        }
+    }
+
+    /**
+     * The {@link World} object to define game play area limits and a default gravity and friction.
+     *
+     * <blockquote>May more to comes in the next release with some <code>Influencers</code> to
+     * dynamically modify entity display or physic attributes</blockquote>
+     */
+    public static class World {
+        /**
+         * Area for this {@link World} object.
+         */
+        public Rectangle2D area;
+
+        private Material material;
+
+        public Vec2d gravity;
+
+        public World setMaterial(Material m) {
+            this.material = m;
+            return this;
+        }
+
+        public Material getMaterial() {
+            return material;
+        }
+
+        /**
+         * Initialize the world with some default values with an area of 320.0 x 200.0.
+         */
+        public World() {
+            area = new Rectangle2D.Double(0.0, 0.0, 320.0, 200.0);
+            gravity = new Vec2d(0.0, -0.981);
+        }
+
+        /**
+         * You can set your own {@link World} area dimension of width x height.
+         *
+         * @param width  the area width for this new {@link World}
+         * @param height the area Height for this new {@link World}.
+         * @return a World with ots new area of width x height.
+         */
+        public World setArea(double width, double height) {
+            area = new Rectangle2D.Double(0.0, 0.0, width, height);
+            return this;
+        }
+
+        /**
+         * Yot can also set the gravity for your {@link World}.
+         *
+         * @param g the new gravity for this World to be applied to all {@link Entity} in this {@link World}.
+         * @return the world updated with its new gravity.
+         */
+        public World setGravity(Vec2d g) {
+            this.gravity = g;
+            return this;
+        }
+    }
+
+    /**
+     * The {@link Influencer} extending {@link Entity} to provide environmental influencer to change {@link Entity}
+     * behavior has soon the Entity is contained by the {@link Influencer}.
+     * An influencer can change temporarily some {@link Entity} attribute's values.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.5
+     */
+    public static class Influencer extends Entity {
+
+        public Influencer(String name) {
+            super(name);
+            addBehavior(new Behavior() {
+                @Override
+                public String filterOnEvent() {
+                    return Behavior.onCollision;
+                }
+
+                @Override
+                public void update(Application a, Entity e, double elapsed) {
+
+                }
+
+                @Override
+                public void update(Application a, double elapsed) {
+
+                }
+
+                @Override
+                public void onCollide(Application a, Entity e1, Entity e2) {
+                    Influencer i1 = (Influencer) e1;
+                    e2.forces.add(i1.getForce());
+                }
+            });
+        }
+
+        /**
+         * Define the {@link Influencer}'s gravity attribute, 0 means World's default gravity.
+         *
+         * @param g the new gravity for this {@link Influencer} zone
+         * @return the updated Influencer with its new gravity.
+         */
+        public Influencer setGravity(Vec2d g) {
+            this.attributes.put("gravity", g);
+            return this;
+        }
+
+        /**
+         * Define the {@link Influencer}'s attribute force to be applied to any {@link Entity}
+         * contained by this {@link Influencer}..
+         *
+         * @param f the force to be applied in this {@link Influencer} zone.
+         * @return the updated {@link Influencer} with its new force.
+         */
+        public Influencer setForce(Vec2d f) {
+            this.attributes.put("force", f);
+            return this;
+        }
+
+        /**
+         * retrieve the current gravity attribute value for this {@link Influencer}
+         *
+         * @return value for this Influencer's gravity.
+         */
+        public Vec2d getGravity() {
+            return (Vec2d) this.attributes.get("gravity");
+        }
+
+        /**
+         * retrieve the current force attribute value for this {@link Influencer}
+         *
+         * @return value for this Influencer's force.
+         */
+        public Vec2d getForce() {
+            return (Vec2d) this.attributes.get("force");
+        }
+
+        public Material getMaterial() {
+            return material;
+        }
+    }
+
+    /**
+     * Define a Bunch of default and standard material. See
+     * As a reference :
+     * <pre>
+     *  Rock       Density : 0.6  Restitution : 0.1
+     *  Wood       Density : 0.3  Restitution : 0.2
+     *  Steal      Density : 1.2  Restitution : 0.05
+     *  BouncyBall Density : 0.3  Restitution : 0.8
+     *  SuperBall  Density : 0.3  Restitution : 0.95
+     *  Pillow     Density : 0.1  Restitution : 0.2
+     *  Static     Density : 0.0  Restitution : 0.0
+     * </pre>
+     */
+    public enum DefaultMaterial {
+        DEFAULT(new Material("default", 1.0, 0.0, 1.0)),
+        /*
+        // convert from Material(elasticity,density,dynFriction,staticFriction)
+        ROCK(new Material("rock", 0.6, 1, 1, 1)),
+        WOOD(new Material("wood", 0.1, 0.69, 0.69, 0.3)),
+        STEEL(new Material("metal", 0.05, 1, 1, 1.2)),
+        RUBBER(new Material("rubber", 0.8, 0.88, 0.98, 0.3)),
+        GLASS(new Material("glass", 0.4, 1, 1, 1)),
+        ICE(new Material("ice", 0.1, 0.1, 1, 1)),
+        AIR(new Material("air", 1, 1, 1, 0.01)),
+        STATIC(new Material("static", 0, 0, 0, 0)),
+        NEUTRAL(new Material("neutral", 1, 1, 1, 1));
+        */;
+
+        Material material;
+
+        DefaultMaterial(Material m) {
+            this.material = m;
+        }
+
+        public Material get() {
+            return this.material;
+        }
+    }
+
+    /**
+     * The {@link Material} is a new way to manage physic attributes for any {@link Entity}.
+     * It is used by {@link PhysicEngine} and {@link Influencer} to compute moves for {@link Entity}.
+     * {@link Influencer} is able to change temporarily {@link Material} for an {@link Entity} when
+     * the {@link Influencer} contains {@link Entity}.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.5
+     */
+    public static class Material {
+        /**
+         * Name for this material
+         */
+        public String name;
+        /**
+         * Material density
+         */
+        public double density;
+        /**
+         * Material elasticity. Used to compute collision effect into the {@link PhysicEngine}
+         */
+        public double elasticity;
+        /**
+         * Material friction. Used to compute friction resistance on moves into the {@link PhysicEngine}
+         */
+        public double friction;
+        /**
+         * Default Material {@link Color} to render this object material.
+         */
+        public Color color = Color.BLUE;
+        /**
+         * Default Material alpha channel (transparency) to render this material.
+         */
+        public float alpha = 0.0f;
+
+        /**
+         * Create a new Material with a name and with some physic characteristics.
+         *
+         * @param name       Name for this new material
+         * @param density    material density to be used in computation (collision and attraction)
+         * @param elasticity material elasticity to compute bouncing capability after collision
+         * @param friction   the friction facture to be used by the {@link PhysicEngine} to compute move resistence.
+         */
+        public Material(String name,
+                        double density,
+                        double elasticity,
+                        double friction) {
+            this.name = name;
+            this.density = density;
+            this.elasticity = elasticity;
+            this.friction = friction;
+        }
+
+        /**
+         * Define the new Color for this Material.
+         *
+         * @param c the new {@link Color} used by {@link Render} to draw this {@link Material}.
+         * @return the updated Material.
+         */
+        public Material setColor(Color c) {
+            this.color = c;
+            return this;
+        }
+
+        /**
+         * Define the new Alpha channel (transparency) for this Material, to be used by {@link Render} at draw time.
+         *
+         * @param a the new alpha value to compute transparency at rendering time;
+         * @return the updated Material.
+         */
+        public Material setAlpha(float a) {
+            this.alpha = a;
+            return this;
+        }
     }
 
     /**
@@ -1179,8 +1711,7 @@ public class Application extends JFrame implements KeyListener {
                     if (e1.id != e2.id && e1.cbox.getBounds().intersects(e2.cbox.getBounds())) {
                         resolve(e1, e2);
                         e1.behaviors.values().stream()
-                                .filter(b -> b.filterOnEvent().equals(Behavior.onCollision))
-                                .collect(Collectors.toList())
+                                .filter(b -> b.filterOnEvent().equals(Behavior.onCollision)).toList()
                                 .forEach(b -> b.onCollide(app, e1, e2));
                     }
                 }
@@ -1212,8 +1743,8 @@ public class Application extends JFrame implements KeyListener {
                         config.speedMinValue, config.colSpeedMaxValue);
                 e2.vel.y += Utils.ceilMinMaxValue(impulse * e1.mass * colSpeed * colNorm.y,
                         config.speedMinValue, config.colSpeedMaxValue);
-                if (e1.name.equals("player") && config.debug > 4) {
-                    System.out.printf("e1.%s collides e2.%s Vp=%s / dist=%f / norm=%s\n", e1.name, e2.name, vp, distance, colNorm);
+                if (e1.name.equals("player")) {
+                    Logger.log(Logger.FINED, this.getClass(), "e1.%s collides e2.%s Vp=%s / dist=%f / norm=%s\n", e1.name, e2.name, vp, distance, colNorm);
                 }
             } else {
                 if (e1.physicType == PhysicType.DYNAMIC && e2.physicType == PhysicType.STATIC) {
@@ -1224,8 +1755,8 @@ public class Application extends JFrame implements KeyListener {
                         e1.vel.y = -e1.vel.y * e1.elasticity;
                         e1.pos.y = e2.pos.y + e2.height;
                     }
-                    if (e1.name.equals("player") && config.debug > 4) {
-                        System.out.printf("e1.%s collides static e2.%s\n", e1.name, e2.name);
+                    if (e1.name.equals("player")) {
+                        Logger.log(Logger.FINED, this.getClass(), "e1.%s collides static e2.%s\n", e1.name, e2.name);
                     }
                 }
             }
@@ -1253,7 +1784,8 @@ public class Application extends JFrame implements KeyListener {
                 img = (BufferedImage) resources.get(path);
             } else {
                 try {
-                    img = ImageIO.read(Resources.class.getResourceAsStream(path));
+                    InputStream is = Resources.class.getResourceAsStream(path);
+                    img = ImageIO.read(Objects.requireNonNull(is));
                     resources.put(path, img);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -1458,34 +1990,6 @@ public class Application extends JFrame implements KeyListener {
     }
 
     /**
-     * The World object to define game play area limits and a default gravity and friction. May more to comes in the next release.
-     */
-    public static class World {
-        public double friction = 1.0;
-        public Rectangle2D area;
-        public double gravity = 0.981;
-
-        public World() {
-            area = new Rectangle2D.Double(0.0, 0.0, 320.0, 200.0);
-        }
-
-        public World setArea(double width, double height) {
-            area = new Rectangle2D.Double(0.0, 0.0, width, height);
-            return this;
-        }
-
-        public World setGravity(double g) {
-            this.gravity = g;
-            return this;
-        }
-
-        public World setFriction(double f) {
-            this.friction = f;
-            return this;
-        }
-    }
-
-    /**
      * Definition for all {@link Entity} managed by the small game framework.
      * A lot of attributes and <a href="https://en.wikipedia.org/wiki/Fluent_interface#Java">Fluent API</a> methods
      * to ease the Entity initialization.
@@ -1526,6 +2030,9 @@ public class Application extends JFrame implements KeyListener {
         public Vec2d vel = new Vec2d(0.0, 0.0);
         public Vec2d acc = new Vec2d(0.0, 0.0);
         public double mass = 1.0;
+
+        public Material material = DefaultMaterial.DEFAULT.get();
+
         public double elasticity = 1.0, friction = 1.0;
 
         // internal attributes
@@ -1654,13 +2161,8 @@ public class Application extends JFrame implements KeyListener {
             return this;
         }
 
-        public Entity setElasticity(double e) {
-            this.elasticity = e;
-            return this;
-        }
-
-        public Entity setFriction(double f) {
-            this.friction = f;
+        public Entity setMaterial(Material m) {
+            this.material = m;
             return this;
         }
 
@@ -1704,6 +2206,12 @@ public class Application extends JFrame implements KeyListener {
             }
         }
 
+        public BufferedImage getImage() {
+            return (BufferedImage) (getAnimations()
+                    ? animations.getFrame()
+                    : image);
+        }
+
         public Entity addAnimation(String key, int x, int y, int tw, int th, int[] durations, String pathToImage, int loop) {
             if (Optional.ofNullable(this.animations).isEmpty()) {
                 this.animations = new Animation();
@@ -1740,7 +2248,6 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
-
     /**
      * {@link AnimationSet} defining a series of Frames and their duration for a specific animation name.
      * This animationSet object is used in the {@link Animation#animationSet} attributes, to defined all the possible
@@ -1749,7 +2256,7 @@ public class Application extends JFrame implements KeyListener {
      * Here is a Fluent API to ease the Animation set definition.
      *
      * @author Frédéric Delorme
-     * @Since 1.0.3
+     * @since 1.0.3
      */
     public static class AnimationSet {
         String name;
@@ -1857,26 +2364,53 @@ public class Application extends JFrame implements KeyListener {
 
     }
 
+    /**
+     * A {@link TextEntity} extending the {@link Entity} will display a {@link TextEntity#text} with a dedicated
+     * {@link TextEntity#font}, with an {@link TextEntity#align} as required on the {@link TextEntity#pos}.
+     */
     public static class TextEntity extends Entity {
         private String text;
         private Font font;
         private TextAlign align = TextAlign.LEFT;
 
+        /**
+         * Create a new {@link TextEntity} with a name.
+         *
+         * @param name the name for this new TextEntity (see {@link Entity#Entity(String)}
+         */
         public TextEntity(String name) {
             super(name);
             this.physicType = PhysicType.STATIC;
         }
 
+        /**
+         * Set the text value t to be displayed for this {@link TextEntity}.
+         *
+         * @param t the text for the {@link TextEntity}.
+         * @return the {@link TextEntity} with its new text.
+         */
         public TextEntity setText(String t) {
             this.text = t;
             return this;
         }
 
+        /**
+         * Set the {@link Font} t for this {@link TextEntity}.
+         *
+         * @param f the {@link Font} to be assigned to this {@link TextEntity}.
+         * @return the {@link TextEntity} object with its new assigned {@link Font}.
+         */
         public TextEntity setFont(Font f) {
             this.font = f;
             return this;
         }
 
+        /**
+         * Set the {@link TextAlign} value for this {@link TextEntity}.
+         *
+         * @param a the {@link TextAlign} value defining howto draw the text at its {@link TextEntity#pos}.
+         * @return the {@link TextEntity} object with its new text alignement defined.
+         */
         public TextEntity setAlign(TextAlign a) {
             this.align = a;
             return this;
@@ -1884,6 +2418,21 @@ public class Application extends JFrame implements KeyListener {
 
     }
 
+    /**
+     * <p> A {@link GaugeEntity} extending the {@link Entity} to display a Gauge on the HUD, to show Energy or Mana
+     * of a dedicated Entity.</p>
+     * <p></p>At declaration, you must set a Min and  max <code>value</code> representing the gauge <code>minValue</code>
+     * and <code>maxValue</code> for your value:
+     * <pre>
+     * GaugeEntity myGE = new GaugeEntity("myValue")
+     *   .setPosition(10,10)
+     *   .setSize(8,40)
+     *   .setMin(0)
+     *   .setMax(100)
+     *   .setColor(Color.RED);
+     * </pre>
+     * </p>
+     */
     public static class GaugeEntity extends Entity {
         double value = 0;
         private double maxValue;
@@ -1913,33 +2462,85 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    /**
+     * <p>The {@link ValueEntity} extends the {@link Entity} by adding the capability to display an integer value.</p>
+     * <p>The ValueEntity will be created as follow: setting {@link ValueEntity} specific attributes like
+     * the <code>value</code>, the display <code>format</code>, the array of {@link BufferedImage}
+     * as <code>figures</code>, and then, the {@link Entity} inherited attributes:</p>
+     * <pre>
+     * ValueEntity scoreEntity = (ValueEntity) new ValueEntity("score")
+     *   .setValue(score)
+     *   .setFormat("%06d")
+     *   .setFigures(figs)
+     *   .setPosition(20, 20)
+     *   .setSize(6 * 8, 16)
+     *   .setStickToCamera(true);
+     * app.addEntity(scoreEntity);
+     * </pre>
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.2
+     */
     public static class ValueEntity extends Entity {
         int value;
         String valueTxt;
-        private BufferedImage[] figs;
+        private BufferedImage[] figures;
         private String format = "%d";
 
+        /**
+         * Create a new {@link ValueEntity} with its name.
+         *
+         * @param name the name of this new {@link ValueEntity}.
+         */
         public ValueEntity(String name) {
             super(name);
             this.physicType = PhysicType.STATIC;
         }
 
+        /**
+         * Value displayed as text must be updated according to the value and its string format.
+         * This is what happened during the update() processing.
+         *
+         * @param elapsed the elapsed time since previous call.
+         */
         @Override
         public void update(double elapsed) {
             super.update(elapsed);
             valueTxt = String.format(format, value);
         }
 
+        /**
+         * Define the {@link ValueEntity} value to be displayed.
+         *
+         * @param value the new value for this {@link ValueEntity}.
+         * @return this ValueEntity with its new value.
+         */
         public ValueEntity setValue(int value) {
             this.value = value;
             return this;
         }
 
-        public ValueEntity setFigures(BufferedImage[] figs) {
-            this.figs = figs;
+        /**
+         * Define the array of {@link BufferedImage} as {@link ValueEntity#figures} to render this integer
+         * {@link ValueEntity#value}.
+         *
+         * @param figures the new BufferedImage array to be used as figures (Must provide an array of 10 {@link BufferedImage},
+         *                corresponding to the 10 digits from 0 to 9).
+         * @return this {@link ValueEntity} with its new figures to be used to draw the integer value.
+         */
+        public ValueEntity setFigures(BufferedImage[] figures) {
+            this.figures = figures;
             return this;
         }
 
+        /**
+         * The value for {@link ValueEntity} must be transformed to a String with some conversion rule according
+         * to the {@link String#format(String, Object...)} method.
+         *
+         * @param f the new {@link String#format(String, Object...)} value to be used for integer to String
+         *          conversion (default is "%d").
+         * @return this {@link ValueEntity} with is new String format attribute.
+         */
         public ValueEntity setFormat(String f) {
             this.format = f;
             return this;
@@ -1947,10 +2548,31 @@ public class Application extends JFrame implements KeyListener {
     }
 
     /**
-     * MapEntity is a displayed map of the all Scene existing active objects.
-     * The Render will display all object according to a defined color code.
+     * <p>{@link MapEntity} is a displayed map of the all Scene existing active objects.</p>
+     * <p>The {@link Render} will display all object according to a defined color code.
+     * <pre>
+     * MapEntity mapEntity = (MapEntity) new MapEntity("map")
+     *   .setColorMapping(
+     *     // define color mapping on name entity filtering
+     *     Map.of(
+     *       "ball_", Color.RED,
+     *     "player", Color.BLUE,
+     *     "pf_", Color.LIGHT_GRAY,
+     *     "floor", Color.GRAY,
+     *     "outPlatform", Color.YELLOW))
+     *   // define list of entities to be displayed on the map
+     *   .setRefEntities(app.entities.values().stream().toList())
+     *   // set World reference
+     *   .setWorld(app.world)
+     *   // define Map display size
+     *   .setSize(48, 32)
+     *   // define where to display the Map
+     *   .setPosition(10, app.config.screenHeight - 48);
+     * </pre>
+     * </p>
      *
      * @author Frédéric Delorme
+     * @see Entity
      * @since 1.0.4
      */
     public static class MapEntity extends Entity {
@@ -1981,35 +2603,196 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
+    /**
+     * <p>The {@link Camera}, extending the {@link Entity} object, has a specific role. It will set the point of view to
+     * show all the {@link Entity} from the {@link Scene} in the {@link World}.</p>
+     * <p>This camera position will be set according to an {@link Entity}  target position, to be tracked.</p>
+     * <p>The {@link Camera} position will be computed with a specific tweenFactor, adding a certain delay to the tracking
+     * position, acting as a spring between the camera and its target.</p>
+     * <p>To define a camera, you must set the camera name, and its target and its viewport:</p>
+     *
+     * <pre>
+     * Camera cam = new Camera("cam01")
+     *   .setViewport(new Rectangle2D.Double(0, 0, app.config.screenWidth, app.config.screenHeight))
+     *   .setTarget(player)
+     *   .setTweenFactor(0.005);
+     * app.render.addCamera(cam);
+     * </pre>
+     *
+     * <p>The viewport mainly corresponds to the size of the displayed window
+     * (see {@link Configuration#screenWidth} and {@link Configuration#screenHeight}).</p>
+     *
+     * <p>The tweenFactor a value from 0.0 to 1.0 is a delay on target tracking.</p>
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.0
+     */
     public static class Camera extends Entity {
 
         private Entity target;
         private double tweenFactor;
         private Rectangle2D viewport;
 
+        /**
+         * Create a new {@link Camera} with its name.
+         *
+         * @param name the name for the newly created {@link Camera}.
+         */
         public Camera(String name) {
             super(name);
             this.physicType = PhysicType.STATIC;
         }
 
+        /**
+         * Define the {@link Camera} target to be tracked.
+         *
+         * @param target the target to tracked by this {@link Camera}, it must be an {@link Entity}.
+         * @return this {@link Camera} with its new target to be tracked.
+         */
         public Camera setTarget(Entity target) {
             this.target = target;
             return this;
         }
 
+        /**
+         * The tween factor value to compute the delay on tracking the target.
+         *
+         * @param tf the new tweenFactor for this {@link Camera}.
+         * @return the {@link Camera} with its new tween factor
+         */
         public Camera setTweenFactor(double tf) {
             this.tweenFactor = tf;
             return this;
         }
 
+        /**
+         * The {@link Camera#viewport} display corresponding to the JFrame display size. This is the view from the camera.
+         *
+         * @param vp the new viewport for this {@link Camera}.
+         * @return this {@link Camera} with ots new Viewport.
+         */
         public Camera setViewport(Rectangle2D vp) {
             this.viewport = vp;
             return this;
         }
 
+        /**
+         * This {@link Camera#pos} will be computed during the update phase of the {@link Application#update(double)},
+         * according to the {@link Camera#target} position and the {@link Camera#tweenFactor}.
+         *
+         * @param elapsed the elapsed time since the previous call, contributing to the new {@link Camera}'s position
+         *                computation with the tweenFactor value and the {@link Camera#target}.
+         */
         public void update(double elapsed) {
             pos.x += Math.round((target.pos.x + target.width - (viewport.getWidth() * 0.5) - pos.x) * tweenFactor * elapsed);
             pos.y += Math.round((target.pos.y + target.height - (viewport.getHeight() * 0.5) - pos.y) * tweenFactor * elapsed);
+        }
+    }
+
+    /**
+     * The list of light type.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.5
+     */
+    public enum LightType {
+        /**
+         * An {@link LightType#AMBIENT} light will display a colored rectangle on all the viewport,
+         * with a color corresponding to the defined {@link Light#color}.
+         */
+        AMBIENT,
+        /**
+         * A {@link LightType#SPOT} light will display directional light of with {@link Light#color} at {@link Light#pos}.
+         * The light direction and length is set by the {@link Light#rotation} and {@link Light#height} attributes.
+         */
+        SPOT,
+        AREA_RECTANGLE,
+        /**
+         * A {@link LightType#SPHERICAL} light will display an ellipse centered light of {@link Light#width} x {@link Light#height}
+         * with {@link Light#color} at {@link Light#pos}.
+         */
+        SPHERICAL
+    }
+
+    /**
+     * <p>A {@link Light} class to simulate lights in a {@link Scene}.</p>
+     * It can be a {@link LightType#SPOT}, an {@link LightType#AMBIENT} or a {@link LightType#SPHERICAL} one.
+     * It will have an {@link Light#energy}, and specific {@link Light#rotation}
+     * angle and a {@link Light#height}  (for SPOT only), or a {@link Light#width} and {@link Light#height}
+     * of the ellipse size(for SPHERICAL only) and a glitter effect (see {@link Light#glitterEffect},
+     * to simulate neon glittering light.
+     *
+     * @author Frédéric Delorme
+     * @since 1.0.5
+     */
+    public static class Light extends Entity {
+        public Color[] colors;
+        public float[] dist;
+        public RadialGradientPaint rgp;
+        private double energy;
+        private LightType lightType;
+        private double rotation;
+        private double glitterEffect;
+
+        /**
+         * Create a new Light with a name
+         *
+         * @param name the name of this new light in the Scene.
+         */
+        public Light(String name) {
+            super(name);
+            setType(NONE);
+            setPhysicType(PhysicType.NONE);
+            setStickToCamera(false);
+        }
+
+        /**
+         * Set the light type;
+         *
+         * @param lt the LightType to be assigned to this light.
+         * @return the updated Light entity.
+         */
+        public Light setLightType(LightType lt) {
+            this.lightType = lt;
+            return this;
+        }
+
+        /**
+         * Define the energy for this Light.
+         *
+         * @param e the value of energy from 0 to 1.0.
+         * @return the updated Light entity.
+         */
+        public Light setEnergy(double e) {
+            this.energy = e;
+            return this;
+        }
+
+        /**
+         * Define the light spot direction (only for {@link LightType#SPOT}
+         *
+         * @param r the rotation angle in radian.
+         * @return the updated Light entity.
+         */
+        public Light setRotation(double r) {
+            this.rotation = r;
+            return this;
+        }
+
+        /**
+         * The glitterEffect factor, adding an offset to the light center to create aglitter effect.
+         *
+         * @param ge the Glitter factor from 0 to 1.0
+         * @return the updated Light entity.
+         */
+        public Light setGlitterEffect(double ge) {
+            this.glitterEffect = ge;
+            return this;
+        }
+
+        @Override
+        public void update(double elapsed) {
+            super.update(elapsed);
         }
     }
 
@@ -2018,13 +2801,41 @@ public class Application extends JFrame implements KeyListener {
 
         boolean create(Application app) throws Exception;
 
+        /**
+         * Update phase for this Scene.
+         *
+         * @param app     the parent Application instance to access services
+         * @param elapsed the elapsed time since previous call.
+         */
         void update(Application app, double elapsed);
 
+        /**
+         * Manage and capture input at Scene level
+         *
+         * @param app
+         */
         void input(Application app);
 
+        /**
+         * Retrieve the name of the scene.
+         *
+         * @return
+         */
         String getName();
 
+        /**
+         * The map of behaviors attached to this Scene and executed during the update cycle.
+         *
+         * @return a Map of Behaviors implementations.
+         */
         Map<String, Behavior> getBehaviors();
+
+        /**
+         * Retrieve the list of Light manage by the scene.
+         *
+         * @return a list of Light
+         */
+        List<Light> getLights();
 
         void dispose();
     }
@@ -2041,6 +2852,7 @@ public class Application extends JFrame implements KeyListener {
         void update(Application a, double elapsed);
 
         void onCollide(Application a, Entity e1, Entity e2);
+
     }
 
     public boolean exit = false;
@@ -2070,10 +2882,22 @@ public class Application extends JFrame implements KeyListener {
     public Map<String, Object> attributes = new HashMap<>();
 
     public World world;
+    private JFrame frame;
 
     public Application(String[] args) {
         NumberFormat.getInstance(Locale.ROOT);
         initialize(args);
+    }
+
+    /**
+     * Constructor used mainly for test purpose.
+     *
+     * @param args                  the list of arguments to be parsed by the Configuration
+     * @param configurationFileName the configuration file path to be loaded by Configuration.
+     */
+    public Application(String[] args, String configurationFileName) {
+        NumberFormat.getInstance(Locale.ROOT);
+        initialize(args, configurationFileName);
     }
 
     protected void run() {
@@ -2083,12 +2907,31 @@ public class Application extends JFrame implements KeyListener {
         }
     }
 
-    private void initialize(String[] args) {
-        config = new Configuration("/app.properties").parseArgs(args);
+    /**
+     * Initialize the Application with the default configuration file (app.proprerties)
+     * and parse java CLI arguments.
+     *
+     * @param args the array of arguments from java CLI
+     * @see Application#initialize(String[], String)
+     */
+    public void initialize(String[] args) {
+        initialize(args, "/app.properties");
+    }
+
+    /**
+     * Initialize the application by setting Configuration instance by loading
+     * data from <code>configFileName</code>  and parsing java CLI arguments <code>args</code>.
+     *
+     * @param args           the CLI java arguments to be parsed (if provided)
+     * @param configFileName the name of the configuration file to be loaded.
+     * @see Configuration
+     */
+    public void initialize(String[] args, String configFileName) {
+        config = new Configuration(configFileName).parseArgs(args);
         I18n.setLanguage(config);
         world = new World()
                 .setArea(config.worldWidth, config.worldHeight)
-                .setGravity(config.worldGravity);
+                .setGravity(new Vec2d(0.0, config.worldGravity));
     }
 
     private boolean start() {
@@ -2096,25 +2939,74 @@ public class Application extends JFrame implements KeyListener {
             initializeServices();
             createWindow();
             if (loadScenes()) {
-                // prepapre services
+                initDefaultActions();
+                // prepare services
                 createJMXStatus(this);
-                System.out.printf("INFO: scene %s activated and created.\n", activeScene.getName());
+                Logger.log(1, this.getClass(), " scene %s activated and created.\n", activeScene.getName());
             }
         } catch (Exception e) {
-            System.out.println("ERR: Unable to initialize scene: " + e.getLocalizedMessage());
+            Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to initialize scene: " + e.getLocalizedMessage());
             return false;
         }
         return true;
     }
 
-    private void initializeServices() {
+    private void initDefaultActions() {
+        actionHandler.actionMapping.putAll(Map.of(
+                // reset the scene
+                KeyEvent.VK_Z, o -> {
+                    reset();
+                    return this;
+                },
+                // manage debug level
+                KeyEvent.VK_D, o -> {
+                    config.debug = config.debug + 1 < 5 ? config.debug + 1 : 0;
+                    return this;
+                },
+                // I quit !
+                KeyEvent.VK_ESCAPE, o -> {
+                    requestExit();
+                    return this;
+                },
+                KeyEvent.VK_K, o -> {
+                    Entity p = entities.get("player");
+                    p.setAttribute("energy", 0);
+                    return this;
+                },
+                KeyEvent.VK_F11, o -> {
+                    setWindowMode(!config.fullScreen);
+
+                    return this;
+                }
+        ));
+    }
+
+    /**
+     * Initialize all Application services.
+     * <p>
+     * <blockquote><em>NOTE</em> This method is now public because of test requirements on services.</blockquote>
+     *
+     * @since 1.0.5
+     */
+    public void initializeServices() {
         render = new Render(this, config, world);
         physicEngine = new PhysicEngine(this, config, world);
         collisionDetect = new CollisionDetector(this, config, world);
         actionHandler = new ActionHandler(this);
     }
 
-    private boolean loadScenes() {
+    /**
+     * Read Scenes and set the default scene according to {@link Configuration}.
+     * the concerned properties entries are:
+     * <ul>
+     *     <li><code>app.scene.list</code>is a list of Scene implementation classes comma separated,</li>
+     *     <li><code>app.scene.default</code> is the scene to be activated at start (by default).</li>
+     * </ul>
+     *
+     * @return true if Scene is correctly loaded, else false.
+     * @see Configuration
+     */
+    public boolean loadScenes() {
         String[] scenesList = config.scenes.split(",");
         for (String scene : scenesList) {
             String[] sceneStr = scene.split(":");
@@ -2126,9 +3018,10 @@ public class Application extends JFrame implements KeyListener {
                 activateScene(config.defaultScene);
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
                     InvocationTargetException e) {
-                System.out.println("ERR: Unable to load scene from configuration file:"
+                Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to load scene from configuration file:"
                         + e.getLocalizedMessage()
                         + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
+                e.printStackTrace(System.out);
                 return false;
             }
         }
@@ -2150,10 +3043,10 @@ public class Application extends JFrame implements KeyListener {
                 sceneReady = scene.create(this);
                 this.activeScene = scene;
             } catch (Exception e) {
-                System.out.println("ERR: Unable to initialize the Scene " + name + " => " + e.getLocalizedMessage());
+                Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to initialize the Scene " + name + " => " + e.getLocalizedMessage());
             }
         } else {
-            System.out.print("ERR: Unable to load unknown scene " + name);
+            Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to load unknown scene " + name);
         }
     }
 
@@ -2169,35 +3062,63 @@ public class Application extends JFrame implements KeyListener {
             entityIndex = 0;
             createScene();
         } catch (Exception e) {
-            System.out.println("ERR: Reset scene issue: " + e.getLocalizedMessage());
+            Logger.log(Logger.ERROR, this.getClass(), "ERR: Reset scene issue: " + e.getLocalizedMessage());
         }
     }
 
     private void createWindow() {
-        setTitle(I18n.get("app.title"));
+        setWindowMode(config.fullScreen);
+    }
 
-        setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/sg-logo-image.png")));
+    /**
+     * Create the JFrame window in fullscreen or windowed mode (according to fullScreenMode boolean value).
+     *
+     * @param fullScreenMode the display mode to be set:
+     *                       <ul>
+     *                       <li>true = DISPLAY_MODE_FULLSCREEN,</li>
+     *                       <li>false = DISPLAY_MODE_WINDOWED</li>
+     *                       </ul>
+     */
+    private void setWindowMode(boolean fullScreenMode) {
+        GraphicsEnvironment graphics =
+                GraphicsEnvironment.getLocalGraphicsEnvironment();
 
-        Dimension dim = new Dimension((int) (config.screenWidth * config.displayScale),
-                (int) (config.screenHeight * config.displayScale));
+        GraphicsDevice device = graphics.getDefaultScreenDevice();
 
-        setSize(dim);
-        setPreferredSize(dim);
-        setMaximumSize(dim);
-        if (config.fullScreen) {
-            setExtendedState(JFrame.MAXIMIZED_BOTH);
-            setUndecorated(true);
+        if (Optional.ofNullable(frame).isPresent() && frame.isVisible()) {
+            frame.setVisible(false);
+            frame.dispose();
         }
 
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame = new JFrame(I18n.get("app.title"));
+        frame.setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/sg-logo-image.png")));
+        frame.setContentPane(this);
 
-        setFocusTraversalKeysEnabled(true);
+        displayMode = fullScreenMode ? DisplayModeEnum.DISPLAY_MODE_FULLSCREEN : DisplayModeEnum.DISPLAY_MODE_WINDOWED;
 
-        setLocationRelativeTo(null);
-        addKeyListener(this);
-        addKeyListener(actionHandler);
-        pack();
-        setVisible(true);
+        if (displayMode.equals(DisplayModeEnum.DISPLAY_MODE_FULLSCREEN)) {
+            frame.setUndecorated(true);
+            device.setFullScreenWindow(frame);
+        } else {
+            Dimension dim = new Dimension((int) (config.screenWidth * config.displayScale),
+                    (int) (config.screenHeight * config.displayScale));
+            frame.setSize(dim);
+            frame.setPreferredSize(dim);
+            frame.setMaximumSize(dim);
+            frame.setLocationRelativeTo(null);
+            frame.setUndecorated(false);
+        }
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setFocusTraversalKeysEnabled(true);
+
+        frame.addKeyListener(this);
+        frame.addKeyListener(actionHandler);
+
+        frame.pack();
+        frame.setVisible(true);
+        if (Optional.ofNullable(frame.getBufferStrategy()).isEmpty()) {
+            frame.createBufferStrategy(config.numberOfBuffer);
+        }
     }
 
     public void requestExit() {
@@ -2276,7 +3197,7 @@ public class Application extends JFrame implements KeyListener {
             try {
                 Thread.sleep(waitTime);
             } catch (InterruptedException ie) {
-                System.out.println("ERR: Unable to wait for " + waitTime + ": " + ie.getLocalizedMessage());
+                Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to wait for " + waitTime + ": " + ie.getLocalizedMessage());
             }
 
             // Update JMX metrics
@@ -2292,12 +3213,12 @@ public class Application extends JFrame implements KeyListener {
 
     private synchronized void update(double elapsed) {
         if (!pause) {
-            double maxElapsed = Math.min(elapsed, config.frameTime);
-            physicEngine.update(Math.min(elapsed, config.frameTime));
-            collisionDetect.update(maxElapsed);
-            //if (sceneReady) {
-            activeScene.update(this, elapsed);
-            //}
+            double maxElapsedTime = Math.min(elapsed, config.frameTime);
+            physicEngine.update(maxElapsedTime);
+            collisionDetect.update(maxElapsedTime);
+            if (sceneReady) {
+                activeScene.update(this, elapsed);
+            }
         }
     }
 
@@ -2315,9 +3236,13 @@ public class Application extends JFrame implements KeyListener {
         render.draw(realFps);
     }
 
-    @Override
     public void dispose() {
-        super.dispose();
+        if (Optional.ofNullable(frame).isPresent()) {
+            frame.dispose();
+        }
+    }
+
+    public void quit() {
         render.dispose();
         physicEngine.dispose();
     }
@@ -2357,7 +3282,6 @@ public class Application extends JFrame implements KeyListener {
         return status;
     }
 
-
     /**
      * Retrieve the internal entity Index current value.
      *
@@ -2367,12 +3291,32 @@ public class Application extends JFrame implements KeyListener {
         return entityIndex;
     }
 
+    public PhysicEngine getPhysicEngine() {
+        return physicEngine;
+    }
+
+    public CollisionDetector getCollisionDetector() {
+        return collisionDetect;
+    }
+
+    public Map<String, Entity> getEntities() {
+        return entities;
+    }
+
+    public World getWorld() {
+        return world;
+    }
+
+    public Render getRender() {
+        return render;
+    }
+
     public static void main(String[] args) {
         try {
             Application app = new Application(args);
             app.run();
         } catch (Exception e) {
-            System.out.printf("ERR: Unable to run application: %s",
+            Logger.log(Logger.ERROR, Application.class, "ERR: Unable to run application: %s",
                     e.getLocalizedMessage());
             e.printStackTrace();
         }

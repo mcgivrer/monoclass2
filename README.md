@@ -1,6 +1,6 @@
 # README
 
-A **MonoClass 2** project test.
+A **MonoClass 2** v1.0.5 project test.
 
 This _small_ Java project with only one (master) class is a proof-of-concept of an over simplified java program to
 deliver maximum feature in a minimum number lines of code, and WITHOUT dependencies out of the JDK itself.
@@ -60,9 +60,9 @@ $> java --enable-preview -jar target/monoclass2-1.0.3.jar
 
 You will get the following window
 
-![DaGame pre-release preparing the v1.0.3 with Behavior and gameplay](docs/images/behaviors-and-gameplay.png "DaGame pre-release preparing the v1.0.3 with Behavior and gameplay")
+![LightAndShadow pre-release preparing the v1.0.5 with Light and Influences](docs/images/monoclass2-1.0.5-snapshot-screenshot.png "LightAndShadow pre-release preparing the v1.0.5 with Light and Influences")
 
-_figure 1 - DaGame pre-release preparing the v1.0.3 with Behavior and gameplay_
+_figure 1 - LightAndShadow pre-release preparing the v1.0.5 with Light and Influences_
 
 > :blue_book: _**NOTE**_
 > _You can notice the new Time display, limiting the time play._
@@ -113,19 +113,25 @@ You can configure dynamically some of the internal parameters:
 1. Change the size of the opened window :
 
 ```shell
-$ java ---enable-preview -jar target/monoclass2-x.y.z.jar w=600 h=400
+$ java ---enable-preview \
+ -jar target/monoclass2-x.y.z.jar \
+ w=600 h=400
 ```
 
 2. set the preferred language to English at start :
 
 ```shell
-$ java ---enable-preview -jar target/monoclass2-x.y.z.jar language=en_EN
+$ java ---enable-preview \
+ -jar target/monoclass2-x.y.z.jar \
+ language=en_EN
 ```
 
 3. set the preferred language to French and change the pixel scale :
 
 ```shell
-$ java ---enable-preview -jar target/monoclass2-x.y.z.jar language=fr_FR s=2.0
+$ java ---enable-preview \
+ -jar target/monoclass2-x.y.z.jar\
+ language=fr_FR s=2.0
 ```
 
 
