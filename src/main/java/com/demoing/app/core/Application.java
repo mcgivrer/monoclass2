@@ -6,6 +6,7 @@ import com.demoing.app.core.gfx.DisplayModeEnum;
 import com.demoing.app.core.gfx.Window;
 import com.demoing.app.core.io.ActionHandler;
 import com.demoing.app.core.math.Vec2d;
+import com.demoing.app.core.service.ServiceManager;
 import com.demoing.app.core.service.collision.CollisionDetector;
 import com.demoing.app.core.service.monitor.AppStatus;
 import com.demoing.app.core.service.physic.PhysicEngine;
@@ -177,16 +178,16 @@ public class Application extends JPanel {
      * @since 1.0.5
      */
     public void initializeServices() {
-
+        ServiceManager sm = new ServiceManager(this);
         // create window.
-        window = new Window(this);
+        this.window = new Window(this);
 
-        sceneMgr = new SceneManager(this, config);
-        physicEngine = new PhysicEngine(this, config);
-        render = new Render(this, physicEngine.getWorld());
-        collisionDetect = new CollisionDetector(this, config, physicEngine.getWorld());
+        sm.add(new PhysicEngine());
+        sm.add(new Render());
+        sm.add(new SceneManager());
+        sm.add(new ActionHandler());
 
-        actionHandler = new ActionHandler(this);
+        sm.start();
     }
 
 

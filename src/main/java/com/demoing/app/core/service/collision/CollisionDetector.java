@@ -5,6 +5,7 @@ import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.config.Configuration;
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.math.MathUtils;
+import com.demoing.app.core.service.Service;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.math.Vec2d;
 import com.demoing.app.core.service.physic.World;
@@ -20,18 +21,16 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Frédéric Delorme
  * @since 1.0.3
  */
-public class CollisionDetector {
-    private final Configuration config;
-    private final Application app;
-    private final World world;
+public class CollisionDetector implements Service {
+    private Configuration config;
+    private Application app;
+    private World world;
 
     // ToDo! maintain a binTree to 'sub-space' world.
     public Map<String, Entity> colliders = new ConcurrentHashMap<>();
 
-    public CollisionDetector(Application a, Configuration c, World w) {
-        this.config = c;
-        this.app = a;
-        this.world = w;
+    public CollisionDetector() {
+
     }
 
     public void add(Entity e) {
@@ -109,5 +108,27 @@ public class CollisionDetector {
         }
         e1.update(1);
         e2.update(1);
+    }
+
+    @Override
+    public String getName() {
+        return "collisionDetector";
+    }
+
+    @Override
+    public void start(Application app) {
+        this.app = app;
+        this.config = app.getConfiguration();
+        this.world = app.getPhysicEngine().getWorld();
+    }
+
+    @Override
+    public String[] getDependencies() {
+        return new String[]{"physicEngine"};
+    }
+
+    @Override
+    public void dispose(Application app) {
+
     }
 }

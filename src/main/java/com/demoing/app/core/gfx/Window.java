@@ -40,7 +40,8 @@ public class Window extends JPanel implements KeyListener {
 
 
     private void createWindow() {
-        setWindowMode(app.config.fullScreen);
+        Configuration config = app.getConfiguration();
+        setWindowMode(config.fullScreen);
     }
 
     /**

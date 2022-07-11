@@ -3,6 +3,7 @@ package com.demoing.app.core.service.scene;
 import com.demoing.app.core.Application;
 import com.demoing.app.core.config.Configuration;
 import com.demoing.app.core.scene.Scene;
+import com.demoing.app.core.service.Service;
 import com.demoing.app.core.utils.Logger;
 
 import java.lang.reflect.Constructor;
@@ -11,9 +12,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public class SceneManager {
-    private final Application application;
-    private final Configuration config;
+public class SceneManager implements Service {
+    private Application application;
+    private Configuration config;
 
     /**
      * THe map of Scene to be activated int o the Application instance.
@@ -28,9 +29,7 @@ public class SceneManager {
 
     private Scene activeScene;
 
-    public SceneManager(Application application, Configuration config) {
-        this.application = application;
-        this.config = config;
+    public SceneManager() {
     }
 
     /**
@@ -94,5 +93,26 @@ public class SceneManager {
 
     public boolean isSceneReady() {
         return this.sceneReady;
+    }
+
+    @Override
+    public String getName() {
+        return "sceneManager";
+    }
+
+    @Override
+    public void start(Application app) {
+        this.application = app;
+        this.config = app.getConfiguration();
+    }
+
+    @Override
+    public void dispose(Application app) {
+
+    }
+
+    @Override
+    public String[] getDependencies() {
+        return new String[]{"render", "physicEngine", "actionHandler", "collisionDetector"};
     }
 }

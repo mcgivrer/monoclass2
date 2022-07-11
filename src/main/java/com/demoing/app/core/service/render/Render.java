@@ -4,6 +4,7 @@ import com.demoing.app.core.Application;
 import com.demoing.app.core.config.Configuration;
 import com.demoing.app.core.entity.*;
 import com.demoing.app.core.gfx.Window;
+import com.demoing.app.core.service.Service;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.World;
 import com.demoing.app.core.utils.Logger;
@@ -33,14 +34,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * The {@link Render} service will provide the drawing process to  display entities to the {@link Application}
  * display buffer,  and then copy the buffer to the application window (see {@link JFrame}.
  */
-public class Render {
+public class Render implements Service {
 
     /**
      * The World object defining the play area limit.
      */
-    private final World world;
-    private final com.demoing.app.core.gfx.Window window;
-    private final Configuration config;
+    private World world;
+    private Window window;
+    private Configuration config;
 
     /**
      * The internal rendering graphics buffer.
@@ -72,25 +73,9 @@ public class Render {
 
     /**
      * Initialize the Render service with the parent Application, the current Configuration, and its World object.
-     *
-     * @param app   the parent application of this Render service.
-     * @param world the World object defining the play area limits.
      */
-    public Render(Application app, World world) {
-        this.config = app.getConfiguration();
-        this.window = app.getWindow();
-        this.world = world;
-        buffer = new BufferedImage((int) config.screenWidth, (int) config.screenHeight,
-                BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = buffer.createGraphics();
-        try {
-            debugFont = Font.createFont(
-                            Font.PLAIN,
-                            Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
-                    .deriveFont(9.0f);
-        } catch (FontFormatException | IOException e) {
-            Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to initialize Render: " + e.getLocalizedMessage());
-        }
+    public Render() {
+
     }
 
     /**
@@ -585,5 +570,40 @@ public class Render {
 
     public List<Entity> getgPipeline() {
         return gPipeline;
+    }
+
+    @Override
+    public String getName() {
+        return "render";
+    }
+
+    @Override
+    public void start(Application app) {
+        this.config = app.getConfiguration();
+        this.window = app.getWindow();
+        // Must use the service manager !
+        this.world = app.getPhysicEngine().getWorld();
+
+        buffer = new BufferedImage((int) config.screenWidth, (int) config.screenHeight,
+                BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = buffer.createGraphics();
+        try {
+            debugFont = Font.createFont(
+                            Font.PLAIN,
+                            Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
+                    .deriveFont(9.0f);
+        } catch (FontFormatException | IOException e) {
+            Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to initialize Render: " + e.getLocalizedMessage());
+        }
+    }
+
+    @Override
+    public String[] getDependencies() {
+        return new String[]{"physicEngine"};
+    }
+
+    @Override
+    public void dispose(Application app) {
+
     }
 }

@@ -1,6 +1,7 @@
 package com.demoing.app.core.io;
 
 import com.demoing.app.core.Application;
+import com.demoing.app.core.service.Service;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -14,29 +15,20 @@ import java.util.function.Function;
  * @author Frédéric Delorme
  * @since 1.0.3
  */
-public class ActionHandler implements KeyListener {
+public class ActionHandler implements Service, KeyListener {
     private final boolean[] prevKeys = new boolean[65536];
     private final boolean[] keys = new boolean[65536];
     private boolean ctrlState = false, shiftState = false, altState = false;
-    private final Application app;
+    private Application app;
     private boolean anyKeyPressed;
 
     public Map<Integer, Function> actionMapping = new HashMap<>();
 
     /**
      * Initialize the service with ots parent {@link Application}.
-     *
-     * @param a THe parent application to link the ActionHandler to.
      */
-    public ActionHandler(Application a) {
-        this.app = a;
-        // register this listener to the Window
-        app.getWindow().addListener(this);
-        // register the Screenshot action to the Action mapping.
-        this.actionMapping.put(KeyEvent.VK_F3, (e) -> {
-            app.getRender().saveScreenshot();
-            return this;
-        });
+    public ActionHandler() {
+
     }
 
 
@@ -73,5 +65,32 @@ public class ActionHandler implements KeyListener {
         boolean toBeReturned = this.anyKeyPressed;
         this.anyKeyPressed = false;
         return toBeReturned;
+    }
+
+    @Override
+    public String getName() {
+        return "actionHandler";
+    }
+
+    @Override
+    public void start(Application app) {
+        this.app = app;
+        // register this listener to the Window
+        app.getWindow().addListener(this);
+        // register the Screenshot action to the Action mapping.
+        this.actionMapping.put(KeyEvent.VK_F3, (e) -> {
+            app.getRender().saveScreenshot();
+            return this;
+        });
+    }
+
+    @Override
+    public String[] getDependencies() {
+        return new String[]{"render"};
+    }
+
+    @Override
+    public void dispose(Application app) {
+
     }
 }

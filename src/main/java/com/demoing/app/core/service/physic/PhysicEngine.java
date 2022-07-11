@@ -6,6 +6,7 @@ import com.demoing.app.core.config.Configuration;
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.entity.Influencer;
 import com.demoing.app.core.math.Vec2d;
+import com.demoing.app.core.service.Service;
 import com.demoing.app.core.service.physic.material.DefaultMaterial;
 import com.demoing.app.core.service.physic.material.Material;
 import com.demoing.app.core.service.render.Render;
@@ -23,26 +24,19 @@ import java.util.stream.Collectors;
  * @author Frédéric Delorme
  * @since 1.0.2
  */
-public class PhysicEngine {
-    private final Application app;
-    private final World world;
-    private final Configuration config;
+public class PhysicEngine implements Service {
+    private Application app;
+    private World world;
+    private Configuration config;
     public long updateTime;
     private final Map<String, Influencer> influencers = new ConcurrentHashMap<>();
 
     /**
      * Initialize the Physic Engine for the parent Application a, with the Configuration c
      * and in a World w.
-     *
-     * @param a the parent Application
-     * @param c the Configuration where to find Physic Engine initialization parameters
      */
-    public PhysicEngine(Application a, Configuration c) {
-        this.app = a;
-        this.config = c;
-        this.world = new World()
-                .setArea(config.worldWidth, config.worldHeight)
-                .setGravity(new Vec2d(0.0, config.worldGravity));
+    public PhysicEngine() {
+
     }
 
     /**
@@ -237,5 +231,29 @@ public class PhysicEngine {
 
     public World getWorld() {
         return this.world;
+    }
+
+    @Override
+    public String getName() {
+        return "physicEngine";
+    }
+
+    @Override
+    public void start(Application app) {
+        this.app = app;
+        this.config = app.getConfiguration();
+        this.world = new World()
+                .setArea(config.worldWidth, config.worldHeight)
+                .setGravity(new Vec2d(0.0, config.worldGravity));
+    }
+
+    @Override
+    public String[] getDependencies() {
+        return new String[]{};
+    }
+
+    @Override
+    public void dispose(Application app) {
+
     }
 }
