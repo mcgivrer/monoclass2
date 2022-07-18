@@ -52,7 +52,7 @@ public class CollisionDetector {
                     if (e1.cbox.getBounds().intersects(e2.cbox.getBounds())) {
                         resolve(e1, e2);
                         e1.behaviors.values().stream()
-                                .filter(b -> b.filterOnEvent().equals(Behavior.onCollision)).toList()
+                                .filter(b -> b.filterOnEvent().equals(Behavior.ON_COLLISION)).toList()
                                 .forEach(b -> b.onCollide(app, e1, e2));
                     }
                 }
@@ -62,7 +62,7 @@ public class CollisionDetector {
 
     /**
      * Collision response largely inspired by the article from
-     * https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
+     * <a href="https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics">collision-detection-physics</a>
      *
      * @param e1 first Entity in the collision
      * @param e2 second Entity in the collision
@@ -101,7 +101,6 @@ public class CollisionDetector {
                     e1.acc.y = -e1.acc.y * e1.material.elasticity * e1.material.friction;
                     e1.pos.y = e2.pos.y + e2.height;
                 }
-                if(e1.name.equals("player"))
                 Logger.log(Logger.DETAILED, this.getClass(), "e1.%s collides static e2.%s\n", e1.name, e2.name);
             }
         }

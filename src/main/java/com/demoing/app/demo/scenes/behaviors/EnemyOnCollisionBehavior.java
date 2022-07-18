@@ -7,7 +7,7 @@ import com.demoing.app.core.entity.Entity;
 public final class EnemyOnCollisionBehavior implements Behavior {
     @Override
     public String filterOnEvent() {
-        return Behavior.onCollision;
+        return Behavior.ON_COLLISION;
     }
 
     @Override
