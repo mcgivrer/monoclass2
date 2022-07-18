@@ -52,8 +52,10 @@ public class CollisionDetector {
                     if (e1.cbox.getBounds().intersects(e2.cbox.getBounds())) {
                         resolve(e1, e2);
                         e1.behaviors.values().stream()
-                                .filter(b -> b.filterOnEvent().equals(Behavior.ON_COLLISION)).toList()
-                                .forEach(b -> b.onCollide(app, e1, e2));
+                                .forEach(l -> l.stream()
+                                        .filter(b -> b.filterOnEvent()
+                                                .contains(Behavior.ON_COLLISION)).toList()
+                                        .forEach(b -> b.onCollide(app, e1, e2)));
                     }
                 }
             }

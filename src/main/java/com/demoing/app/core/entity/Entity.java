@@ -25,10 +25,13 @@ import static com.demoing.app.core.entity.EntityType.RECTANGLE;
 
 /**
  * Definition for all {@link Entity} managed by the small game framework.
- * A lot of attributes and <a href="https://en.wikipedia.org/wiki/Fluent_interface#Java">Fluent API</a> methods
+ * A lot of attributes and
+ * <a href="https://en.wikipedia.org/wiki/Fluent_interface#Java">Fluent API</a>
+ * methods
  * to ease the Entity initialization.
  * <p>
- * Support some {@link PhysicEngine}, {@link Render}, {@link Animation}, and {@link CollisionDetector} information,
+ * Support some {@link PhysicEngine}, {@link Render}, {@link Animation}, and
+ * {@link CollisionDetector} information,
  * mandatory attributes for multiple services.
  *
  * @author Frédéric Delorme
@@ -79,8 +82,10 @@ public class Entity {
     public int duration = -1;
     public Map<String, Object> attributes = new ConcurrentHashMap<>();
 
-    public Map<String, Behavior> behaviors = new ConcurrentHashMap<>();
+    public Map<String, List<Behavior>> behaviors = new ConcurrentHashMap<>();
     private Color shadowColor = Color.BLACK;
+
+    private List<Entity> child = new ArrayList<>();
 
     public Entity(String name) {
         this.name = name;
@@ -251,7 +256,8 @@ public class Entity {
                 : image);
     }
 
-    public Entity addAnimation(String key, int x, int y, int tw, int th, int[] durations, String pathToImage, int loop) {
+    public Entity addAnimation(String key, int x, int y, int tw, int th, int[] durations, String pathToImage,
+            int loop) {
         if (Optional.ofNullable(this.animations).isEmpty()) {
             this.animations = new Animation();
         }
@@ -265,11 +271,6 @@ public class Entity {
 
     public Entity activateAnimation(String key) {
         animations.activate(key);
-        return this;
-    }
-
-    public Entity addBehavior(Behavior b) {
-        this.behaviors.put(b.filterOnEvent(), b);
         return this;
     }
 
@@ -287,6 +288,18 @@ public class Entity {
     }
 
     /**
+     * Add a behavior to this entity.
+     * 
+     * @param b the behavior to be added to the Entity
+     * @return the updated Entity.
+     * @since 1.0.4
+     */
+    public Entity addBehavior(Behavior b) {
+        this.addBehavior(b.filterOnEvent(), b);
+        return this;
+    }
+
+    /**
      * Retrieve the internal entity Index current value.
      *
      * @return
@@ -295,4 +308,24 @@ public class Entity {
         return entityIndex;
     }
 
+    /**
+     * Add a child entity to this entity.
+     * 
+     * @param e
+     * @return
+     */
+    public Entity addChild(Entity e) {
+        child.add(e);
+        return this;
+    }
+
+    public List<Entity> getChild() {
+        return child;
+    }
+
+    public Entity addBehavior(String behaviorEvent, Behavior b){
+        behaviors.compute(behaviorEvent, (s, behaviorList) -> behaviorList == null ? new ArrayList<Behavior>() : behaviorList).add(b);
+
+        return this;
+    }
 }

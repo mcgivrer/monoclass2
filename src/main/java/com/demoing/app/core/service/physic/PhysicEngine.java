@@ -61,19 +61,21 @@ public class PhysicEngine {
             }
             e.update(elapsed);
 
-            // TODO update Entity Behavior
+            // Update Entity Behavior (A specific event may have multiple Behavior)
             e.behaviors.values().stream()
-                    .filter(b -> b.filterOnEvent()
-                            .contains(Behavior.ON_UPDATE_ENTITY))
-                    .toList()
-                    .forEach(b -> b.update(app, e, elapsed));
+                    .forEach(
+                            l -> l.stream()
+                                    .filter(b -> b.filterOnEvent()
+                                            .contains(Behavior.ON_UPDATE_ENTITY))
+                                    .toList()
+                                    .forEach(b -> b.update(app, e, elapsed)));
 
             // Reset all collision for the Entity e
             e.collide = false;
             e.colliders.clear();
         });
 
-        // TODO update Scene Behaviors
+        // Update Scene Behaviors
         if (Optional.ofNullable(app.getSceneManager().getActiveScene().getBehaviors()).isPresent()) {
             app.getSceneManager()
                     .getActiveScene()
