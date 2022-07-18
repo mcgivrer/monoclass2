@@ -64,7 +64,7 @@ public class PhysicEngine {
             // TODO update Entity Behavior
             e.behaviors.values().stream()
                     .filter(b -> b.filterOnEvent()
-                            .contains(Behavior.updateEntity))
+                            .contains(Behavior.ON_UPDATE_ENTITY))
                     .toList()
                     .forEach(b -> b.update(app, e, elapsed));
 
@@ -80,7 +80,7 @@ public class PhysicEngine {
                     .getBehaviors()
                     .values().stream()
                     .filter(b -> b.filterOnEvent()
-                            .contains(Behavior.updateScene))
+                            .contains(Behavior.ON_UPDATE_SCENE))
                     .toList()
                     .forEach(b -> b.update(app, elapsed));
         }

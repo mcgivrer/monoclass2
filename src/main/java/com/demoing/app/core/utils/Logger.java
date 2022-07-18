@@ -1,10 +1,10 @@
 package com.demoing.app.core.utils;
 
-import com.demoing.app.core.Application;
 import com.demoing.app.core.config.Configuration;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 
 /**
  * A little Logger class helper to output some basc log to console for debug purpose.
@@ -23,9 +23,11 @@ public class Logger {
     private static int logLevel = 0;
 
     private static DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    private static String entityLogFilterMatching;
 
     public Logger(Configuration c) {
         logLevel = c.logLevel;
+        entityLogFilterMatching = c.logEntityFilterMatching;
     }
 
     /**
@@ -39,10 +41,16 @@ public class Logger {
      * @param args      arguments array to format the correct message.
      */
     public static void log(int level, Class className, String message, Object... args) {
-        if (logLevel >= level) {
+        if (logLevel >= level && isEntityFiltered(args)) {
             ZonedDateTime ldt = ZonedDateTime.now();
             System.out.printf("[%s] %s : %s - %s\n", ldt.format(dtf), className, level, String.format(message, args));
         }
+    }
+
+    private static boolean isEntityFiltered(Object[] args) {
+        return Logger.entityLogFilterMatching.equals("") || Arrays.stream(args).anyMatch(
+                o -> o instanceof String
+                        && Logger.entityLogFilterMatching.contains((String)o));
     }
 
     public static void setLevel(int level) {

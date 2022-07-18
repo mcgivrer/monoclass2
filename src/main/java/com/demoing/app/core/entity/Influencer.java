@@ -20,7 +20,7 @@ public class Influencer extends Entity {
         addBehavior(new Behavior() {
             @Override
             public String filterOnEvent() {
-                return Behavior.onCollision;
+                return Behavior.ON_COLLISION;
             }
 
             @Override

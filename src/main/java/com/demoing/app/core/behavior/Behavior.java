@@ -4,9 +4,9 @@ import com.demoing.app.core.Application;
 import com.demoing.app.core.entity.Entity;
 
 public interface Behavior {
-    String onCollision = "onCollide";
-    String updateEntity = "updateEntity";
-    String updateScene = "updateScene";
+    String ON_COLLISION = "onCollide";
+    String ON_UPDATE_ENTITY = "updateEntity";
+    String ON_UPDATE_SCENE = "updateScene";
 
     String filterOnEvent();
 

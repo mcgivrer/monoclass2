@@ -49,6 +49,22 @@ public class Configuration {
      * @see Logger
      */
     public int logLevel = 0;
+
+    /**
+     * Comma separated list of entity names to activate debug exclusively on. If empty all entity activities are logged.
+     * Example in configuration file:
+     * <pre>
+     * ...
+     * # Logger level (0=none, 5=all)
+     * app.logger.level=2
+     * # Coma separated list of entity name to be logged (matching list)
+     * app.logger.filter.entity.match=player,ball
+     * ...
+     * </pre>
+     * <p>
+     * Here only activities on entity's name matching with <code>player</code> and <code>ball</code> will be logged.
+     */
+    public String logEntityFilterMatching = "";
     public long frameTime = 0;
 
     /**
@@ -137,6 +153,7 @@ public class Configuration {
         debugObjectFilter = appProps.getProperty("app.debug.objectFilter", "");
         logLevel = parseInt(appProps.getProperty("app.logger.level", "0"));
 
+        logEntityFilterMatching = appProps.getProperty("app.logger.filter.entity.match", "");
         screenWidth = parseDouble(appProps.getProperty("app.screen.width", "320.0"));
         screenHeight = parseDouble(appProps.getProperty("app.screen.height", "200.0"));
         displayScale = parseDouble(appProps.getProperty("app.screen.scale", "2.0"));
@@ -204,6 +221,7 @@ public class Configuration {
                     case "b", "buffers" -> numberOfBuffer = parseInt(argSplit[1]);
 
                     case "d", "debug" -> debug = parseInt(argSplit[1]);
+                    case "logFilter" -> logEntityFilterMatching = argSplit[1];
                     case "of", "objectFilter" -> debugObjectFilter = argSplit[1];
                     case "ll", "logLevel" -> logLevel = parseInt(argSplit[1]);
 
@@ -217,7 +235,6 @@ public class Configuration {
                     case "accmax" -> accMaxValue = parseDouble(argSplit[1]);
                     case "cspmin" -> colSpeedMinValue = parseDouble(argSplit[1]);
                     case "cspmax" -> colSpeedMaxValue = parseDouble(argSplit[1]);
-
                     case "fps" -> fps = parseDouble(argSplit[1]);
                     case "f", "fullScreen" -> convertStringToBoolean(argSplit[1]);
 

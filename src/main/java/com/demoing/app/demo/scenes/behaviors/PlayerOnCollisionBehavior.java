@@ -14,7 +14,7 @@ public final class PlayerOnCollisionBehavior implements Behavior {
 
     @Override
     public String filterOnEvent() {
-        return onCollision;
+        return ON_COLLISION;
     }
 
     @Override
