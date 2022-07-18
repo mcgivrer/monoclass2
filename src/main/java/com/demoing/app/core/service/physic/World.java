@@ -4,6 +4,7 @@ import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.math.Vec2d;
 import com.demoing.app.core.service.physic.material.Material;
 
+import java.awt.*;
 import java.awt.geom.Rectangle2D;
 
 /**
@@ -60,5 +61,9 @@ public class World {
     public World setGravity(Vec2d g) {
         this.gravity = g;
         return this;
+    }
+
+    public Rectangle2D getArea() {
+        return this.area;
     }
 }

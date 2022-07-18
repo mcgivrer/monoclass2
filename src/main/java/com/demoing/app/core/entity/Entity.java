@@ -257,7 +257,7 @@ public class Entity {
     }
 
     public Entity addAnimation(String key, int x, int y, int tw, int th, int[] durations, String pathToImage,
-            int loop) {
+                               int loop) {
         if (Optional.ofNullable(this.animations).isEmpty()) {
             this.animations = new Animation();
         }
@@ -289,7 +289,7 @@ public class Entity {
 
     /**
      * Add a behavior to this entity.
-     * 
+     *
      * @param b the behavior to be added to the Entity
      * @return the updated Entity.
      * @since 1.0.4
@@ -310,7 +310,7 @@ public class Entity {
 
     /**
      * Add a child entity to this entity.
-     * 
+     *
      * @param e
      * @return
      */
@@ -319,13 +319,46 @@ public class Entity {
         return this;
     }
 
+    /**
+     * Return the child entities
+     *
+     * @return a list of Entity.
+     */
     public List<Entity> getChild() {
         return child;
     }
 
-    public Entity addBehavior(String behaviorEvent, Behavior b){
-        behaviors.compute(behaviorEvent, (s, behaviorList) -> behaviorList == null ? new ArrayList<Behavior>() : behaviorList).add(b);
+    /**
+     * Add a behavior on a specific Behavior event type to the Entity.
+     *
+     * @param behaviorEventType one the of possible event type {@link Behavior#ON_UPDATE_ENTITY}, {@link Behavior#ON_UPDATE_SCENE}, {@link Behavior#ON_COLLISION}
+     * @param b                 the required Behavior to be applied according to the behavior event type (see {@link Behavior}).
+     * @return the updated Entity.
+     */
+    public Entity addBehavior(String behaviorEventType, Behavior b) {
+        behaviors.compute(behaviorEventType, (s, behaviorList) -> behaviorList == null ? new ArrayList<Behavior>() : behaviorList).add(b);
 
+        return this;
+    }
+
+    /**
+     * Return the list of Behavior corresponding to the requested <code>eventType</code>.
+     *
+     * @param eventType one the of possible event type {@link Behavior#ON_UPDATE_ENTITY}, {@link Behavior#ON_UPDATE_SCENE}, {@link Behavior#ON_COLLISION}
+     * @return the updated Entity.
+     */
+    public List<Behavior> getBehaviors(String eventType) {
+        return behaviors.get(eventType);
+    }
+
+    /**
+     * Add a force to the Entity.
+     * @param dx
+     * @param dy
+     * @return
+     */
+    public Entity addForce(double dx, double dy) {
+        this.forces.add(new Vec2d(dx,dy));
         return this;
     }
 }

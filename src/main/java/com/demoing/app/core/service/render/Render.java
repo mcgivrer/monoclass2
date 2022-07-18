@@ -117,40 +117,7 @@ public class Render {
                 .filter(e -> !(e instanceof Light)
                         && e.isAlive() || e.isPersistent())
                 .forEach(e -> {
-                    if (e.isNotStickToCamera()) {
-                        moveCamera(g, activeCamera, -1);
-                    }
-                    g.setColor(e.color);
-                    switch (e) {
-                        // This is a TextEntity
-                        case TextEntity te -> {
-                            drawText(g, e, te);
-                        }
-                        // This is a GaugeEntity
-                        case GaugeEntity ge -> {
-                            drawGauge(g, ge);
-                        }
-                        // This is a ValueEntity
-                        case ValueEntity se -> {
-                            drawValue(g, se);
-                        }
-                        // This is a MapEntity
-                        case MapEntity me -> {
-                            drawMapEntity(g, me);
-                        }
-                        // This is an Influencer
-                        case Influencer ie -> {
-                            drawInfluencer(g, ie);
-                        }
-                        // This is a basic entity
-                        case Entity ee -> {
-                            drawEntity(g, ee);
-                        }
-                    }
-                    drawDebugInfo(g, e);
-                    if (e.isNotStickToCamera()) {
-                        moveCamera(g, activeCamera, 1);
-                    }
+                    drawPipelineEntity(g, e);
                 });
         // Draw all lights
         gPipeline.stream().filter(e -> e instanceof Light).forEach(l -> {
@@ -165,6 +132,45 @@ public class Render {
         g.dispose();
         renderToScreen(realFps);
         renderingTime = System.nanoTime() - startTime;
+    }
+
+    private void drawPipelineEntity(Graphics2D g, Entity e) {
+        if (e.isNotStickToCamera()) {
+            moveCamera(g, activeCamera, -1);
+        }
+        g.setColor(e.color);
+        switch (e) {
+            // This is a TextEntity
+            case TextEntity te -> {
+                drawText(g, e, te);
+            }
+            // This is a GaugeEntity
+            case GaugeEntity ge -> {
+                drawGauge(g, ge);
+            }
+            // This is a ValueEntity
+            case ValueEntity se -> {
+                drawValue(g, se);
+            }
+            // This is a MapEntity
+            case MapEntity me -> {
+                drawMapEntity(g, me);
+            }
+            // This is an Influencer
+            case Influencer ie -> {
+                drawInfluencer(g, ie);
+            }
+            // This is a basic entity or a PArticleSystem
+            case Entity ee -> {
+                drawEntity(g, ee);
+            }
+        }
+        drawDebugInfo(g, e);
+        if (e.isNotStickToCamera()) {
+            moveCamera(g, activeCamera, 1);
+        }
+        // Draw all child entities.
+        e.getChild().forEach(ce->drawPipelineEntity(g,ce));
     }
 
     private void drawInfluencer(Graphics2D g, Influencer ie) {

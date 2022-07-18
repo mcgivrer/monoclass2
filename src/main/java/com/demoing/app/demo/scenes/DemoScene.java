@@ -13,6 +13,7 @@ import com.demoing.app.core.entity.*;
 import com.demoing.app.core.utils.I18n;
 import com.demoing.app.demo.scenes.behaviors.EnemyOnCollisionBehavior;
 import com.demoing.app.demo.scenes.behaviors.PlayerOnCollisionBehavior;
+import com.demoing.app.demo.scenes.behaviors.RainParticleUpdate;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -162,6 +163,11 @@ public class DemoScene extends AbstractScene {
                 .activateAnimation("idle")
                 .addBehavior(new PlayerOnCollisionBehavior(this));
         app.addEntity(player);
+
+        ParticleSystem ps = (ParticleSystem) new ParticleSystem("rain")
+                .setType(NONE)
+                .addBehavior(new RainParticleUpdate(world));
+        app.addEntity(ps);
 
         Camera cam = new Camera("cam01")
                 .setViewport(new Rectangle2D.Double(0, 0, app.config.screenWidth, app.config.screenHeight))

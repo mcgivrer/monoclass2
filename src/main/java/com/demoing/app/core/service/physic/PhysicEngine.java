@@ -58,10 +58,13 @@ public class PhysicEngine {
         app.getEntities().values().forEach((e) -> {
             if (e.physicType.equals(PhysicType.DYNAMIC)) {
                 updateEntity(e, elapsed);
+                // Update all child
+                e.getChild().forEach(childE -> updateEntity(childE, elapsed));
             }
             e.update(elapsed);
 
             // Update Entity Behavior (A specific event may have multiple Behavior)
+            // this can be applied alto specifically to ParticleSystem particle's update and generation.
             e.behaviors.values().stream()
                     .forEach(
                             l -> l.stream()
