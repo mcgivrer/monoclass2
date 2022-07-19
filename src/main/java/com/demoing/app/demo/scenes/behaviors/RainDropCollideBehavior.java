@@ -3,25 +3,16 @@ package com.demoing.app.demo.scenes.behaviors;
 import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.entity.Entity;
-import com.demoing.app.core.service.physic.World;
 
-public class RainDropParticleUpdate implements Behavior {
-    private final World world;
-
-    public RainDropParticleUpdate(World world) {
-        this.world = world;
-    }
-
+public class RainDropCollideBehavior implements Behavior {
     @Override
     public String filterOnEvent() {
-        return Behavior.ON_UPDATE_ENTITY;
+        return Behavior.ON_COLLISION;
     }
 
     @Override
     public void update(Application a, Entity e, double elapsed) {
-        if (e.pos.y > world.area.getHeight()) {
-            e.duration = 0;
-        }
+
     }
 
     @Override
@@ -31,5 +22,6 @@ public class RainDropParticleUpdate implements Behavior {
 
     @Override
     public void onCollide(Application a, Entity e1, Entity e2) {
+        e1.setDuration(0);
     }
 }

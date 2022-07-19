@@ -164,6 +164,7 @@ public class DemoScene extends AbstractScene {
                 .addBehavior(new PlayerOnCollisionBehavior(this));
         app.addEntity(player);
 
+        // Test particle system to simulate rain.
         ParticleSystem ps = (ParticleSystem) new ParticleSystem("rain")
                 .setType(NONE)
                 .addBehavior(new RainParticleUpdate(world));

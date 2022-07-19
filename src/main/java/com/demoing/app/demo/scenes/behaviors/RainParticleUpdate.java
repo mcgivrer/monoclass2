@@ -12,7 +12,7 @@ public class RainParticleUpdate implements Behavior {
 
     private World world;
 
-    public  RainParticleUpdate(World w) {
+    public RainParticleUpdate(World w) {
         this.world = w;
     }
 
@@ -25,18 +25,29 @@ public class RainParticleUpdate implements Behavior {
     public void update(Application a, Entity e, double elapsed) {
         if (e.getChild().size() < 200) {
             createDropParticleFromParent(e);
+        } else {
+            e.getChild().stream()
+                .filter(child -> child.isAlive())
+                .forEach(child -> {
+                    initDropParticle(child);
+                });
         }
     }
 
-    private void createDropParticleFromParent(Entity parent) {
-        Entity drop = new Entity(parent.name+"_drop_" +( parent.getChild().size() + 1))
-                .setType(EntityType.ELLIPSE)
+    private void initDropParticle(Entity child) {
+        child.setDuration(-1)
                 .setPosition(Math.random() * world.getArea().getWidth(), 0)
+                .addForce((0.5 * Math.random()) - 0.25, 0.4);
+    }
+
+    private void createDropParticleFromParent(Entity parent) {
+        Entity drop = new Entity(parent.name + "_drop_" + (parent.getChild().size() + 1))
+                .setType(EntityType.ELLIPSE)
                 .setSize(1.0, 2.0)
-                .addForce((0.5 * Math.random()) - 0.25, 0.4)
                 .setColor(Color.CYAN)
                 .setPriority(10)
                 .addBehavior(new RainDropParticleUpdate(world));
+        initDropParticle(drop);
         parent.getChild().add(drop);
     }
 

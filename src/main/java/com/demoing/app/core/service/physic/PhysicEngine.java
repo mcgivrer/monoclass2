@@ -59,7 +59,10 @@ public class PhysicEngine {
             if (e.physicType.equals(PhysicType.DYNAMIC)) {
                 updateEntity(e, elapsed);
                 // Update all child
-                e.getChild().forEach(childE -> updateEntity(childE, elapsed));
+                e.getChild().forEach(childE -> {
+                    updateEntity(childE, elapsed);
+                    childE.update(elapsed);
+                });
             }
             e.update(elapsed);
 

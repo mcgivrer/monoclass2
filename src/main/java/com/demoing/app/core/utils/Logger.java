@@ -23,7 +23,7 @@ public class Logger {
     private static int logLevel = 0;
 
     private static DateTimeFormatter dtf = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-    private static String entityLogFilterMatching;
+    private static String entityLogFilterMatching = "";
 
     public Logger(Configuration c) {
         logLevel = c.logLevel;
@@ -50,7 +50,7 @@ public class Logger {
     private static boolean isEntityFiltered(Object[] args) {
         return Logger.entityLogFilterMatching.equals("") || Arrays.stream(args).anyMatch(
                 o -> o instanceof String
-                        && Logger.entityLogFilterMatching.contains((String)o));
+                        && Logger.entityLogFilterMatching.contains((String) o));
     }
 
     public static void setLevel(int level) {

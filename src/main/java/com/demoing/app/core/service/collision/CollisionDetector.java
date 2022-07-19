@@ -35,6 +35,7 @@ public class CollisionDetector {
     }
 
     public void add(Entity e) {
+
         colliders.put(e.name, e);
     }
 
