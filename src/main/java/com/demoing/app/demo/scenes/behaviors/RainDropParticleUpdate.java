@@ -4,6 +4,7 @@ import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.service.physic.World;
+import com.demoing.app.core.utils.Logger;
 
 public class RainDropParticleUpdate implements Behavior {
     private final World world;
@@ -14,7 +15,7 @@ public class RainDropParticleUpdate implements Behavior {
 
     @Override
     public String filterOnEvent() {
-        return Behavior.ON_UPDATE_ENTITY;
+        return Behavior.ON_UPDATE_ENTITY+Behavior.ON_COLLISION;
     }
 
     @Override
@@ -31,5 +32,7 @@ public class RainDropParticleUpdate implements Behavior {
 
     @Override
     public void onCollide(Application a, Entity e1, Entity e2) {
+        Logger.log(Logger.DEBUG, RainParticleUpdate.class, "%s collide %s", e1.name, e2.name);
+
     }
 }

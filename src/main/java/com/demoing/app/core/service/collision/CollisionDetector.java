@@ -28,17 +28,33 @@ public class CollisionDetector {
     // ToDo! maintain a binTree to 'sub-space' world.
     public Map<String, Entity> colliders = new ConcurrentHashMap<>();
 
+    /**
+     * initialization of the CollisionDetector service
+     *
+     * @param a the parent Application
+     * @param c the configuration to rely on
+     * @param w the world where all the entities evolve.
+     */
     public CollisionDetector(Application a, Configuration c, World w) {
         this.config = c;
         this.app = a;
         this.world = w;
     }
 
+    /**
+     * Adding an {@link Entity} to the collision detection service.
+     *
+     * @param e the {@link Entity} to kae part in the collision detection system.
+     */
     public void add(Entity e) {
 
         colliders.put(e.name, e);
     }
 
+    /**
+     * Step into the detection 
+     * @param elapsed
+     */
     public void update(double elapsed) {
         detect();
     }
