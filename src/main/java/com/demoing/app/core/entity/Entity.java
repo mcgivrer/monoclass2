@@ -296,6 +296,7 @@ public class Entity {
      */
     public Entity addBehavior(Behavior b) {
         this.addBehavior(b.filterOnEvent(), b);
+        b.initialization(this);
         return this;
     }
 

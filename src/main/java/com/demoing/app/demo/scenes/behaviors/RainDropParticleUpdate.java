@@ -45,7 +45,6 @@ public class RainDropParticleUpdate implements Behavior {
      */
     @Override
     public void onCollide(Application a, Entity e1, Entity e2) {
-        Logger.log(Logger.DEBUG, RainParticleUpdate.class, "%s collide %s", e1.name, e2.name);
-        e1.duration = 0;
+
     }
 }

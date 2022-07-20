@@ -4,6 +4,7 @@ import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.entity.EntityType;
+import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.World;
 import com.demoing.app.core.utils.Logger;
 
@@ -25,12 +26,17 @@ public class RainParticleUpdate implements Behavior {
     /**
      * Nb max of particles to simulate rain.
      */
-    private int nbMaxParticle = 200;
+    private int nbMaxParticle = 300;
 
     /**
      * Duration for on rain drop (in ms)
      */
     private int particleDuration = 5000;
+
+    /**
+     * The rain force to generate rain drop.
+     */
+    private double rainForce = 2.5;
 
     /**
      * Create the Rain drop generator effect
@@ -39,6 +45,13 @@ public class RainParticleUpdate implements Behavior {
      */
     public RainParticleUpdate(World w) {
         this.world = w;
+    }
+
+    @Override
+    public void initialization(Entity e) {
+        for (int i = 0; i < nbMaxParticle; i++) {
+            createDropParticleFromParent(e);
+        }
     }
 
     /**
@@ -60,24 +73,10 @@ public class RainParticleUpdate implements Behavior {
      */
     @Override
     public void update(Application a, Entity e, double elapsed) {
-        if (e.getChild().size() < nbMaxParticle) {
-            createDropParticleFromParent(e);
-        } else {
-            e.getChild().stream()
-                    .filter(child -> !child.isAlive())
-                    .forEach(this::initDropParticle);
-        }
-    }
-
-    /**
-     * Initialize particle attribute to renew position, velocity  and life duration
-     *
-     * @param child the particle to be renewed (here is a Rain drop one)
-     */
-    private void initDropParticle(Entity child) {
-        child.setDuration(particleDuration)
-                .setPosition(Math.random() * world.getArea().getWidth(), 0)
-                .addForce((0.5 * Math.random()) - 0.25, 1.6);
+        e.getChild()
+                .stream()
+                .filter(child -> !child.isAlive())
+                .forEach(this::initDropParticle);
     }
 
     /**
@@ -88,12 +87,28 @@ public class RainParticleUpdate implements Behavior {
     private void createDropParticleFromParent(Entity parent) {
         Entity drop = new Entity(parent.name + "_drop_" + (parent.getChild().size() + 1))
                 .setType(EntityType.ELLIPSE)
+                .setPhysicType(PhysicType.DYNAMIC)
                 .setSize(1.0, 2.0)
                 .setColor(Color.CYAN)
+                .setMass(0.01)
                 .setPriority(10)
-                .addBehavior(new RainDropParticleUpdate(world));
+                .addBehavior(
+                        new RainDropParticleUpdate(world))
+                .addBehavior(
+                        new RainDropCollideBehavior(world));
         initDropParticle(drop);
         parent.getChild().add(drop);
+    }
+
+    /**
+     * Initialize particle attribute to renew position, velocity  and life duration
+     *
+     * @param child the particle to be renewed (here is a Rain drop one)
+     */
+    private void initDropParticle(Entity child) {
+        child.setDuration(particleDuration)
+            .setPosition(Math.random() * (world.getArea().getWidth()*0.8)+(world.getArea().getWidth()*0.1), 0)
+            .addForce((0.125 * Math.random()), rainForce);
     }
 
     /**

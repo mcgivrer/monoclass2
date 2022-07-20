@@ -50,6 +50,9 @@ public class CollisionDetector {
     public void add(Entity e) {
 
         colliders.put(e.name, e);
+        e.getChild().forEach(
+                ce -> colliders.put(ce.name, ce)
+        );
     }
 
     /**
@@ -69,15 +72,8 @@ public class CollisionDetector {
                 e2.collide = e2.collide || false;
                 if (e1.id != e2.id) {
                     if (e1.cbox.getBounds().intersects(e2.cbox.getBounds())) {
-
                         resolve(e1, e2);
                         applyBehaviors(e1, e2);
-                        if(e1 instanceof ParticleSystem) {
-                            e1.getChild().forEach(e -> {
-                                resolve(e, e2);
-                                applyBehaviors(e, e2);
-                            });
-                        }
                     }
                 }
             }
@@ -91,7 +87,8 @@ public class CollisionDetector {
                                 .contains(Behavior.ON_COLLISION)).toList()
                         .forEach(b -> {
                             b.onCollide(app, e1, e2);
-                        }));
+                        })
+                );
     }
 
     /**
@@ -104,12 +101,15 @@ public class CollisionDetector {
     private void resolve(Entity e1, Entity e2) {
         e1.collide = true;
         e2.collide = true;
+
         Vec2d vp = new Vec2d((e2.pos.x - e1.pos.x), (e2.pos.y - e1.pos.y));
         double distance = Math.sqrt((e2.pos.x - e1.pos.x) * (e2.pos.x - e1.pos.x) + (e2.pos.y - e1.pos.y) * (e2.pos.y - e1.pos.y));
         Vec2d colNorm = new Vec2d(vp.x / distance, vp.y / distance);
+
         if (e1.physicType == PhysicType.DYNAMIC && e2.physicType == PhysicType.DYNAMIC) {
             e1.colliders.add(e2);
             e2.colliders.add(e1);
+
             Vec2d vRelSpeed = new Vec2d(e1.vel.x - e2.vel.x, e1.vel.y - e2.vel.y);
             double colSpeed = vRelSpeed.x * colNorm.x + vRelSpeed.y * colNorm.y;
             var impulse = 2 * colSpeed / (e1.mass * e1.material.density + e2.mass * e2.material.density);
@@ -125,6 +125,7 @@ public class CollisionDetector {
             Logger.log(Logger.DETAILED, this.getClass(), "e1.%s collides e2.%s Vp=%s / dist=%f / norm=%s\n", e1.name, e2.name, vp, distance, colNorm);
 
         } else {
+
             if (e1.physicType == PhysicType.DYNAMIC && e2.physicType == PhysicType.STATIC) {
                 e1.colliders.add(e2);
                 if (e2.material.elasticity > 0) {
@@ -138,6 +139,9 @@ public class CollisionDetector {
                     }
                     Logger.log(Logger.DETAILED, this.getClass(), "e1.%s collides static e2.%s\n", e1.name, e2.name);
                 }
+            }
+            if (e1.physicType == PhysicType.DYNAMIC && e2.physicType == PhysicType.NONE) {
+                e1.colliders.add(e2);
             }
         }
         e1.update(1);

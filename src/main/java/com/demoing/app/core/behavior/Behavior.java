@@ -10,6 +10,15 @@ public interface Behavior {
 
     String filterOnEvent();
 
+    /**
+     * A default creator for this behavior to be called on Behavior initialization.
+     *
+     * @param e the concerned entity by the Behavior
+     */
+    default void initialization(Entity e) {
+
+    }
+
     void update(Application a, Entity e, double elapsed);
 
     void update(Application a, double elapsed);
