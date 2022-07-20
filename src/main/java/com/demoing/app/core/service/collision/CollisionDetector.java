@@ -4,6 +4,7 @@ import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.config.Configuration;
 import com.demoing.app.core.entity.Entity;
+import com.demoing.app.core.entity.ParticleSystem;
 import com.demoing.app.core.math.MathUtils;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.math.Vec2d;
@@ -52,7 +53,8 @@ public class CollisionDetector {
     }
 
     /**
-     * Step into the detection 
+     * Step into the detection
+     *
      * @param elapsed
      */
     public void update(double elapsed) {
@@ -67,16 +69,29 @@ public class CollisionDetector {
                 e2.collide = e2.collide || false;
                 if (e1.id != e2.id) {
                     if (e1.cbox.getBounds().intersects(e2.cbox.getBounds())) {
+
                         resolve(e1, e2);
-                        e1.behaviors.values().stream()
-                                .forEach(l -> l.stream()
-                                        .filter(b -> b.filterOnEvent()
-                                                .contains(Behavior.ON_COLLISION)).toList()
-                                        .forEach(b -> b.onCollide(app, e1, e2)));
+                        applyBehaviors(e1, e2);
+                        if(e1 instanceof ParticleSystem) {
+                            e1.getChild().forEach(e -> {
+                                resolve(e, e2);
+                                applyBehaviors(e, e2);
+                            });
+                        }
                     }
                 }
             }
         }
+    }
+
+    private void applyBehaviors(Entity e1, Entity e2) {
+        e1.behaviors.values().stream()
+                .forEach(l -> l.stream()
+                        .filter(b -> b.filterOnEvent()
+                                .contains(Behavior.ON_COLLISION)).toList()
+                        .forEach(b -> {
+                            b.onCollide(app, e1, e2);
+                        }));
     }
 
     /**

@@ -180,12 +180,10 @@ public class Application extends JPanel {
 
         // create window.
         window = new Window(this);
-
         sceneMgr = new SceneManager(this, config);
         physicEngine = new PhysicEngine(this, config);
         render = new Render(this, physicEngine.getWorld());
         collisionDetect = new CollisionDetector(this, config, physicEngine.getWorld());
-
         actionHandler = new ActionHandler(this);
     }
 

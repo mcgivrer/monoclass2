@@ -23,6 +23,16 @@ public class RainParticleUpdate implements Behavior {
     private final World world;
 
     /**
+     * Nb max of particles to simulate rain.
+     */
+    private int nbMaxParticle = 200;
+
+    /**
+     * Duration for on rain drop (in ms)
+     */
+    private int particleDuration = 5000;
+
+    /**
      * Create the Rain drop generator effect
      *
      * @param w the World object to take in account for Rain drop generation.
@@ -50,7 +60,7 @@ public class RainParticleUpdate implements Behavior {
      */
     @Override
     public void update(Application a, Entity e, double elapsed) {
-        if (e.getChild().size() < 200) {
+        if (e.getChild().size() < nbMaxParticle) {
             createDropParticleFromParent(e);
         } else {
             e.getChild().stream()
@@ -65,7 +75,7 @@ public class RainParticleUpdate implements Behavior {
      * @param child the particle to be renewed (here is a Rain drop one)
      */
     private void initDropParticle(Entity child) {
-        child.setDuration(3000)
+        child.setDuration(particleDuration)
                 .setPosition(Math.random() * world.getArea().getWidth(), 0)
                 .addForce((0.5 * Math.random()) - 0.25, 1.6);
     }
@@ -73,7 +83,7 @@ public class RainParticleUpdate implements Behavior {
     /**
      * Create a brand-new particle with color, type and name, and then initialize it with duration, position and speed.
      *
-     * @param parent the parent {@link ParticleSystem}.
+     * @param parent the parent {@link com.demoing.app.core.entity.ParticleSystem}.
      */
     private void createDropParticleFromParent(Entity parent) {
         Entity drop = new Entity(parent.name + "_drop_" + (parent.getChild().size() + 1))
@@ -89,16 +99,16 @@ public class RainParticleUpdate implements Behavior {
     /**
      * Nothing to do with the Scene update.
      *
-     * @param a
-     * @param elapsed
+     * @param a       the parent application.
+     * @param elapsed the elapsed time since previous call.
      */
     @Override
     public void update(Application a, double elapsed) {
-
+        // No need to implement update for Scene.
     }
 
     /**
-     * Nothing to do with e ParticleSystem collision.
+     * Nothing to do with the ParticleSystem collision.
      *
      * @param a
      * @param e1

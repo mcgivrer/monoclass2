@@ -15,7 +15,7 @@ public class RainDropParticleUpdate implements Behavior {
 
     @Override
     public String filterOnEvent() {
-        return Behavior.ON_UPDATE_ENTITY+Behavior.ON_COLLISION;
+        return Behavior.ON_COLLISION;
     }
 
     @Override
@@ -25,14 +25,27 @@ public class RainDropParticleUpdate implements Behavior {
         }
     }
 
+    /**
+     * No need to implement the Scene update for this {@link Behavior}.
+     *
+     * @param a       the parent application
+     * @param elapsed the elapsed time since previous call.
+     */
     @Override
     public void update(Application a, double elapsed) {
 
     }
 
+    /**
+     * if the particle collides with another entity, Log it !
+     *
+     * @param a  the parent application
+     * @param e1 the first entity (the Particle)
+     * @param e2 the second entity colliding the particle.
+     */
     @Override
     public void onCollide(Application a, Entity e1, Entity e2) {
         Logger.log(Logger.DEBUG, RainParticleUpdate.class, "%s collide %s", e1.name, e2.name);
-
+        e1.duration = 0;
     }
 }
