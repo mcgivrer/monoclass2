@@ -90,23 +90,22 @@ You can configure dynamically some of the internal parameters:
 | Argument                | Configuration key | Description                                                                                         | Default   |
 |:------------------------|:------------------|:----------------------------------------------------------------------------------------------------|:----------|
 | `w`, `width`            | screenWidth       | The width of the game window                                                                        | 320       |
-| `h`, `height`           | screenHeight      | The height of the game window                                                                       | 240       |
-| `s`, `scale`            | displayScale      | The the pixel scale                                                                                 | 2         |
+| `h`, `height`           | screenHeight      | The height of the game window                                                                       | 200       |
+| `s`, `scale`            | displayScale      | The the pixel scale                                                                                 | 2.5       |
 | `d`, `debug`            | debug             | the debug level of display mode                                                                     | 1         |
 | `ww`, `worldwidth`      | worldWidth        | The width of the world play area                                                                    | 800       |
 | `wh`, `worldheight`     | worldHeight       | The height of the world play area                                                                   | 600       |
 | `wg`, `worldgravity`    | worldGravity      | The gravity in the world play area                                                                  | 0.981     |
-| `spmin`                 | speedMinValue     | Physic Engine threshold object minimum speed to 0                                                   |           |
-| `spmax`                 | speedMaxValue     | Physic Engine maximum object speed                                                                  |           |
-| `accmin`                | accMinValue       | Physic Engine threshold object minimum acceleration to 0                                            |           |
-| `accmax`                | accMaxValue       | Physic Engine maximum object acceleration                                                           |           |
-| `cspmin`                | colSpeedMinValue  | Collision Detector threshold object minimum speed to 0                                              |           |
-| `cspmax`                | colSpeedMaxValue  | Collision Detector maximum object speed                                                             |           |
+| `spmin`                 | speedMinValue     | Physic Engine threshold object minimum speed to 0                                                   | 3.2       |
+| `spmax`                 | speedMaxValue     | Physic Engine maximum object speed                                                                  | 0.1       |
+| `accmin`                | accMinValue       | Physic Engine threshold object minimum acceleration to 0                                            | 0.01      |
+| `accmax`                | accMaxValue       | Physic Engine maximum object acceleration                                                           | 3.5       |
+| `cspmin`                | colSpeedMinValue  | Collision Detector threshold object minimum speed to 0                                              | 0.1       |
+| `cspmax`                | colSpeedMaxValue  | Collision Detector maximum object speed                                                             | 3.2       |
 | `fps`                   | fps               | Frame Per Second                                                                                    | 60        |
 | `f`, `fullScreen`       | fullScreen        | Switch game window to fullscreen mode                                                               | false[^2] |
 | `scene`                 | defaultScene      | the default scene to be activated (must be listed in the `app.scenes` in the `app.properties` file) | N/A       |
 | `l`, `language`, `lang` | defaultLanguage   | select the preferred language  (existing values are en_EN, fr_FR, es_ES or de_DE).                  | en_EN     |
-
 
 ### Usage example
 
