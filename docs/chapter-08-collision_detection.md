@@ -16,7 +16,8 @@ carefully the PhysicType with STATIC and DYNAMIC values.
 ```java
 public enum PhysicType {
     DYNAMIC,
-    STATIC
+    STATIC,
+    NONE
 }
 ```
 

@@ -17,7 +17,7 @@ https://learnwell.medium.com/how-to-dockerize-a-java-gui-application-bce560abf62
 
 Prepare a Docker image (see [Dockerfile](../Dockerfile) "open the corresponding docker file")
 
-and build tyhe image:
+and build the image:
 
 ```shell
 docker build --pull --rm -f "Dockerfile" -t monoclass2:latest "."

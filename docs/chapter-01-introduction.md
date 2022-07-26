@@ -7,11 +7,11 @@ JEP420 Pattern Matching `switch`, `@FunctionalInterface` and some enhancement on
 # The project
 
 The [`Application`](https://github.com/mcgivrer/monoclass2/blob/feature/add-camera-entity/src/main/java/com/demoing/app/Application.java#L17)
-class (we can not talk about a project for a 1500 LoCs class) is composed of some attribtues and methods (sic) and a
+class (we can not talk about a project for a 1500 LoCs class) is composed of some attributes and methods (sic) and a
 limited number of subclasses.
 
 So, [`I18n`](https://github.com/mcgivrer/monoclass2/blob/feature/add-camera-entity/src/main/java/com/demoing/app/Application.java#L69)
-, `Entity`, `TextEntity` and `Camera` are subclasses of `Application` master class, if you does not understand :P.
+, `Entity`, `TextEntity` and `Camera` are subclasses of `Application` master class, if you do not understand :P.
 
 ## Project organization & structure
 

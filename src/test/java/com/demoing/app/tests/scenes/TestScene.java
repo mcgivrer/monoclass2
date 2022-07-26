@@ -1,4 +1,4 @@
-package com.demoing.app.tests;
+package com.demoing.app.tests.scenes;
 
 import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;

@@ -12,7 +12,7 @@ event (`onCollision`), where sme new thing may happen:
 - impact player energy each time a ball collide the player, and manage energy and life of the player.
 
 Adding new Platforms that contains a new attribute named "dead" and set to true. If a ball collide such platform, it
-disappear and raise the player score.
+disappears and raise the player score.
 
 Let's begin with the `Behavior` interface:
 

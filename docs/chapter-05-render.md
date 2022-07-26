@@ -4,12 +4,13 @@ All draw operations are delegated to the `Render` class to order, draw and updat
 
 ## JDK 17-18 advantages
 
-Mosty in all services and processing class, I'll be using the latest Lambdas possibilities and the JEP-420 preview from
-JDK17 and 18, the Pattern Matching Switch Capability, For rendering purpose, adapting the `Render#draw` method the the
+Mostly in all services and processing class, I'll be using the latest Lambdas possibilities and the JEP-420 preview from
+JDK17 and 18, the Pattern Matching Switch Capability, For rendering purpose, adapting the `Render#draw` method the
 type of Entity in the pipeline.
 
 ```java
 class Render {
+    //...
     public draw(double fps) {
         gPipeline.stream()
                 .filter(e -> e.isAlive() || e.isNeverDying())
@@ -26,6 +27,7 @@ class Render {
                     //...
                 });
     }
+    //...
 }
 ```
 

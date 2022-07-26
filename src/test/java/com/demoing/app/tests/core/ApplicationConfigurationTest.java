@@ -24,7 +24,7 @@ public class ApplicationConfigurationTest extends AbstractApplicationTest {
         Assertions.assertEquals(320.0, app.config.screenWidth, 0.1, "The Screen Width configuration has not been set");
         Assertions.assertEquals(200.0, app.config.screenHeight, 0.1, "The Screen Height configuration has not been set");
         Assertions.assertEquals(2.5, app.config.displayScale, 0.1, "The Display Scale configuration has not been set");
-        Assertions.assertEquals("test:com.demoing.app.tests.TestScene", app.config.scenes, "The list of scenes configuration has not been set");
+        Assertions.assertEquals("test:com.demoing.app.tests.scenes.TestScene", app.config.scenes, "The list of scenes configuration has not been set");
         Assertions.assertEquals("test", app.config.defaultScene, "The default scene configuration has not been set");
     }
 
