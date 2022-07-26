@@ -1,7 +1,5 @@
-package com.demoing.app.core;
+package com.demoing.app.tests.core;
 
-
-import io.cucumber.java.nl.Stel;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,7 +8,7 @@ public class ApplicationConfigurationTest extends AbstractApplicationTest {
 
     @BeforeEach
     public void setup() {
-        super.setup("/test-config.properties");
+        super.setup("test-config.properties");
     }
 
     @Test

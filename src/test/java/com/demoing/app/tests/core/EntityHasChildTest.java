@@ -1,4 +1,4 @@
-package com.demoing.app.core;
+package com.demoing.app.tests.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;

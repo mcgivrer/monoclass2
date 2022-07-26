@@ -23,7 +23,7 @@ public class I18n {
      * @param config the parent configuration.
      */
     public static void setLanguage(Configuration config) {
-        String[] langCountry = config.defaultLanguage.split("_");
+        String[] langCountry = (config.defaultLanguage != null ? config.defaultLanguage : "en_EN").split("_");
         messages = ResourceBundle.getBundle("i18n.messages", new Locale(langCountry[0], langCountry[1]));
     }
 

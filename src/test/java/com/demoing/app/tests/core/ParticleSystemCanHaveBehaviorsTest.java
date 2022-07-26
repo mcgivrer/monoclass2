@@ -1,5 +1,6 @@
-package com.demoing.app.core;
+package com.demoing.app.tests.core;
 
+import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.entity.ParticleSystem;

@@ -25,8 +25,8 @@ import java.util.stream.Collectors;
  */
 public class PhysicEngine {
     private final Application app;
-    private final World world;
-    private final Configuration config;
+    private World world;
+    private Configuration config;
     public long updateTime;
     private final Map<String, Influencer> influencers = new ConcurrentHashMap<>();
 
@@ -42,7 +42,8 @@ public class PhysicEngine {
         this.config = c;
         this.world = new World()
                 .setArea(config.worldWidth, config.worldHeight)
-                .setGravity(new Vec2d(0.0, config.worldGravity));
+                .setGravity(new Vec2d(0.0, config.worldGravity))
+                .setMaterial(DefaultMaterial.DEFAULT.get());
     }
 
     /**
@@ -245,5 +246,9 @@ public class PhysicEngine {
 
     public World getWorld() {
         return this.world;
+    }
+
+    public void setWorld(World world) {
+        this.world = world;
     }
 }

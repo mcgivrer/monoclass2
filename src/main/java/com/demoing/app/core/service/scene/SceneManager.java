@@ -44,23 +44,26 @@ public class SceneManager {
      * @return true if Scene is correctly loaded, else false.
      * @see Configuration
      */
-    public boolean loadScenes() {
-        String[] scenesList = config.scenes.split(",");
-        for (String scene : scenesList) {
-            String[] sceneStr = scene.split(":");
-            try {
-                Class<?> clazzScene = Class.forName(sceneStr[1]);
-                final Constructor<?> sceneConstructor = clazzScene.getConstructor(String.class);
-                Scene s = (Scene) sceneConstructor.newInstance(sceneStr[0]);
-                scenes.put(sceneStr[0], s);
-                activateScene(config.defaultScene);
-            } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
-                     InvocationTargetException e) {
-                Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to load scene from configuration file:"
-                        + e.getLocalizedMessage()
-                        + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
-                e.printStackTrace(System.out);
-                return false;
+    public boolean loadScenes(String[] scenesList) {
+        if (Optional.ofNullable(scenesList).isPresent()
+                && !scenesList[0].equals("")) {
+            for (String scene : scenesList) {
+                String[] sceneStr = scene.split(":");
+                try {
+                    Class<?> clazzScene = Class.forName(sceneStr[1]);
+                    final Constructor<?> sceneConstructor = clazzScene.getConstructor(String.class);
+                    Scene s = (Scene) sceneConstructor.newInstance(sceneStr[0]);
+                    scenes.put(sceneStr[0], s);
+                    activateScene(config.defaultScene);
+                } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException |
+                         IllegalAccessException |
+                         InvocationTargetException e) {
+                    Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to load scene from configuration file:"
+                            + e.getLocalizedMessage()
+                            + "scene:" + sceneStr[0] + "=>" + sceneStr[1]);
+                    e.printStackTrace(System.out);
+                    return false;
+                }
             }
         }
         return true;
@@ -70,7 +73,7 @@ public class SceneManager {
         activeScene.create(application);
     }
 
-    protected void activateScene(String name) {
+    public void activateScene(String name) {
         if (scenes.containsKey(name)) {
             if (Optional.ofNullable(this.activeScene).isPresent()) {
                 this.activeScene.dispose();
@@ -94,5 +97,9 @@ public class SceneManager {
 
     public boolean isSceneReady() {
         return this.sceneReady;
+    }
+
+    public void addScene(String sceneName, Scene scene) {
+        scenes.put(sceneName, scene);
     }
 }

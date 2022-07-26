@@ -1,4 +1,4 @@
-package com.demoing.app.core;
+package com.demoing.app.tests.core;
 
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.entity.Influencer;
@@ -31,7 +31,7 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
     public void aWorldCanHaveInfluencer() {
         assertNotNull(
                 app.getPhysicEngine().getInfluencers(),
-                "the PhysicEngine has no Influencers List");
+                "the PhysicEngine has no Influencer's List");
     }
 
     @Test
@@ -54,7 +54,7 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
         // Create an Influencer in the initialized app World
         Influencer i = (Influencer) new Influencer("influencer_1")
                 .setForce(new Vec2d(1.0, 0.0))
-                .setPosition(0.0, w.area.getHeight() - 200.0)
+                .setPosition(0.0, 0.0)
                 .setSize(w.area.getWidth(), 200.0)
                 .setPhysicType(PhysicType.NONE)
                 .setColor(new Color(0.0f, 0.0f, 0.5f, .07f));
@@ -73,11 +73,9 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
             app.getPhysicEngine().update(16.0);
         }
 
-        assertTrue(e1.pos.x != 10.0,
-                "The Entity has not been updated by the Influencer force on the X axis");
-        assertTrue(
-                e1.pos.y != 10.0,
-                "The Entity has not been updated by the Influencer force on the Y axis");
+        assertAll("The Entity has not been updated by the Influencer force",
+                () -> assertTrue(e1.pos.x > 10.0, "The Entity has not been updated by the Influencer force on the X axis"),
+                () -> assertTrue(e1.pos.y > 10.0, "The Entity has not been updated by the Influencer force on the Y axis"));
     }
 
 }

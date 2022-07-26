@@ -1,4 +1,4 @@
-package com.demoing.app.core;
+package com.demoing.app.tests.core;
 
 import com.demoing.app.core.gfx.Animation;
 import org.junit.jupiter.api.AfterEach;

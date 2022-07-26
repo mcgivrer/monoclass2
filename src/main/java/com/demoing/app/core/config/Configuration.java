@@ -137,7 +137,7 @@ public class Configuration {
      */
     public Configuration(String fileName) {
         try {
-            InputStream is = this.getClass().getResourceAsStream(fileName);
+            InputStream is = this.getClass().getClassLoader().getResourceAsStream(fileName);
             appProps.load(is);
             loadConfig();
         } catch (Exception e) {

@@ -114,7 +114,7 @@ public class Application extends JPanel {
         try {
             initializeServices();
 
-            if (sceneMgr.loadScenes()) {
+            if (sceneMgr.loadScenes(config.scenes.split(","))) {
                 initDefaultActions();
                 // prepare services
                 createJMXStatus(this);

@@ -14,6 +14,7 @@ import java.awt.geom.Rectangle2D;
  * dynamically modify entity display or physic attributes</blockquote>
  */
 public class World {
+    private String name;
     /**
      * Area for this {@link World} object.
      */
@@ -38,6 +39,17 @@ public class World {
     public World() {
         area = new Rectangle2D.Double(0.0, 0.0, 320.0, 200.0);
         gravity = new Vec2d(0.0, -0.981);
+        this.name = "default";
+    }
+
+    /**
+     * Create a new world with a name.
+     *
+     * @param name name for the new world.
+     */
+    public World(String name) {
+        this();
+        this.name = name;
     }
 
     /**
@@ -65,5 +77,9 @@ public class World {
 
     public Rectangle2D getArea() {
         return this.area;
+    }
+
+    public Vec2d getGravity() {
+        return this.gravity;
     }
 }
