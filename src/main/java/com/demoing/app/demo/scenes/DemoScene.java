@@ -456,8 +456,8 @@ public class DemoScene extends AbstractScene {
             }
 
             if (!action) {
-                p.vel.x *= p.friction;
-                p.vel.x *= p.friction;
+                p.vel.x *= (p.friction);
+                p.vel.x *= (p.friction);
             }
         }
     }
