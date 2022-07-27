@@ -65,7 +65,7 @@ public class Application extends JPanel {
     public Map<String, Object> attributes = new HashMap<>();
 
     public Application(String[] args) {
-        this(args, "/app.properties");
+        this(args, "app.properties");
     }
 
     /**

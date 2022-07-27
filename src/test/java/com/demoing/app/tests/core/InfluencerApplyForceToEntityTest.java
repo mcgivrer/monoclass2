@@ -19,7 +19,7 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
 
     @BeforeEach
     public void setup() {
-        super.setup("/test-influencers.properties");
+        super.setup("test-influencers.properties");
     }
 
     @AfterEach
@@ -30,8 +30,8 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
     @Test
     public void aWorldCanHaveInfluencer() {
         assertNotNull(
-                app.getPhysicEngine().getInfluencers(),
-                "the PhysicEngine has no Influencer's List");
+                getApp().getPhysicEngine().getInfluencers(),
+                "the PhysicEngine has no Influence's List");
     }
 
     @Test
@@ -39,15 +39,15 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
         Influencer i = new Influencer("influencer_1")
                 .setForce(new Vec2d(10, 10))
                 .setGravity(new Vec2d(0.0, -0.981));
-        app.addEntity(i);
+        getApp().addEntity(i);
         assertEquals(
-                1, app.getPhysicEngine().getInfluencers().size(),
+                1, getApp().getPhysicEngine().getInfluencers().size(),
                 "The PhysicEngine was not updated with the created Influencer");
     }
 
     @Test
     public void addOneEntityUnderInfluencerAction() {
-        World w = app.getPhysicEngine().getWorld();
+        World w = getApp().getPhysicEngine().getWorld();
         // stop gravity effect on the application's World instance.
         w.setGravity(new Vec2d(0.0, 0.0)).setMaterial(DefaultMaterial.DEFAULT.get());
 
@@ -58,7 +58,7 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
                 .setSize(w.area.getWidth(), 200.0)
                 .setPhysicType(PhysicType.NONE)
                 .setColor(new Color(0.0f, 0.0f, 0.5f, .07f));
-        app.addEntity(i);
+        getApp().addEntity(i);
 
         // create a simple Rectangle entity to be influenced by the "influencer_1"
         Entity e1 = new Entity("entity_1")
@@ -66,11 +66,11 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
                 .setPosition(10, 10)
                 .setPhysicType(PhysicType.DYNAMIC)
                 .setType(EntityType.RECTANGLE);
-        app.addEntity(e1);
+        getApp().addEntity(e1);
 
         // 1 second of update (60 call for physic engine call)
         for (int n = 0; n < 60; n++) {
-            app.getPhysicEngine().update(16.0);
+            getApp().getPhysicEngine().update(16.0);
         }
 
         assertAll("The Entity has not been updated by the Influencer force",

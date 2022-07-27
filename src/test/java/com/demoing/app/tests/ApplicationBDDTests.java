@@ -22,5 +22,5 @@ import io.cucumber.junit.CucumberOptions;
         "usage:target/cucumber-usage.json",
         "junit:target/cucumber-results.xml" },
     tags = "not @ignore")
-class GameBDDTests {
+class ApplicationBDDTests {
 }
