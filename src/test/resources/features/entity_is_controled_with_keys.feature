@@ -2,6 +2,7 @@ Feature: An Entity can be controlled with keyboard
 
   According to directional keys (UP,DOWN,LEFT and RIGHT), the entity player can be controlled.
 
+  @player @scene @physic @world @keys
   Scenario: The player is controlled with directional keys
     Given A new Game from configuration "test-player.properties"
     And I create a new Scene typed "KeyScene" named "scene_keys" as default
