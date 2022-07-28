@@ -4,7 +4,6 @@ import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.service.physic.World;
-import com.demoing.app.core.utils.Logger;
 
 public class RainDropParticleUpdate implements Behavior {
     private final World world;

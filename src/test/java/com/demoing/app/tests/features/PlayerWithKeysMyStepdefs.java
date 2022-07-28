@@ -15,6 +15,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class PlayerWithKeysMyStepdefs extends AbstractApplicationTest implements En {
+    static Robot robot;
+    static {
+        try {
+            robot = new Robot();
+        } catch (AWTException e) {
+            e.printStackTrace();
+        }
+    }
     private static Map<String, Integer> keyMapping = Map.of(
             "UP", KeyEvent.VK_UP,
             "DOWN", KeyEvent.VK_DOWN,
@@ -27,21 +35,21 @@ public class PlayerWithKeysMyStepdefs extends AbstractApplicationTest implements
                 Scene kScn = new KeyScene(sceneName);
                 getApp().getSceneManager().addScene(sceneName, kScn);
                 getApp().getSceneManager().activateScene(sceneName);
-            }else{
-                fail("Unable to create request scene type "+sceneType);
+            } else {
+                fail("Unable to create request scene type " + sceneType);
             }
         });
         And("I push the {string} key for {int} ms", (String keyCode, Integer duration) -> {
-            Robot robot = new Robot();
             robot.keyPress(keyMapping.get(keyCode.toUpperCase()));
-            robot.wait(duration);
+            robot.delay(duration);
             robot.keyRelease(keyMapping.get(keyCode.toUpperCase()));
         });
         Then("the Entity {string} move of {double} px vertically.", (String entityName, Double verticalMoveInPx) -> {
             Vec2d initialPosition = (Vec2d) cache.get("initialPosition");
             Entity player = getApp().getEntity(entityName);
             double deltaY = Math.abs(player.pos.y - initialPosition.y);
-            assertEquals(verticalMoveInPx, deltaY, 4, "The Entity " + entityName + " has not moved vertically for " + verticalMoveInPx);
+            assertEquals(verticalMoveInPx, deltaY, 4,
+                    "The Entity " + entityName + " has not moved vertically for " + verticalMoveInPx);
         });
     }
 }

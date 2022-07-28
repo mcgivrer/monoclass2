@@ -364,7 +364,7 @@ public class Application extends JPanel {
     public void removeEntity(String name) {
         Entity e = entities.get(name);
         render.remove(e);
-        collisionDetect.colliders.remove(e);
+        collisionDetect.remove(e);
         entities.remove(name);
     }
 

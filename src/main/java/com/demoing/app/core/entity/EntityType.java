@@ -1,7 +1,5 @@
 package com.demoing.app.core.entity;
 
-import com.demoing.app.core.Application;
-
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;

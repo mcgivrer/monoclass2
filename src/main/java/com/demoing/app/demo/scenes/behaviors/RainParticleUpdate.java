@@ -1,14 +1,13 @@
 package com.demoing.app.demo.scenes.behaviors;
 
+import java.awt.Color;
+
 import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.entity.EntityType;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.World;
-import com.demoing.app.core.utils.Logger;
-
-import java.awt.*;
 
 /**
  * the RainParticleUpdate wil perform the Particle rain drop generation regarding a max number of particle.

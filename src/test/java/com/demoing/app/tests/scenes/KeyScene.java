@@ -1,17 +1,15 @@
 package com.demoing.app.tests.scenes;
 
+import java.awt.event.KeyEvent;
+import java.util.List;
+import java.util.Map;
+
 import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.entity.Light;
 import com.demoing.app.core.gfx.Window;
-import com.demoing.app.core.math.Vec2d;
 import com.demoing.app.core.scene.Scene;
-import com.demoing.app.core.service.physic.PhysicType;
-
-import java.awt.event.KeyEvent;
-import java.util.List;
-import java.util.Map;
 
 public class KeyScene implements Scene {
 

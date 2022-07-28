@@ -1,9 +1,8 @@
 package com.demoing.app.core.gfx;
 
-import com.demoing.app.core.Application;
-import com.demoing.app.core.entity.Entity;
-
 import java.awt.image.BufferedImage;
+
+import com.demoing.app.core.entity.Entity;
 
 /**
  * {@link AnimationSet} defining a series of Frames and their duration for a specific animation name.

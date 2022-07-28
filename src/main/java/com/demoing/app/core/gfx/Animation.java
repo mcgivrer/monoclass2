@@ -25,8 +25,6 @@ public class Animation {
     public int currentFrame;
     private long internalAnimationTime;
 
-    private boolean loop = true;
-
     public Animation() {
         currentAnimationSet = null;
         currentFrame = 0;

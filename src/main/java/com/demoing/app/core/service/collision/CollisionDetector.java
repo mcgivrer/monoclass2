@@ -1,19 +1,18 @@
 package com.demoing.app.core.service.collision;
 
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.config.Configuration;
 import com.demoing.app.core.entity.Entity;
-import com.demoing.app.core.entity.ParticleSystem;
 import com.demoing.app.core.math.MathUtils;
-import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.math.Vec2d;
+import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.World;
 import com.demoing.app.core.utils.Logger;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Collision Detector Service.
@@ -51,8 +50,22 @@ public class CollisionDetector {
 
         colliders.put(e.name, e);
         e.getChild().forEach(
-                ce -> colliders.put(ce.name, ce)
-        );
+                ce -> colliders.put(ce.name, ce));
+    }
+
+    /**
+     * Remove an {@link Entity} and all its child object from the collision
+     * detection service.
+     *
+     * @param e the {@link Entity} to be removed from the collision detection
+     *          system.
+     */
+    public void remove(Entity e) {
+        e.getChild().forEach(
+                ce -> {
+                    colliders.remove(ce.name);
+                });
+        colliders.remove(e.name);
     }
 
     /**
@@ -84,16 +97,17 @@ public class CollisionDetector {
         e1.behaviors.values().stream()
                 .forEach(l -> l.stream()
                         .filter(b -> b.filterOnEvent()
-                                .contains(Behavior.ON_COLLISION)).toList()
+                                .contains(Behavior.ON_COLLISION))
+                        .toList()
                         .forEach(b -> {
                             b.onCollide(app, e1, e2);
-                        })
-                );
+                        }));
     }
 
     /**
      * Collision response largely inspired by the article from
-     * <a href="https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics">collision-detection-physics</a>
+     * <a href=
+     * "https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics">collision-detection-physics</a>
      *
      * @param e1 first Entity in the collision
      * @param e2 second Entity in the collision
@@ -103,7 +117,8 @@ public class CollisionDetector {
         e2.collide = true;
 
         Vec2d vp = new Vec2d((e2.pos.x - e1.pos.x), (e2.pos.y - e1.pos.y));
-        double distance = Math.sqrt((e2.pos.x - e1.pos.x) * (e2.pos.x - e1.pos.x) + (e2.pos.y - e1.pos.y) * (e2.pos.y - e1.pos.y));
+        double distance = Math
+                .sqrt((e2.pos.x - e1.pos.x) * (e2.pos.x - e1.pos.x) + (e2.pos.y - e1.pos.y) * (e2.pos.y - e1.pos.y));
         Vec2d colNorm = new Vec2d(vp.x / distance, vp.y / distance);
 
         if (e1.physicType == PhysicType.DYNAMIC && e2.physicType == PhysicType.DYNAMIC) {
@@ -122,7 +137,8 @@ public class CollisionDetector {
             e2.vel.y += MathUtils.ceilMinMaxValue(impulse * e1.mass * e2.material.density * colSpeed * colNorm.y,
                     config.speedMinValue, config.colSpeedMaxValue);
 
-            Logger.log(Logger.DETAILED, this.getClass(), "e1.%s collides e2.%s Vp=%s / dist=%f / norm=%s\n", e1.name, e2.name, vp, distance, colNorm);
+            Logger.log(Logger.DETAILED, this.getClass(), "e1.%s collides e2.%s Vp=%s / dist=%f / norm=%s\n", e1.name,
+                    e2.name, vp, distance, colNorm);
 
         } else {
 

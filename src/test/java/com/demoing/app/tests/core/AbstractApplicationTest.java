@@ -1,10 +1,9 @@
 package com.demoing.app.tests.core;
 
-import com.demoing.app.core.Application;
-import com.demoing.app.core.config.Configuration;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.demoing.app.core.Application;
 
 public class AbstractApplicationTest {
     protected static Map<String, Object> cache = new ConcurrentHashMap<>();
