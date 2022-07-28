@@ -292,7 +292,7 @@ public class DemoScene extends AbstractScene {
             Light l = (Light) new Light("sphericalLight_" + i)
                     .setLightType(LightType.SPHERICAL)
                     .setEnergy(1.0)
-                    .setGlitterEffect(0.1)
+                    .setGlitterEffect(0.24)
                     .setStickToCamera(false)
                     .setColor(new Color(0.0f, 0.7f, 0.5f, 0.85f))
                     .setPosition(100.0 + (80.0 * i), app.config.screenHeight * 0.5)

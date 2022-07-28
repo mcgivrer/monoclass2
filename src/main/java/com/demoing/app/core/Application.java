@@ -1,78 +1,142 @@
 package com.demoing.app.core;
 
+import java.awt.Graphics;
+import java.awt.event.KeyEvent;
+import java.text.NumberFormat;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.swing.JPanel;
+
 import com.demoing.app.core.config.Configuration;
 import com.demoing.app.core.entity.Entity;
-import com.demoing.app.core.gfx.DisplayModeEnum;
 import com.demoing.app.core.gfx.Window;
 import com.demoing.app.core.io.ActionHandler;
-import com.demoing.app.core.math.Vec2d;
 import com.demoing.app.core.service.collision.CollisionDetector;
 import com.demoing.app.core.service.monitor.AppStatus;
 import com.demoing.app.core.service.physic.PhysicEngine;
-import com.demoing.app.core.service.physic.World;
 import com.demoing.app.core.service.render.Render;
 import com.demoing.app.core.service.scene.SceneManager;
 import com.demoing.app.core.utils.I18n;
 import com.demoing.app.core.utils.Logger;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.text.NumberFormat;
-import java.util.List;
-import java.util.*;
-
 /**
- * <p>{@link Application} is a Proof of Concept of a game mechanics, satisfying to some rules:
+ * <p>
+ * {@link Application} is a Proof of Concept of a game mechanics, satisfying to
+ * some rules:
  * <ul>
  * <li>only one main java classe (sub classes and enum are authorized),</li>
- * <li> limit the number of line of code (without javadoc)</li>
- * <li> Build without any external tools but bash and JDK.</li>
+ * <li>limit the number of line of code (without javadoc)</li>
+ * <li>Build without any external tools but bash and JDK.</li>
  * </ul>
  * </p>
  * <p>
- * <p>The entrypoint is the {@link Application#run()} method to start.
- * Its reading its default configuration from an <code>app.properties</code> file.
+ * <p>
+ * The entrypoint is the {@link Application#run()} method to start.
+ * Its reading its default configuration from an <code>app.properties</code>
+ * file.
  * </p>
  *
  * @author Frédéric Delorme
  * @since 1.0.0
  */
 public class Application extends JPanel {
-
+    /**
+     * Exit flag to request exit from application from the main loop.
+     * 
+     * @see Application#loop()
+     */
     public boolean exit = false;
-
+    /**
+     * a Pause flag to set the game in pause mode from the mao loop,
+     * preventing from rendering and updating applicaiton entities.
+     * 
+     * @see Application#loop()
+     */
     public boolean pause = false;
-
+    /**
+     * Configuration component supporting all confugruation from
+     * file and the ones coming command line arguments.
+     */
     public Configuration config;
 
+    /**
+     * The Window component lkeeping the link with OS events and graphics display.
+     */
     public Window window;
 
+    /**
+     * The graphic component to assume all drawing.
+     */
     public Render render;
+    /**
+     * THe Scene manager to chnage between different gameplay or game state.
+     */
     public SceneManager sceneMgr;
+    /**
+     * Physic computation engine to update and maintain application's
+     * managed entities regarding physic mechanic.
+     */
     private PhysicEngine physicEngine;
+    /**
+     * THis collision detection component will provide new collision event and some
+     * hook
+     * to proceed to correst collision response, at entity and/or at Scene level.
+     */
     private CollisionDetector collisionDetect;
+    /**
+     * Some actionListener to manage common application action,
+     * like processing a specific global key event request
+     */
     public ActionHandler actionHandler;
 
+    /**
+     * This Aplication status reporter is used by JMX to maintains internal
+     * metrics to be shared with monitoring system.
+     */
     private AppStatus appStats;
 
+    /**
+     * The real measured FPS; a render and update frame rate.
+     */
     private long realFps = 0;
 
+    /**
+     * An internal metric regarding the global one loop cycle duration.
+     */
     private long computationTime = 0;
 
-    private final Map<String, Entity> entities = new HashMap<>();
-    public Map<String, Object> attributes = new HashMap<>();
+    /**
+     * Map of entities maintained by the Application.
+     */
+    private final Map<String, Entity> entities = new ConcurrentHashMap<>();
+    /**
+     * Some shared attributes than can be accessible
+     * from everywhere in the application.
+     */
+    public Map<String, Object> attributes = new ConcurrentHashMap<>();
 
+    /**
+     * THe main constructor to start the Applciatiopn.
+     * The only input are the possible command line arguments for configuration
+     * purpose, overloading the default ones coming from configuration file.
+     * 
+     * @param args the array of arguents coming from the java command line.
+     */
     public Application(String[] args) {
-        this(args, "/app.properties");
+        this(args, "app.properties");
     }
 
     /**
      * Constructor used mainly for test purpose.
      *
-     * @param args                  the list of arguments to be parsed by the Configuration
-     * @param configurationFileName the configuration file path to be loaded by Configuration.
+     * @param args                  the list of arguments to be parsed by the
+     *                              Configuration
+     * @param configurationFileName the configuration file path to be loaded by
+     *                              Configuration.
      */
     public Application(String[] args, String configurationFileName) {
         NumberFormat.getInstance(Locale.ROOT);
@@ -88,7 +152,8 @@ public class Application extends JPanel {
 
     /**
      * Initialize the application by setting Configuration instance by loading
-     * data from <code>configFileName</code>  and parsing java CLI arguments <code>args</code>.
+     * data from <code>configFileName</code> and parsing java CLI arguments
+     * <code>args</code>.
      *
      * @param args           the CLI java arguments to be parsed (if provided)
      * @param configFileName the name of the configuration file to be loaded.
@@ -102,9 +167,9 @@ public class Application extends JPanel {
     /**
      * Start the Application by :
      * <ul>
-     *     <li>initializing services,</li>
-     *     <li>open the Application's window</li>
-     *     <li>and then init JMX monitoring service</li>
+     * <li>initializing services,</li>
+     * <li>open the Application's window</li>
+     * <li>and then init JMX monitoring service</li>
      * </ul>
      * a boolean start status is return according to the start operations.
      *
@@ -118,7 +183,8 @@ public class Application extends JPanel {
                 initDefaultActions();
                 // prepare services
                 createJMXStatus(this);
-                Logger.log(1, this.getClass(), " scene %s activated and created.\n", sceneMgr.getActiveScene().getName());
+                Logger.log(1, this.getClass(), " scene %s activated and created.\n",
+                        sceneMgr.getActiveScene().getName());
             }
         } catch (Exception e) {
             Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to initialize scene: " + e.getLocalizedMessage());
@@ -130,11 +196,11 @@ public class Application extends JPanel {
     /**
      * Define some pre-wired actions on some keys:
      * <ul>
-     *     <li><kbd>F11</kbd> switch between window and fullscreen display,</li>
-     *     <li><kbd>Z</kbd> reset the current scene,</li>
-     *     <li><kbd>D</kbd> Switch debug level from 0 to 4,</li>
-     *     <li><kbd>ESC</kbd> request to quit application,</li>
-     *     <li><kbd>K</kbd> Kill player's energy (test quicky),</li>
+     * <li><kbd>F11</kbd> switch between window and fullscreen display,</li>
+     * <li><kbd>Z</kbd> reset the current scene,</li>
+     * <li><kbd>D</kbd> Switch debug level from 0 to 4,</li>
+     * <li><kbd>ESC</kbd> request to quit application,</li>
+     * <li><kbd>K</kbd> Kill player's energy (test quicky),</li>
      * </ul>
      *
      * @author Frédéric Delorme
@@ -165,14 +231,14 @@ public class Application extends JPanel {
                 KeyEvent.VK_F11, o -> {
                     window.setWindowMode(!config.fullScreen);
                     return this;
-                }
-        ));
+                }));
     }
 
     /**
      * Initialize all Application services.
      * <p>
-     * <blockquote><em>NOTE</em> This method is now public because of test requirements on services.</blockquote>
+     * <blockquote><em>NOTE</em> This method is now public because of test
+     * requirements on services.</blockquote>
      *
      * @since 1.0.5
      */
@@ -186,7 +252,6 @@ public class Application extends JPanel {
         collisionDetect = new CollisionDetector(this, config, physicEngine.getWorld());
         actionHandler = new ActionHandler(this);
     }
-
 
     private void createJMXStatus(Application application) {
         appStats = new AppStatus(this, application, "Application");
@@ -236,7 +301,8 @@ public class Application extends JPanel {
             try {
                 Thread.sleep(waitTime);
             } catch (InterruptedException ie) {
-                Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to wait for " + waitTime + ": " + ie.getLocalizedMessage());
+                Logger.log(Logger.ERROR, this.getClass(),
+                        "ERR: Unable to wait for " + waitTime + ": " + ie.getLocalizedMessage());
             }
 
             // Update JMX metrics
@@ -351,7 +417,6 @@ public class Application extends JPanel {
     public Map<String, Entity> getEntities() {
         return entities;
     }
-
 
     public long getRealFps() {
         return realFps;
