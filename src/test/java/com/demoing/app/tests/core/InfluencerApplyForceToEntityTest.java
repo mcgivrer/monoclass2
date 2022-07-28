@@ -19,7 +19,7 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
 
     @BeforeEach
     public void setup() {
-        super.setup("/test-influencers.properties");
+        super.setup("test-influencers.properties");
     }
 
     @AfterEach
@@ -53,7 +53,7 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
 
         // Create an Influencer in the initialized app World
         Influencer i = (Influencer) new Influencer("influencer_1")
-                .setForce(new Vec2d(1.0, 0.0))
+                .setForce(new Vec2d(1.0, 1.0))
                 .setPosition(0.0, 0.0)
                 .setSize(w.area.getWidth(), 200.0)
                 .setPhysicType(PhysicType.NONE)
