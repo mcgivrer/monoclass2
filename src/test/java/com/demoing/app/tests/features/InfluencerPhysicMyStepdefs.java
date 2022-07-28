@@ -1,20 +1,18 @@
 package com.demoing.app.tests.features;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.math.Vec2d;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.material.Material;
 import com.demoing.app.tests.core.AbstractApplicationTest;
-import io.cucumber.java8.An;
+
 import io.cucumber.java8.En;
-import io.cucumber.java8.StepDefinitionBody;
-import io.cucumber.messages.internal.com.fasterxml.jackson.databind.node.ObjectNode;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class InfluencerPhysicMyStepdefs extends AbstractApplicationTest implements En {
 
