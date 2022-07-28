@@ -57,6 +57,9 @@ public class PhysicEngine {
 
         // update entities
         app.getEntities().values().forEach((e) -> {
+            // Reset all collision for the Entity e
+            e.collide = false;
+            e.colliders.clear();
             if (e.physicType.equals(PhysicType.DYNAMIC)) {
                 updateEntity(e, elapsed);
                 // Update all child
@@ -77,9 +80,6 @@ public class PhysicEngine {
                                     .toList()
                                     .forEach(b -> b.update(app, e, elapsed)));
 
-            // Reset all collision for the Entity e
-            e.collide = false;
-            e.colliders.clear();
         });
 
         // Update Scene Behaviors
@@ -122,7 +122,7 @@ public class PhysicEngine {
         Material m = e.material;
         Vec2d g = new Vec2d(world.gravity.x, e.mass * world.gravity.y);
         for (Influencer i : getInfluencers().values()) {
-            if (i.box.intersects(e.box)) {
+            if (i.box.contains(e.box)) {
                 Logger.log(Logger.DETAILED, this.getClass(), "Entity %s intersects Influencer %s", e.name, i.name);
                 if (Optional.ofNullable(i.getGravity()).isPresent()) {
                     g = new Vec2d(
@@ -215,21 +215,25 @@ public class PhysicEngine {
             e.pos.x = 0.0;
             e.vel.x *= -1 * e.elasticity;
             e.acc.x = 0.0;
+            e.collide=true;
         }
         if (e.cbox.getBounds().getY() < 0.0) {
             e.pos.y = 0.0;
             e.vel.y *= -1 * e.elasticity;
             e.acc.y = 0.0;
+            e.collide=true;
         }
         if (e.cbox.getBounds().getX() + e.cbox.getBounds().getWidth() > world.area.getWidth()) {
             e.pos.x = world.area.getWidth() - e.width;
             e.vel.x *= -1 * e.elasticity;
             e.acc.x = 0.0;
+            e.collide=true;
         }
         if (e.cbox.getBounds().getY() + e.cbox.getBounds().getHeight() > world.area.getHeight()) {
             e.pos.y = world.area.getHeight() - e.height;
             e.vel.x *= -1 * e.elasticity;
             e.acc.x = 0.0;
+            e.collide=true;
         }
     }
 

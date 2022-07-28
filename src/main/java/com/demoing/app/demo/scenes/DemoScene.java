@@ -114,7 +114,7 @@ public class DemoScene extends AbstractScene {
         Influencer i1 = (Influencer) new Influencer("if_1_water")
                 .setForce(new Vec2d(0.0, -0.19))
                 .setType(RECTANGLE)
-                .setMaterial(new Material("water", 0.6, 0, 0.05))
+                .setMaterial(new Material("water", 0.6, 0, 0.8))
                 .setPosition(0.0, world.area.getHeight() - 200.0)
                 .setSize(world.area.getWidth(), 200.0)
                 .setPhysicType(PhysicType.NONE)
@@ -456,8 +456,8 @@ public class DemoScene extends AbstractScene {
             }
 
             if (!action) {
-                p.vel.x *= p.friction;
-                p.vel.x *= p.friction;
+                p.vel.x *= (p.friction);
+                p.vel.x *= (p.friction);
             }
         }
     }

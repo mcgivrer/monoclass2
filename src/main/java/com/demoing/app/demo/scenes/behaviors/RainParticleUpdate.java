@@ -108,7 +108,7 @@ public class RainParticleUpdate implements Behavior {
     private void initDropParticle(Entity child) {
         child.setDuration(particleDuration)
             .setPosition(Math.random() * (world.getArea().getWidth()*0.8)+(world.getArea().getWidth()*0.1), 0)
-            .addForce((0.125 * Math.random()), rainForce);
+            .addForce(0.05 , rainForce);
     }
 
     /**
