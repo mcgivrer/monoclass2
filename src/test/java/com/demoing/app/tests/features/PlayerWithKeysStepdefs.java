@@ -14,8 +14,9 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class PlayerWithKeysMyStepdefs extends AbstractApplicationTest implements En {
+public class PlayerWithKeysStepdefs extends AbstractApplicationTest implements En {
     static Robot robot;
+
     static {
         try {
             robot = new Robot();
@@ -23,13 +24,14 @@ public class PlayerWithKeysMyStepdefs extends AbstractApplicationTest implements
             e.printStackTrace();
         }
     }
+
     private static Map<String, Integer> keyMapping = Map.of(
             "UP", KeyEvent.VK_UP,
             "DOWN", KeyEvent.VK_DOWN,
             "LEFT", KeyEvent.VK_LEFT,
             "RIGHT", KeyEvent.VK_RIGHT);
 
-    public PlayerWithKeysMyStepdefs() {
+    public PlayerWithKeysStepdefs() {
         And("I create a new Scene typed {string} named {string} as default", (String sceneType, String sceneName) -> {
             if (sceneType.toUpperCase().equals("KEYSCENE")) {
                 Scene kScn = new KeyScene(sceneName);
@@ -40,10 +42,29 @@ public class PlayerWithKeysMyStepdefs extends AbstractApplicationTest implements
             }
         });
         And("I push the {string} key for {int} ms", (String keyCode, Integer duration) -> {
-            robot.keyPress(keyMapping.get(keyCode.toUpperCase()));
-            robot.delay(duration);
-            robot.keyRelease(keyMapping.get(keyCode.toUpperCase()));
+
+
+            Thread keyThread = new Thread(() -> {
+                robot.delay(duration);
+                robot.keyPress(keyMapping.get(keyCode.toUpperCase()));
+                robot.delay(duration);
+                robot.keyRelease(keyMapping.get(keyCode.toUpperCase()));
+            });
+            Thread updateGame = new Thread(() -> {
+                for (int i = 0; i < duration * 5; i++) {
+                    getApp().getPhysicEngine().update(16);
+                    try {
+                        Thread.sleep(16);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    keyThread.notify();
+                }
+            });
+            keyThread.start();
+            updateGame.start();
         });
+
         Then("the Entity {string} move of {double} px vertically.", (String entityName, Double verticalMoveInPx) -> {
             Vec2d initialPosition = (Vec2d) cache.get("initialPosition");
             Entity player = getApp().getEntity(entityName);
