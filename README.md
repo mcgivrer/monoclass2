@@ -26,6 +26,7 @@ the project is now structured through multiple packages :
   |  |   |_  monitor
   |  |   |_  physic
   |  |   |_  render
+  |  |   |_  scene
   |  |_  utils
   |_ demo
        |_ scenes
