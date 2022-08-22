@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>fr.snapgames.services</groupId>
     <artifactId>monoclass2</artifactId>
-    <version>1.0.5</version>
+    <version>1.0.6-SNAPSHOT</version>
     <name>MonoClass2</name>
     <description>Building a small 2D plateform game framework from a simple class.</description>
     <inceptionYear>2022</inceptionYear>
@@ -38,7 +38,7 @@
         <url>https://github.com/mcgivrer/monoclass2</url>
         <connection>scm:git:git@github.com:mcgivrer/monoclass2.git</connection>
         <developerConnection>scm:git:https://github.com/mcgivrer/monoclass2.git</developerConnection>
-        <tag>v1.0.5-SNAPSHOT</tag>
+        <tag>v${project.version}</tag>
     </scm>
     <issueManagement>
         <system>GitHub</system>
