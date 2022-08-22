@@ -6,8 +6,7 @@ The World object describes the environment into all the Entity will evolve, thro
 
 ![Diagram Influencer](./diagrams/diagram-influencers.svg "what is an Influencer ?")
 
-
-The Influencer entity will let entity to be temporarily changed in its attributes, changing forces, friction,
+The Influencer entity will let entity be temporarily changed in its attributes, changing forces, friction,
 elasticity, color, speed, acceleration, gravity.
 
 The World object will support a map of Influencer, and the PhysicEngine, will apply the Influence attributes changes to
@@ -20,7 +19,8 @@ graphical attributes.
 
 The `Influencer` will take benefit of all already existing `Entity` attribute to support `Influencer`'s goals:
 Change the `Entity` contained in the area defined by the Influencer position and size, and the attributes will support
-the `attributes` to be applied to these contained entities. Attributes will be changed by a nen entity named Material (see bellow).
+the `attributes` to be applied to these contained entities. Attributes will be changed by a nen entity named Material (
+see bellow).
 
 ```java 
 public class Influencer extends Entity {
@@ -41,7 +41,7 @@ be reused and adapted.
 
 Here we will introduce the `Material` object.
 
-It's a java class having the mandatory physic attribtues like `elasticity`, `densit` and `friction` values, and some
+It's a java class having the mandatory physic attributes like `elasticity`, `densit` and `friction` values, and some
 graphical attribute as `color` and `transparency` values.
 
 ```java
@@ -55,6 +55,7 @@ public class Material {
     public float transparency;
 }
 ```
+
 ## World
 
 The `World` object now must support a default `Material` to define environmental constrains.
@@ -64,13 +65,14 @@ public static class World {
     public double gravity = 0.981;
     public Rectangle2D area;
     public Material material;
-    
-    public Material setMaterial(Material m){
-      this.material = m;
-      return this;
+
+    public Material setMaterial(Material m) {
+        this.material = m;
+        return this;
     }
-    public getMaterial(){
-      return material;
+
+    public getMaterial() {
+        return material;
     }
 }
 ```
@@ -79,8 +81,10 @@ public static class World {
 
 The `Influencer` can be added to the `Applicaiton` entities Map.
 
-- The `Render` processing is now adpated to display specifically the `Influencer` like an `Entity`.
-- The `PhysicEngine` is updated to detect when an Entity is "influcend" by an Influencer, if that the casen the `Material` defined in the `Influencer` is temporarily applied in place of the one of the Entity in the physic computation. So `density`, `friction` or `elasticity` can be changed in the `Influencer`'s influence area :P
+- The `Render` processing is now adapted to display specifically the `Influencer` like an `Entity`.
+- The `PhysicEngine` is updated to detect when an Entity is "influenced" by an Influencer, if that the case
+  the `Material` defined in the `Influencer` is temporarily applied in place of the one of the Entity in the physic
+  computation. So `density`, `friction` or `elasticity` can be changed in the `Influencer`'s influence area :P
 
 ### Render
 
@@ -88,29 +92,30 @@ The new draw method will take care of the `Influencer` entity:
 
 ```java
 public class Render
-    //...
-    public void draw(long realFps) {
+
         //...
-        gPipeline.stream()
-            .filter(e -> !(e instanceof Light)
-                    && e.isAlive() || e.isPersistent())
-            .forEach(e -> {
-                if (e.isNotStickToCamera()) {
-                    moveCamera(g, activeCamera, -1);
-                }
-                g.setColor(e.color);
-                switch (e) {
-                    //...
-                    // This is an Influencer
-                    case Influencer ie -> {
-                        drawInfluencer(g, ie);
-                    }
-                    //...
-                }
-                //...
-        });
-    }
-    //...
+        public void draw(long realFps) {
+            //...
+            gPipeline.stream()
+                    .filter(e -> !(e instanceof Light)
+                            && e.isAlive() || e.isPersistent())
+                    .forEach(e -> {
+                        if (e.isNotStickToCamera()) {
+                            moveCamera(g, activeCamera, -1);
+                        }
+                        g.setColor(e.color);
+                        switch (e) {
+                            //...
+                            // This is an Influencer
+                            case Influencer ie -> {
+                                drawInfluencer(g, ie);
+                            }
+                            //...
+                        }
+                        //...
+                    });
+        }
+        //...
 }
 ```
 
@@ -125,20 +130,21 @@ public class PhysicEngine {
                 .filter(e -> e instanceof Influencer)
                 .collect(Collectors.toMap(e -> e.name, e -> (Influencer) e));
     }
+
     //...
     private Material applyWorldInfluencers(Entity e) {
         Material m = e.material;
         getInfluencers().values()
-            .stream()
-            .filter(i -> i.box.contains(e.box))
-            .forEach(i2 -> {
-                m = i2.material;
-                e.forces.add(i1.force);
-            });
+                .stream()
+                .filter(i -> i.box.contains(e.box))
+                .forEach(i2 -> {
+                    m = i2.material;
+                    e.forces.add(i1.force);
+                });
         return m;
     }
     //...
-    
+
     private void applyPhysicRuleToEntity(Entity e, double elapsed) {
         e.oldPos.x = e.pos.x;
         e.oldPos.y = e.pos.y;
@@ -159,6 +165,6 @@ public class PhysicEngine {
 
         e.forces.clear();
     }
-    
+
 }
 ```

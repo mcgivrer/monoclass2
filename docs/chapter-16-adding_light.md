@@ -1,6 +1,6 @@
 # Lights
 
-An new `Entity` inheriting component named `Light` must provide a way to simulate some light with different type:
+A new `Entity` inheriting component named `Light` must provide a way to simulate some light with different type:
 
 - SPOT light,
 - POINT light

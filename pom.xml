@@ -3,9 +3,9 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>fr.snapgames.services</groupId>
     <artifactId>monoclass2</artifactId>
-    <version>1.0.5-SNAPSHOT</version>
+    <version>1.0.6-SNAPSHOT</version>
     <name>MonoClass2</name>
-    <description>Building a small 2D plateform game framework from a simple class.</description>
+    <description>Building a small 2D platform game framework from a simple class.</description>
     <inceptionYear>2022</inceptionYear>
 
     <!-- Project License -->
@@ -64,6 +64,8 @@
         <maven.compiler.target>18</maven.compiler.target>
         <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
         <project.scm.id>github</project.scm.id>
+        <cucumber.version>7.3.3</cucumber.version>
+        <junit.version>5.8.2</junit.version>
     </properties>
 
     <!-- Project Dependencies -->
@@ -75,25 +77,25 @@
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-junit</artifactId>
-            <version>7.2.3</version>
+            <version>${cucumber.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-java8</artifactId>
-            <version>7.2.3</version>
+            <version>${cucumber.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-java</artifactId>
-            <version>7.2.3</version>
+            <artifactId>cucumber-core</artifactId>
+            <version>${cucumber.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>5.8.2</version>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -110,8 +112,8 @@
                 <configuration>
                     <release>${maven.compiler.source}</release>
                     <enablePreview>true</enablePreview>
-                    <source>${maven.compiler.source}</source>
-                    <target>${maven.compiler.source}</target>
+                    <source>18</source>
+                    <target>18</target>
                     <compilerArgs>--enable-preview</compilerArgs>
                 </configuration>
             </plugin>
@@ -288,12 +290,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
+                <version>3.0.0-M7</version>
                 <configuration>
                     <testFailureIgnore>true</testFailureIgnore>
-                    <includes>
-                        <exclude>**/*BDDTests.java</exclude>
-                    </includes>
                     <argLine>
                         --illegal-access=permit
                     </argLine>

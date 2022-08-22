@@ -1,8 +1,19 @@
-package com.demoing.app.scenes;
+package com.demoing.app.demo.scenes;
 
-import com.demoing.app.core.AbstractScene;
+import com.demoing.app.core.behavior.Behavior;
+import com.demoing.app.core.gfx.Window;
+import com.demoing.app.core.io.Resources;
+import com.demoing.app.core.service.physic.World;
+import com.demoing.app.core.service.physic.material.Material;
+import com.demoing.app.core.service.physic.PhysicType;
+import com.demoing.app.core.math.Vec2d;
+import com.demoing.app.core.scene.AbstractScene;
 import com.demoing.app.core.Application;
-import com.demoing.app.core.Application.*;
+import com.demoing.app.core.entity.*;
+import com.demoing.app.core.utils.I18n;
+import com.demoing.app.demo.scenes.behaviors.EnemyOnCollisionBehavior;
+import com.demoing.app.demo.scenes.behaviors.PlayerOnCollisionBehavior;
+import com.demoing.app.demo.scenes.behaviors.RainParticleUpdate;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -12,16 +23,18 @@ import java.io.IOException;
 import java.util.*;
 import java.util.List;
 
-import static com.demoing.app.core.Application.EntityType.*;
-import static com.demoing.app.core.Application.PhysicType.STATIC;
-import static com.demoing.app.core.Application.TextAlign.CENTER;
+import static com.demoing.app.core.entity.EntityType.*;
+import static com.demoing.app.core.service.physic.PhysicType.STATIC;
+import static com.demoing.app.core.entity.TextAlign.CENTER;
 
 public class DemoScene extends AbstractScene {
 
-    Font wlcFont;
+    private World world;
+
+    private Font wlcFont;
 
     private boolean gameOver;
-    BufferedImage[] figs;
+    private BufferedImage[] figs;
 
     public DemoScene(String name) {
         super(name);
@@ -37,13 +50,14 @@ public class DemoScene extends AbstractScene {
     public boolean create(Application app) throws IOException, FontFormatException {
 
         gameOver = false;
+        world = app.getPhysicEngine().getWorld();
         // define default world friction (air resistance ?)
-        app.world.setMaterial(
+        world.setMaterial(
                 new Material(
                         "world",
                         1.0,
                         0.0,
-                        0.98));
+                        1.0));
 
         // define Game global variables
         app.setAttribute("life", 5);
@@ -55,8 +69,8 @@ public class DemoScene extends AbstractScene {
                 .setType(RECTANGLE)
                 .setPhysicType(STATIC)
                 .setColor(Color.LIGHT_GRAY)
-                .setPosition(32, app.world.area.getHeight() - 16)
-                .setSize(app.world.area.getWidth() - 64, 16)
+                .setPosition(32, world.area.getHeight() - 16)
+                .setSize(world.area.getWidth() - 64, 16)
                 .setCollisionBox(0, 0, 0, 0)
                 .setMaterial(matFloor)
                 .setMass(10000);
@@ -66,7 +80,7 @@ public class DemoScene extends AbstractScene {
                 .setType(RECTANGLE)
                 .setPhysicType(STATIC)
                 .setColor(Color.YELLOW)
-                .setPosition(app.world.area.getWidth() - 48, app.world.area.getHeight() - 8)
+                .setPosition(world.area.getWidth() - 48, world.area.getHeight() - 8)
                 .setSize(48, 8)
                 .setCollisionBox(0, 0, 0, 0)
                 .setMaterial(matFloor)
@@ -78,7 +92,7 @@ public class DemoScene extends AbstractScene {
                 .setType(RECTANGLE)
                 .setPhysicType(STATIC)
                 .setColor(Color.YELLOW)
-                .setPosition(0, app.world.area.getHeight() - 8)
+                .setPosition(0, world.area.getHeight() - 8)
                 .setSize(48, 8)
                 .setCollisionBox(0, 0, 0, 0)
                 .setMaterial(matFloor)
@@ -97,13 +111,13 @@ public class DemoScene extends AbstractScene {
         app.addEntity(la01);
 
         // Create an Influencer in the initialized app World
-        Influencer i1 = (Influencer) new Influencer("influencer_1")
-                .setForce(new Vec2d(0.0, -0.18))
+        Influencer i1 = (Influencer) new Influencer("if_1_water")
+                .setForce(new Vec2d(0.0, -0.19))
                 .setType(RECTANGLE)
-                .setMaterial(new Material("water", 0.6, 0.0, 0.9))
-                .setPosition(0.0, app.world.area.getHeight() - 200.0)
-                .setSize(app.world.area.getWidth(), 200.0)
-                .setPhysicType(Application.PhysicType.NONE)
+                .setMaterial(new Material("water", 0.6, 0, 0.8))
+                .setPosition(0.0, world.area.getHeight() - 200.0)
+                .setSize(world.area.getWidth(), 200.0)
+                .setPhysicType(PhysicType.NONE)
                 .setColor(new Color(0.0f, 0.0f, 0.5f, .07f));
         app.addEntity(i1);
 
@@ -113,10 +127,12 @@ public class DemoScene extends AbstractScene {
         // A main player Entity.
         Entity player = new Entity("player")
                 .setType(IMAGE)
-                .setPosition(app.world.area.getWidth() * 0.5, app.world.area.getHeight() * 0.5)
+                .setPosition(
+                        world.area.getWidth() * 0.5,
+                        world.area.getHeight() * 0.5)
                 .setSize(32.0, 32.0)
                 .setMaterial(
-                        new Material("player_mat", 1.0, 0.1, 0.2))
+                        new Material("player_mat", 1.0, 0.3, 0.98))
                 .setColor(Color.RED)
                 .setPriority(1)
                 .setMass(40.0)
@@ -145,30 +161,14 @@ public class DemoScene extends AbstractScene {
                         new int[]{160, 160, 160, 160, 160, 160, 500},
                         "/images/sprites01.png", 0)
                 .activateAnimation("idle")
-                .addBehavior(new Behavior() {
-
-                    @Override
-                    public String filterOnEvent() {
-                        return onCollision;
-                    }
-
-                    @Override
-                    public void onCollide(Application a, Entity e1, Entity e2) {
-                        if (e2.name.contains("ball_")) {
-                            reducePlayerEnergy(a, e1, e2);
-                        }
-                    }
-
-                    @Override
-                    public void update(Application a, Entity e, double d) {
-
-                    }
-
-                    public void update(Application a, double d) {
-
-                    }
-                });
+                .addBehavior(new PlayerOnCollisionBehavior(this));
         app.addEntity(player);
+
+        // Test particle system to simulate rain.
+        ParticleSystem ps = (ParticleSystem) new ParticleSystem("rain")
+                .setType(NONE)
+                .addBehavior(new RainParticleUpdate(world));
+        app.addEntity(ps);
 
         Camera cam = new Camera("cam01")
                 .setViewport(new Rectangle2D.Double(0, 0, app.config.screenWidth, app.config.screenHeight))
@@ -181,7 +181,7 @@ public class DemoScene extends AbstractScene {
         wlcFont = Resources.loadFont("/fonts/FreePixel.ttf")
                 .deriveFont(12.0f);
 
-        //---- Everything about HUD -----
+        // ---- Everything about HUD -----
 
         // Score Display
         int score = (int) app.getAttribute("score", 0);
@@ -245,8 +245,8 @@ public class DemoScene extends AbstractScene {
                                 "pf_", Color.LIGHT_GRAY,
                                 "floor", Color.GRAY,
                                 "outPlatform", Color.YELLOW))
-                .setRefEntities(app.entities.values().stream().toList())
-                .setWorld(app.world)
+                .setRefEntities(app.getEntities().values().stream().toList())
+                .setWorld(world)
                 .setSize(48, 32)
                 .setPosition(10, app.config.screenHeight - 48);
         app.addEntity(mapEntity);
@@ -255,45 +255,54 @@ public class DemoScene extends AbstractScene {
 
         // A welcome Text
         TextEntity welcomeMsg = (TextEntity) new TextEntity("welcome")
-                .setText(Application.I18n.get("app.message.welcome"))
+                .setText(I18n.get("app.message.welcome"))
                 .setAlign(CENTER)
                 .setFont(wlcFont)
-                .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
+                .setPosition(
+                        app.config.screenWidth * 0.5,
+                        app.config.screenHeight * 0.8)
                 .setColor(Color.WHITE)
                 .setInitialDuration(5000)
                 .setPriority(20)
                 .setStickToCamera(true);
         app.addEntity(welcomeMsg);
 
-        app.addEntity(new TextEntity("YouAreDead")
+        // You are dead Text
+        TextEntity youAreDeadTxt = (TextEntity) new TextEntity("YouAreDead")
                 .setText(I18n.get("app.player.dead"))
                 .setAlign(CENTER)
                 .setFont(wlcFont)
-                .setPosition(app.config.screenWidth * 0.5, app.config.screenHeight * 0.8)
+                .setPosition(
+                        app.config.screenWidth * 0.5,
+                        app.config.screenHeight * 0.8)
                 .setColor(Color.WHITE)
                 .setInitialDuration(0)
                 .setPriority(20)
-                .setStickToCamera(true));
+                .setStickToCamera(true);
+        app.addEntity(youAreDeadTxt);
 
         // mapping of keys actions:
         return true;
     }
 
     private void generateLights(Application app) {
+        boolean switchFront = false;
         for (int i = 0; i < 10; i++) {
+            switchFront = !switchFront;
             Light l = (Light) new Light("sphericalLight_" + i)
                     .setLightType(LightType.SPHERICAL)
                     .setEnergy(1.0)
-                    .setGlitterEffect(0.1)
+                    .setGlitterEffect(0.24)
                     .setStickToCamera(false)
                     .setColor(new Color(0.0f, 0.7f, 0.5f, 0.85f))
                     .setPosition(100.0 + (80.0 * i), app.config.screenHeight * 0.5)
-                    .setSize(50.0, 50.0);
+                    .setSize(50.0, 50.0)
+                    .setPriority(switchFront ? 10 : 0);
             app.addEntity(l);
         }
     }
 
-    private void reducePlayerEnergy(Application app, Entity player, Entity e) {
+    public void reducePlayerEnergy(Application app, Entity player, Entity e) {
         int hurt = (int) e.getAttribute("hurt", 0);
         int energy = (int) player.getAttribute("energy", 0);
         energy -= hurt;
@@ -314,11 +323,12 @@ public class DemoScene extends AbstractScene {
 
     private void generateAllPlatforms(Application app, int nbPf) {
         java.util.List<Entity> platforms = new ArrayList<>();
+        Material matPF = new Material("matPF", 1.0, 0.2, 0.20);
         Entity pf;
         boolean found = false;
         for (int i = 0; i < nbPf; i++) {
             while (true) {
-                pf = createOnePlatform(app, i);
+                pf = createOnePlatform(app, i, matPF);
                 found = false;
                 for (Entity p : platforms) {
                     if (p.cbox.intersects(pf.cbox.getBounds())) {
@@ -335,16 +345,15 @@ public class DemoScene extends AbstractScene {
 
     }
 
-    private Entity createOnePlatform(Application app, int i) {
+    private Entity createOnePlatform(Application app, int i, Material matPF) {
         double pfWidth = ((int) (Math.random() * 5) + 4);
-        double maxCols = (app.world.area.getWidth() / 16.0);
-        // 48=height of 1 pf + 1 player, -(3 + 3) to prevent create platform too low and too high
-        double maxRows = (app.world.area.getHeight() / 48) - 6;
-        double pfCol = (int) (Math.random() * maxCols);
+        double maxCols = (world.area.getWidth() / 16.0);
+        // 48=height of 1 pf + 1 player, -(3 + 3) to prevent create platform too low and
+        // too high
+        double maxRows = (world.area.getHeight() / 48) - 6;
+        double pfCol = (int) (Math.random() * (maxCols * (Math.random() > 0.5 ? 1.0 : 0.75)));
         pfCol = pfCol < maxCols ? pfCol : maxRows - pfWidth;
-        double pfRow = (int) ((Math.random() * maxRows) + 3);
-
-        Material matPF = new Material("matPF", 1.0, 0.02, 0.2);
+        double pfRow = (int) ((Math.random() * maxRows) + 2);
 
         Entity pf = new Entity("pf_" + i)
                 .setType(RECTANGLE)
@@ -363,7 +372,7 @@ public class DemoScene extends AbstractScene {
 
     @Override
     public synchronized void update(Application app, double elapsed) {
-        if (app.entities.containsKey("score") && app.entities.containsKey("player")) {
+        if (app.getEntities().containsKey("score") && app.getEntities().containsKey("player")) {
             Entity player = app.getEntity("player");
 
             // Update timer
@@ -390,7 +399,6 @@ public class DemoScene extends AbstractScene {
             ValueEntity lifeEntity = (ValueEntity) app.getEntity("life");
             lifeEntity.setValue(life);
 
-
             int energy = (int) player.getAttribute("energy", 0);
             GaugeEntity energyEntity = (GaugeEntity) app.getEntity("energy");
             energyEntity.setValue(energy);
@@ -407,48 +415,49 @@ public class DemoScene extends AbstractScene {
 
     private void gameOver(Application app, Entity player) {
         player.activateAnimation("dead");
-        TextEntity youAreDead = (TextEntity) app.entities.get("YouAreDead");
+        TextEntity youAreDead = (TextEntity) app.getEntities().get("YouAreDead");
         youAreDead.setInitialDuration(-1);
         gameOver = true;
     }
 
     @Override
     public void input(Application app) {
+        Window win = app.getWindow();
         Entity p = app.getEntity("player");
         if (Optional.ofNullable(p).isPresent()) {
             double speed = (double) p.getAttribute("accStep", 0.05);
             double jumpFactor = (double) p.getAttribute("jumpFactor", 12.0);
             boolean action = (boolean) p.getAttribute("action", false);
-            if (app.isCtrlPressed()) {
+            if (win.isCtrlPressed()) {
                 speed *= 2;
             }
-            if (app.isShiftPressed()) {
+            if (win.isShiftPressed()) {
                 speed *= 4;
             }
             p.activateAnimation("idle");
-            if (app.getKeyPressed(KeyEvent.VK_LEFT)) {
+            if (win.isKeyPressed(KeyEvent.VK_LEFT)) {
                 p.activateAnimation("walk");
-                p.forces.add(new Application.Vec2d(-speed, 0.0));
+                p.forces.add(new Vec2d(-speed, 0.0));
                 action = true;
             }
-            if (app.getKeyPressed(KeyEvent.VK_RIGHT)) {
+            if (win.isKeyPressed(KeyEvent.VK_RIGHT)) {
                 p.activateAnimation("walk");
-                p.forces.add(new Application.Vec2d(speed, 0.0));
+                p.forces.add(new Vec2d(speed, 0.0));
                 action = true;
             }
-            if (app.getKeyPressed(KeyEvent.VK_UP)) {
+            if (win.isKeyPressed(KeyEvent.VK_UP)) {
                 p.activateAnimation("jump");
-                p.forces.add(new Application.Vec2d(0.0, -jumpFactor * speed));
+                p.forces.add(new Vec2d(0.0, -jumpFactor * speed));
                 action = true;
             }
-            if (app.getKeyPressed(KeyEvent.VK_DOWN)) {
-                p.forces.add(new Application.Vec2d(0.0, speed));
+            if (win.isKeyPressed(KeyEvent.VK_DOWN)) {
+                p.forces.add(new Vec2d(0.0, speed));
                 action = true;
             }
 
             if (!action) {
-                p.vel.x *= p.friction;
-                p.vel.x *= p.friction;
+                p.vel.x *= (p.friction);
+                p.vel.x *= (p.friction);
             }
         }
     }
@@ -459,7 +468,7 @@ public class DemoScene extends AbstractScene {
     }
 
     @Override
-    public Map<String, Application.Behavior> getBehaviors() {
+    public Map<String, Behavior> getBehaviors() {
         return behaviors;
     }
 
@@ -470,7 +479,7 @@ public class DemoScene extends AbstractScene {
 
     @Override
     public void dispose() {
-        //todo release all resources captured by the scene.
+        // todo release all resources captured by the scene.
     }
 
     private void generateEntity(Application app, String namePrefix, int nbEntity, double acc) {
@@ -478,11 +487,11 @@ public class DemoScene extends AbstractScene {
         Material matEnt = new Material("matEnt", 1.0, 0.65, 0.98);
 
         for (int i = 0; i < nbEntity; i++) {
-            Entity e = new Entity(namePrefix + Application.getEntityIndex())
+            Entity e = new Entity(namePrefix + Entity.getEntityIndex())
                     .setType(ELLIPSE)
                     .setSize(8, 8)
-                    .setPosition(Math.random() * app.world.area.getWidth(),
-                            Math.random() * (app.world.area.getHeight() - 48))
+                    .setPosition(Math.random() * world.area.getWidth(),
+                            Math.random() * (world.area.getHeight() - 48))
                     .setColor(Color.RED)
                     .setInitialDuration((int) ((Math.random() * 5) + 5) * 5000)
                     .setMaterial(matEnt)
@@ -492,32 +501,7 @@ public class DemoScene extends AbstractScene {
                     .setAttribute("hurt", 1)
                     // player can win 10 to 50 points
                     .setAttribute("points", (int) (10 + (Math.random() * 4)) * 10)
-                    .addBehavior(new Behavior() {
-                        @Override
-                        public String filterOnEvent() {
-                            return Behavior.onCollision;
-                        }
-
-                        @Override
-                        public void onCollide(Application a, Entity e1, Entity e2) {
-                            // If hurt a dead attribute platform => Die !
-                            if ((boolean) e2.getAttribute("dead", false) && e1.isAlive()) {
-                                int score = (int) a.getAttribute("score", 0);
-                                int points = (int) e1.getAttribute("points", 0);
-                                a.setAttribute("score", score + points);
-                                e1.setDuration(0);
-                            }
-                        }
-
-                        @Override
-                        public void update(Application a, Entity e, double d) {
-
-                        }
-
-                        @Override
-                        public void update(Application a, double d) {
-                        }
-                    });
+                    .addBehavior(new EnemyOnCollisionBehavior());
             app.addEntity(e);
         }
     }

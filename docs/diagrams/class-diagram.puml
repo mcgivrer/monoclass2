@@ -1,10 +1,10 @@
-@startuml "docs/images/diagram-01-classes-diagram.png"
+@startuml
 !theme plain
 hide methods
 hide attributes
 
 class Application
-class Application::I18n
+class Application::I18n<< (S,#FF7700) Singleton >>
 class Application::Entity
 class Application::Camera extends Application::Entity
 class Application::Configuration
@@ -13,15 +13,18 @@ class Application::CollisionDetector
 class Application::Render
 class Application::Resources
 class Application::ActionHandler
+interface Application::Scene
+class DemoScene extends AbstractScene implements Application::Scene
 
 Application "1" --> "1" Application::Camera:activeCamera
 Application "1" --> "*" Application::Camera:cameras
 Application "1" --> "*" Application::Entity:entities
 Application "1" ---> "1" Application::I18n:i18n
 Application "1" ---> "1" Application::Resources:resources
-Application "1" ----> "1" Application::ActionHandler:ah
+Application "1" ---> "1" Application::ActionHandler:actionHandler
 Application "1" ---> "1" Application::Configuration:config
-Application "1" ----> "1" Application::PhysicEngine:pe
-Application "1" ----> "1" Application::CollisionDetector:cd
+Application "1" ----> "1" Application::PhysicEngine:physicEngine
+Application "1" ----> "1" Application::CollisionDetector:collisionDetector
 Application "1" ----> "1" Application::Render:render
+Application "1" ->"1" Application::Scene:activeScene
 @enduml

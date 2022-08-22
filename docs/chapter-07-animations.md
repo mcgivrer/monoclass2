@@ -3,10 +3,12 @@
 To product beautiful sprite, we need a Animation engine, let's have an Animation class, attribute for Entity, and adapt
 the Render and entity update to process animations set and display a moving Sprite !
 
-Animation is map of set of frames, each set of frame must ave a an easy way to define/identify it, a simple String key
+Animation is map of set of frames, each set of frame must have an easy way to define/identify it, a simple String key
 will do the job.
 
-> **NOTE** > _As a sample graphics, we will use a sprites image board from [Elthen adventurer sprites](https://elthen.itch.io/pixel-art-adventurer-sprites) thanks to his [fair licensing](https://www.patreon.com/posts/27430241)._
+> **NOTE** > _As a sample graphics, we will use a sprites image board
+from [Elthen adventurer sprites](https://elthen.itch.io/pixel-art-adventurer-sprites) thanks to
+his [fair licensing](https://www.patreon.com/posts/27430241)._
 
 ![Sprites sheet from Elthen](./images/illustration-sprites.png)
 

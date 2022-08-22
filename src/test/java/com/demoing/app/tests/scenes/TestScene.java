@@ -1,12 +1,15 @@
-package com.demoing.app.tests;
+package com.demoing.app.tests.scenes;
 
 import com.demoing.app.core.Application;
+import com.demoing.app.core.behavior.Behavior;
+import com.demoing.app.core.entity.Light;
+import com.demoing.app.core.scene.Scene;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class TestScene implements Application.Scene {
+public class TestScene implements Scene {
     private String name = "noname";
 
     public TestScene(String name) {
@@ -39,12 +42,12 @@ public class TestScene implements Application.Scene {
     }
 
     @Override
-    public Map<String, Application.Behavior> getBehaviors() {
+    public Map<String, Behavior> getBehaviors() {
         return null;
     }
 
     @Override
-    public List<Application.Light> getLights() {
+    public List<Light> getLights() {
         return new ArrayList<>();
     }
 

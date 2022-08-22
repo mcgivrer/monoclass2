@@ -1,6 +1,6 @@
-package com.demoing.app.core;
+package com.demoing.app.tests.core;
 
-import com.demoing.app.core.Application.Animation;
+import com.demoing.app.core.gfx.Animation;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +35,7 @@ public class ApplicationAnimationTest {
         for (int i = 0; i < (910 * 2) / 10; i++) {
             anim.update(10);
             System.out.println("time:" + i * 10
-                    + " => frame duration: " + (anim.animationSet.get("test").durations[anim.currentFrame] * i)
+                    + " => frame duration: " + (anim.getAnimationSet().get("test").getDurations(anim.currentFrame) * i)
                     + "=> anim frame:" + anim.currentFrame);
         }
         Assertions.assertEquals(0, anim.currentFrame, 0, "Aniomation has loop 2 times and go back to 0");
@@ -50,7 +50,7 @@ public class ApplicationAnimationTest {
                 new int[]{10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130},
                 -1);
         anim.activate("test");
-        Assertions.assertEquals(13, anim.animationSet.get("test").frames.length, "AnimationSet is not well created");
+        Assertions.assertEquals(13, anim.getAnimationSet().get("test").getFrames().length, "AnimationSet is not well created");
     }
 
     @Test
@@ -88,17 +88,17 @@ public class ApplicationAnimationTest {
                 new int[]{60, 60, 250, 250, 60, 60},
                 -1);
         Assertions.assertEquals(3,
-                anim.animationSet.size(),
+                anim.getAnimationSet().size(),
                 "All animation set has not been initialized.");
 
         Assertions.assertEquals(13,
-                anim.animationSet.get("idle").frames.length,
+                anim.getAnimationSet().get("idle").getFrames().length,
                 "Idle animation has not been init with 13 frames");
         Assertions.assertEquals(8,
-                anim.animationSet.get("walk").frames.length,
+                anim.getAnimationSet().get("walk").getFrames().length,
                 "Walk animation has not been init with 8 frames");
         Assertions.assertEquals(6,
-                anim.animationSet.get("jump").frames.length,
+                anim.getAnimationSet().get("jump").getFrames().length,
                 "Jump animation has not been init with 6 frames");
     }
 
@@ -111,7 +111,7 @@ public class ApplicationAnimationTest {
                 new int[]{160, 160, 160, 160, 160, 160, 500},
                 0);
 
-        Assertions.assertEquals(0, anim.animationSet.get("dead").loop, "This Dead animation will loop !");
+        Assertions.assertEquals(0, anim.getAnimationSet().get("dead").getLoop(), "This Dead animation will loop !");
     }
 
 }

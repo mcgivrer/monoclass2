@@ -1,17 +1,24 @@
-package com.demoing.app.core;
+package com.demoing.app.core.scene;
+
+import com.demoing.app.core.Application;
+import com.demoing.app.core.behavior.Behavior;
+import com.demoing.app.core.config.Configuration;
+import com.demoing.app.core.entity.Light;
+import com.demoing.app.core.math.Vec2d;
+import com.demoing.app.core.service.physic.World;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class AbstractScene implements Application.Scene {
+public abstract class AbstractScene implements Scene {
     protected final String name;
-    protected Map<String, Application.Behavior> behaviors = new ConcurrentHashMap<>();
+    protected Map<String, Behavior> behaviors = new ConcurrentHashMap<>();
     /**
      * The list of Light manage by this scene
      */
-    protected List<Application.Light> lights = new ArrayList<>();
+    protected List<Light> lights = new ArrayList<>();
 
     public AbstractScene(String name) {
         this.name = name;
@@ -35,12 +42,12 @@ public abstract class AbstractScene implements Application.Scene {
     }
 
     @Override
-    public Map<String, Application.Behavior> getBehaviors() {
+    public Map<String, Behavior> getBehaviors() {
         return null;
     }
 
     @Override
-    public List<Application.Light> getLights() {
+    public List<Light> getLights() {
         return null;
     }
 
