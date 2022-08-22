@@ -11,16 +11,8 @@ public class TileMapScene extends TestScene {
 
     @Override
     public boolean create(Application app) throws Exception {
-        TileMap tileMap = (TileMap) new TileMap("tm_02")
-                .setTileSize(16, 16)
-                .setMapSize(40, 20)
-                .setPriority(1);
-        loadMap(tileMap,"maps/map_0_1.properties");
+        TileMap tileMap = TileMapLoader.load("/maps/map_test.properties");
         app.addEntity(tileMap);
         return true;
-    }
-
-    private void loadMap(TileMap tileMap, String mapFilepath) {
-        tileMap = TileMapLoader.load(mapFilepath);
     }
 }

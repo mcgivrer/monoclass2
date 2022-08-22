@@ -16,7 +16,7 @@ public class TileMap extends Entity {
     /**
      * internal color mapping for Tile rendering
      */
-    public Map<Integer, Color> tiles = Map.of(
+    public final Map<Integer, Color> tiles = Map.of(
             0, Color.BLACK,
             1, Color.GREEN,
             2, Color.DARK_GRAY,
