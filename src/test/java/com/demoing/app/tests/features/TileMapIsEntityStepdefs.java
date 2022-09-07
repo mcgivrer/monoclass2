@@ -6,9 +6,10 @@ import com.demoing.app.tests.core.AbstractApplicationTest;
 import io.cucumber.java8.En;
 
 import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TileMapIsEntityStepdefs extends AbstractApplicationTest implements En {
 
@@ -50,6 +51,37 @@ public class TileMapIsEntityStepdefs extends AbstractApplicationTest implements 
             assertTrue(tm.drawn, "the TileMap has not been drawn");
             assertEquals(tm.getMapLength(), tm.tileDrawnCounter, "the number of rendered tiles does not match map size");
         });
+        Then("the TileMap {string} has an Object named {string}", (String tilemapName, String objectName) -> {
+            TileMap tm = (TileMap) (getApp().getEntity(tilemapName));
+            boolean status = false;
+            for (Map<String, Object> item : tm.getEntities().values()) {
+                if (item.get("name").equals(objectName)) {
+                    status = true;
+                    break;
+                }
+            }
+            assertTrue(status, "The entity name " + objectName + " in tilemap " + tilemapName + "is not declared");
+        });
+        And("the Object named {string} from TileMap {string} has attribute {string} with value {string}",
+                (String objectName, String tilemapName, String attributeName, String attributeValue) -> {
+                    TileMap tm = (TileMap) (getApp().getEntity(tilemapName));
+                    Map<String, Object> objAttributes = findObject(tm, objectName);
+                    if (Optional.ofNullable(objAttributes).isPresent()) {
+                        assertEquals(attributeValue,
+                                (String) objAttributes.get(attributeName).toString(),
+                                "The attribute " + attributeName + " has not value " + attributeValue);
+                    } else {
+                        fail("The attribute " + attributeName + " does not exist in object " + objectName);
+                    }
+                });
+    }
 
+    private Map<String, Object> findObject(TileMap tm, String objectName) {
+        for (Map<String, Object> item : tm.getEntities().values()) {
+            if (item.get("name").equals(objectName)) {
+                return item;
+            }
+        }
+        return null;
     }
 }

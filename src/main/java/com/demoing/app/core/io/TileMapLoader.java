@@ -5,10 +5,8 @@ import com.demoing.app.core.entity.TileMap;
 import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -35,17 +33,28 @@ public class TileMapLoader {
             readMapFromStringList(tm, map, mapWidth, mapHeight);
 
             List<Object> objects = tmProps.keySet().stream().filter(k -> k.toString().contains("level.objects")).collect(Collectors.toList());
-            Map<Integer, String> mapEntities = new ConcurrentHashMap<>();
-            objects.forEach(o -> {
+            Map<Integer, Map<String, Object>> mapEntities = new ConcurrentHashMap<>();
+            for (Object o : objects) {
                 int key = Integer.parseInt(o.toString().substring("level.objects.".length()));
-                mapEntities.put(key, tmProps.getProperty(o.toString()));
-            });
+                mapEntities.put(key, collectObjectAttributes((String) tmProps.get(o.toString())));
+            }
+            tm.addEntities(mapEntities);
             System.out.printf("mapEntities size:%d", mapEntities.size());
 
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         return tm;
+    }
+
+    private static Map<String, Object> collectObjectAttributes(String attrString) {
+        Map<String, Object> attributes = new HashMap<>();
+        String[] attrs = attrString.split(";");
+        Arrays.stream(attrs).toList().forEach(s -> {
+            String[] attrValues = s.split(":");
+            attributes.put(attrValues[0], attrValues[1]);
+        });
+        return attributes;
     }
 
     private static void readMapFromStringList(TileMap tm, String map, int mapWidth, int mapHeight) {

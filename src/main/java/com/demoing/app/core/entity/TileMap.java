@@ -3,7 +3,7 @@ package com.demoing.app.core.entity;
 import com.demoing.app.core.service.physic.PhysicType;
 
 import java.awt.*;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -16,7 +16,7 @@ public class TileMap extends Entity {
     /**
      * internal color mapping for Tile rendering
      */
-    public final Map<Integer, Color> tiles = Map.of(
+    public final Map<Integer, Color> tilesColor = Map.of(
             0, Color.BLACK,
             1, Color.GREEN,
             2, Color.DARK_GRAY,
@@ -56,6 +56,7 @@ public class TileMap extends Entity {
      * binary data of this TileMap
      */
     public int[] map;
+    private Map<Integer, Map<String, Object>> entities;
 
     /**
      * Create a new {@link TileMap} named <code>tilemapName</code>.
@@ -101,5 +102,18 @@ public class TileMap extends Entity {
      */
     public int getMapLength() {
         return map.length;
+    }
+
+    public TileMap addEntities(Map<Integer, Map<String, Object>> entities) {
+        this.entities = entities;
+        return this;
+    }
+
+    public Map<Integer, Map<String, Object>> getEntities() {
+        return this.entities;
+    }
+
+    public Map<String, Object> getEntity(int entityNb) {
+        return this.entities.get(entityNb);
     }
 }

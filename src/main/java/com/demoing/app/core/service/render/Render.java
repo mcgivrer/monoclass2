@@ -3,7 +3,6 @@ package com.demoing.app.core.service.render;
 import com.demoing.app.core.Application;
 import com.demoing.app.core.config.Configuration;
 import com.demoing.app.core.entity.*;
-import com.demoing.app.core.gfx.Window;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.World;
 import com.demoing.app.core.utils.Logger;
@@ -186,7 +185,7 @@ public class Render {
                 tileCounter++;
                 int tileIdx = tme.map[ix + (iy * tme.mapWidth)];
                 if (tileIdx != 0) {
-                    g.setColor(tme.tiles.get(tileIdx));
+                    g.setColor(tme.tilesColor.get(tileIdx));
                     g.fillRect(ix * tme.tileWidth, iy * tme.tileHeight, tme.tileWidth, tme.tileHeight);
                 } else {
                     g.setColor(Color.BLUE);
