@@ -3,9 +3,9 @@ package com.demoing.app.tests.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import org.junit.Test;
 
 import com.demoing.app.core.entity.Entity;
+import org.junit.jupiter.api.Test;
 
 public class EntityHasChildTest {
     Entity entity;
@@ -25,7 +25,4 @@ public class EntityHasChildTest {
         }
         assertEquals(20, entity.getChild().size(), 0, "The parent entity has no multiple child");
     }
-
-
-    
 }

@@ -1,9 +1,11 @@
 package com.demoing.app.tests;
 
-import org.junit.runner.RunWith;
+import org.junit.platform.suite.api.ConfigurationParameter;
+import org.junit.platform.suite.api.IncludeEngines;
+import org.junit.platform.suite.api.SelectClasspathResource;
+import org.junit.platform.suite.api.Suite;
 
-import io.cucumber.junit.Cucumber;
-import io.cucumber.junit.CucumberOptions;
+import static io.cucumber.junit.platform.engine.Constants.GLUE_PROPERTY_NAME;
 
 /**
  * TDD entry point for the test execution
@@ -11,16 +13,10 @@ import io.cucumber.junit.CucumberOptions;
  * @author Frédéric Delorme
  * @since 0.0.1
  */
-@RunWith(Cucumber.class)
-@CucumberOptions(
-    features = "src/test/resources/features",
-    glue = { "com.demoing.app.tests.features" },
-    plugin = {
-        "html:target/cucumber-html-report",
-        "json:target/cucumber.json",
-        "pretty:target/cucumber-pretty.txt",
-        "usage:target/cucumber-usage.json",
-        "junit:target/cucumber-results.xml" },
-    tags = "not @ignore")
+@Suite
+@IncludeEngines("cucumber")
+@SelectClasspathResource("com/demoing/app/tests/features")
+@ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "com.demoing.app.tests.features")
+@ConfigurationParameter(key = "cucumber.features", value = "src/test/resources/features")
 class ApplicationBDDTests {
 }
