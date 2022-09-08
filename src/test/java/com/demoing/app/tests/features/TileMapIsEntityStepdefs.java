@@ -1,5 +1,6 @@
 package com.demoing.app.tests.features;
 
+import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.entity.TileMap;
 import com.demoing.app.core.scene.Scene;
 import com.demoing.app.tests.core.AbstractApplicationTest;
@@ -37,7 +38,7 @@ public class TileMapIsEntityStepdefs extends AbstractApplicationTest implements 
             TileMap tm = (TileMap) (getApp().getEntity(tilemapName));
             assertEquals(mapTileLength, tm.getMapLength(), "The TileMap internal array does not match width and height");
         });
-        And("a TileMap named {string} is created", (String tilemapName) -> {
+        And("the Scene creates a TileMap named {string}", (String tilemapName) -> {
             TileMap tm = (TileMap) (getApp().getEntity(tilemapName));
             assertEquals(tilemapName, tm.name, "A wrong TileMap is created");
         });
@@ -74,6 +75,21 @@ public class TileMapIsEntityStepdefs extends AbstractApplicationTest implements 
                         fail("The attribute " + attributeName + " does not exist in object " + objectName);
                     }
                 });
+        Then("a GameObject named {string} is created by TileMap {string}", (String objectName, String tilemapName) -> {
+            TileMap tm = (TileMap) (getApp().getEntity(tilemapName));
+            boolean entityFound = false;
+            for (Entity e : tm.getChild()) {
+                entityFound = true;
+                break;
+
+            }
+            if (entityFound) {
+                assertTrue(e.name.equals(objectName), "The GameObject " + objectName + "has not been created by TileMap " + tilemapName);
+            } else {
+                fail("T" +
+                        "he GameObject " + objectName + "has not been created by TileMap " + tilemapName);
+            }
+        });
     }
 
     private Map<String, Object> findObject(TileMap tm, String objectName) {
