@@ -2,8 +2,6 @@
 
 A **MonoClass 2** v1.0.6 project test.
 
-## UPDATE 2022-JULY-01
-
 The project evolves to a too big number of feature, and debugging a `monoclass` is annoying; I reach the point of "class
 splitting", or refactoring.
 I've also introduced Maven to perform a better build (see [pom.xml](./pom.xml "open the maven build file"))
