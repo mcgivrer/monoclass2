@@ -1,6 +1,6 @@
 # README
 
-A **MonoClass 2** v1.0.5 project test.
+A **MonoClass 2** v1.0.6 project test.
 
 ## UPDATE 2022-JULY-01
 
@@ -139,6 +139,7 @@ You can configure dynamically some internal parameters:
 | `d`, `debug`         | app.debug.level        | Debug level (0=no debug to 5=max debut)                                                                             | 0       |
 | `of`, `objectFilter` | app.debug.objectFilter | String coma separated of objects named to activate details debug display information for.                           | ""      |
 | `ll`, `logLevel`     | app.logger.level       | Logger level (0=none, 5=all)                                                                                        | 0       |
+
 
 ### Usage example
 
