@@ -1,10 +1,7 @@
 package com.demoing.app.tests.core;
 
 import com.demoing.app.core.gfx.Animation;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 
 public class ApplicationAnimationTest {
@@ -22,6 +19,7 @@ public class ApplicationAnimationTest {
     }
 
     @Test
+    @DisplayName("Adding some animation set")
     public void testLoopAnimSet() {
         anim.addAnimationSet("test",
                 "/images/sprites01.png",
@@ -42,6 +40,7 @@ public class ApplicationAnimationTest {
     }
 
     @Test
+    @DisplayName("Checking the exact animation number of frames")
     public void testNumberOfFrames() {
         anim.addAnimationSet("test",
                 "/images/sprites01.png",
@@ -54,6 +53,7 @@ public class ApplicationAnimationTest {
     }
 
     @Test
+    @DisplayName("Getting some animation's frame information")
     public void testGetFrameNotNull() {
         anim.addAnimationSet("test",
                 "/images/sprites01.png",
@@ -68,6 +68,7 @@ public class ApplicationAnimationTest {
     }
 
     @Test
+    @DisplayName("Adding multiple animation set with various frames size")
     public void testMultipleAnimationSetSizeAndFramesLength() {
         anim.addAnimationSet("idle",
                 "/images/sprites01.png",
@@ -103,7 +104,8 @@ public class ApplicationAnimationTest {
     }
 
     @Test
-    public void testNotLoopingAnimationCOnfiguration() {
+    @DisplayName("Setting a non looping animation")
+    public void testNotLoopingAnimationConfiguration() {
         anim.addAnimationSet("dead",
                 "/images/sprites01.png",
                 0, 7 * 32,

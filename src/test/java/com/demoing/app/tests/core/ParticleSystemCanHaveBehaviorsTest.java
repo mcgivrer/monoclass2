@@ -5,12 +5,14 @@ import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.entity.ParticleSystem;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 public class ParticleSystemCanHaveBehaviorsTest {
     ParticleSystem ps;
 
     @Test
+    @DisplayName("A ParticleSystem uses a dedicated Behavior to update particles")
     public void psCanHaveParticleUpdateBehavior() {
         ps = new ParticleSystem("psOneUpdate");
         ps.addParticleUpdate(new Behavior() {
@@ -21,7 +23,7 @@ public class ParticleSystemCanHaveBehaviorsTest {
 
             @Override
             public void update(Application a, Entity e, double elapsed) {
-
+                // TODO implements a basic particle updater
             }
 
             @Override
@@ -39,6 +41,7 @@ public class ParticleSystemCanHaveBehaviorsTest {
     }
 
     @Test
+    @DisplayName("A ParticleSystem uses a Behavior implementation to generate particles")
     public void psCanHaveParticleGeneratorBehavior() {
         ps = new ParticleSystem("psTwoGenerator");
         ps.addParticleUpdate(new Behavior() {
@@ -49,7 +52,7 @@ public class ParticleSystemCanHaveBehaviorsTest {
 
             @Override
             public void update(Application a, Entity e, double elapsed) {
-
+                // TODO implements a basic generator
             }
 
             @Override
