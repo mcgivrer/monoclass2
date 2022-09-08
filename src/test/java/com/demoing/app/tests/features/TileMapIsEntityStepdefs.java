@@ -75,20 +75,21 @@ public class TileMapIsEntityStepdefs extends AbstractApplicationTest implements 
                         fail("The attribute " + attributeName + " does not exist in object " + objectName);
                     }
                 });
-        Then("a GameObject named {string} is created by TileMap {string}", (String objectName, String tilemapName) -> {
+        Then("a Entity named {string} is created by TileMap {string}", (String objectName, String tilemapName) -> {
             TileMap tm = (TileMap) (getApp().getEntity(tilemapName));
             boolean entityFound = false;
             for (Entity e : tm.getChild()) {
                 entityFound = true;
+                assertTrue(e.name.equals(objectName), "The Entity " + objectName + "has not been created by TileMap " + tilemapName);
                 break;
-
             }
-            if (entityFound) {
-                assertTrue(e.name.equals(objectName), "The GameObject " + objectName + "has not been created by TileMap " + tilemapName);
-            } else {
-                fail("T" +
-                        "he GameObject " + objectName + "has not been created by TileMap " + tilemapName);
+            if (!entityFound) {
+                fail("The Entity " + objectName + "has not been created by TileMap " + tilemapName);
             }
+        });
+        Then("a Entity instance named {string} is created in TileMap {string}", (String instanceName, String tilemapName) -> {
+            TileMap tm = (TileMap) (getApp().getEntity(tilemapName));
+            assertTrue(!findObject(tm, instanceName).isEmpty(), "The Entity instance " + instanceName + " has not been created");
         });
     }
 
@@ -99,5 +100,9 @@ public class TileMapIsEntityStepdefs extends AbstractApplicationTest implements 
             }
         }
         return null;
+    }
+
+    private Optional<Entity> findEntity(TileMap tm, String game) {
+        return tm.getChild().stream().filter(e -> e.name.equals(game)).limit(1).findFirst();
     }
 }

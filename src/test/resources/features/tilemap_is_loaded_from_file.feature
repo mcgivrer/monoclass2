@@ -31,4 +31,13 @@ Feature: Add a new entity TileMap to define full level of a platform game.
   Scenario: A "tm_03" TileMap create GameObject
     Given a Scene "test_03"
     And the Scene creates a TileMap named "tm_03"
-    Then a GameObject named "player" is created
+    Then a GameObject named "player" is created in TileMap "tm_03"
+
+  Scenario Outline: A "tm_03" TileMap create multiple GameObject instance in map
+    Given a Scene "test_03"
+    And the Scene creates a TileMap named "tm_03"
+    Then a GameObject instance named {instanceName} is created in TileMap "tm_03"
+    Examples:
+      | instanceName |
+      | enemy_1      |
+      | enemy_2      |
