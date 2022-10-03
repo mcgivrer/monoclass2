@@ -50,6 +50,7 @@ public class Entity {
     public List<Entity> colliders = new CopyOnWriteArrayList<>();
 
     // Rendering attributes
+    private int layer;
     public int priority;
     public EntityType type = RECTANGLE;
     public Image image;
@@ -86,6 +87,7 @@ public class Entity {
     private Color shadowColor = Color.BLACK;
 
     private List<Entity> child = new ArrayList<>();
+
 
     public Entity(String name) {
         this.name = name;
@@ -354,12 +356,24 @@ public class Entity {
 
     /**
      * Add a force to the Entity.
+     *
      * @param dx
      * @param dy
-     * @return
+     * @return the updated Entity.
      */
     public Entity addForce(double dx, double dy) {
-        this.forces.add(new Vec2d(dx,dy));
+        this.forces.add(new Vec2d(dx, dy));
+        return this;
+    }
+
+    /**
+     * Set  layer for this Entity.
+     *
+     * @param l an integer value defining the layer number to attach this entity to.
+     * @return the updated Entity.
+     */
+    public Entity setLayer(int l) {
+        this.layer = l;
         return this;
     }
 }

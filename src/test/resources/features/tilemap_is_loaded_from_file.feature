@@ -28,7 +28,7 @@ Feature: Add a new entity TileMap to define full level of a platform game.
     And the Object named "enemy_$" from TileMap "tm_03" has attribute "class" with value "com.demoing.app.core.entity.Entity"
     And the Object named "enemy_$" from TileMap "tm_03" has attribute "attributes" with value "[live=10,fire=5]"
 
-  Scenario: A "tm_03" TileMap create GameObject
+  Scenario: A "tm_03" TileMap create Entity
     Given a Scene "test_03"
     And the Scene creates a TileMap named "tm_03"
-    Then a GameObject named "player" is created
+    Then an Entity named "player" is created by TileMap "tm_03"

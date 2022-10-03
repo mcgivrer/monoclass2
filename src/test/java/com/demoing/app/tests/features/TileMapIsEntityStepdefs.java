@@ -75,21 +75,31 @@ public class TileMapIsEntityStepdefs extends AbstractApplicationTest implements 
                         fail("The attribute " + attributeName + " does not exist in object " + objectName);
                     }
                 });
-        Then("a GameObject named {string} is created by TileMap {string}", (String objectName, String tilemapName) -> {
-            TileMap tm = (TileMap) (getApp().getEntity(tilemapName));
-            boolean entityFound = false;
-            for (Entity e : tm.getChild()) {
-                entityFound = true;
-                break;
-
-            }
-            if (entityFound) {
-                assertTrue(e.name.equals(objectName), "The GameObject " + objectName + "has not been created by TileMap " + tilemapName);
-            } else {
-                fail("T" +
-                        "he GameObject " + objectName + "has not been created by TileMap " + tilemapName);
-            }
+        Then("a Entity named {string} is created by TileMap {string}", (String objectName, String tilemapName) -> {
+            Entity entityFound = findEntityFromTilemap(tilemapName, objectName);
+            assertTrue(Optional.ofNullable(entityFound).isPresent(),
+                    "The Entity '" + objectName
+                            + "' has not been created by TileMap " + tilemapName);
         });
+        Then("an Entity named {string} is created by TileMap {string}", (String entityName, String tilemapName) -> {
+            Entity player = findEntityFromTilemap(tilemapName, entityName);
+            assertTrue(Optional.ofNullable(player).isPresent(),
+                    "The Entity '" + entityName
+                            + "' has not been created by TileMap " + tilemapName);
+        });
+    }
+
+    private Entity findEntityFromTilemap(String tilemapName, String entityName) {
+        TileMap tm = (TileMap) (getApp().getEntity(tilemapName));
+        Entity entityFound = null;
+        for (Entity e : tm.getChild()) {
+            if (e.name.equals(entityName)) {
+                entityFound = e;
+            }
+            break;
+
+        }
+        return entityFound;
     }
 
     private Map<String, Object> findObject(TileMap tm, String objectName) {
