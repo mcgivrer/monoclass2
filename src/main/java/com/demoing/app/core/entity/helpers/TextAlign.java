@@ -1,4 +1,6 @@
-package com.demoing.app.core.entity;
+package com.demoing.app.core.entity.helpers;
+
+import com.demoing.app.core.entity.TextEntity;
 
 /**
  * THe TextAlign attribute value is use for TextEntity only, to define how the rendered text must be aligned.

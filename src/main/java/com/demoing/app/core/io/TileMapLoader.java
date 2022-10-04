@@ -1,10 +1,12 @@
 package com.demoing.app.core.io;
 
 import com.demoing.app.core.Application;
+import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.entity.Entity;
-import com.demoing.app.core.entity.EntityType;
-import com.demoing.app.core.entity.Tile;
-import com.demoing.app.core.entity.TileMap;
+import com.demoing.app.core.entity.helpers.EntityType;
+import com.demoing.app.core.entity.tilemap.Tile;
+import com.demoing.app.core.entity.tilemap.TileMap;
+import com.demoing.app.core.scene.Scene;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.material.Material;
 
@@ -20,7 +22,7 @@ import java.util.stream.Collectors;
 public class TileMapLoader {
     private static int entityIndex = 0;
 
-    public static TileMap load(Application app, String mapFilepath) {
+    public static TileMap load(Application app, Scene scn, String mapFilepath) {
         TileMap tm;
         Properties tmProps = new Properties();
         InputStream is = TileMapLoader.class.getResourceAsStream(mapFilepath);
@@ -36,7 +38,7 @@ public class TileMapLoader {
 
             readAllTiles(tm, tmProps, resources);
 
-            Collection<Entity> entities = createEntitiesAsChild(tm, tmProps, resources);
+            Collection<Entity> entities = createEntitiesAsChild(scn, tm, tmProps, resources);
 
             System.out.printf("mapEntities size:%d", entities.size());
 
@@ -58,7 +60,7 @@ public class TileMapLoader {
         for (Object o : tilesDefinitions) {
             int key = Integer.parseInt(o.toString().substring("level.tiles.".length()));
 
-            Map<String, Object> attributes = collectAttributes((String) tmProps.get(o.toString()), ";", ":");
+            Map<String, Object> attributes = collectAttributesMap((String) tmProps.get(o.toString()), ";", ":");
 
             Map<String, Object> tileImageAttributes = (Map<String, Object>) attributes.get("image");
             attributes.put("image", tileImageAttributes);
@@ -75,23 +77,28 @@ public class TileMapLoader {
         tm.setAttribute("level.tiles", tiles);
     }
 
-    private static Map<String, Object> collectAttributes(String attrString, String attrSeparator,
-                                                         String valueSeparator) {
+    private static Map<String, Object> collectAttributesMap(String attrString, String attrSeparator,
+                                                            String valueSeparator) {
         Map<String, Object> attributes = new HashMap<>();
         String[] attrs = attrString.split(attrSeparator);
         Arrays.stream(attrs).toList().forEach(s -> {
             String[] attrValues = s.split(valueSeparator);
-            attributes.put(attrValues[0], convertAttributeValue(attrValues[1].strip()));
+            attributes.put(attrValues[0], convertAttributeValueAsObject(attrValues[1].strip()));
         });
         return attributes;
     }
 
+    private static List<String> collectAttributesList(String attrString, String attrSeparator) {
+        String[] values = attrString.split(attrSeparator);
+        return Arrays.asList(values);
+    }
 
-    private static Object convertAttributeValue(String attrValue) {
+
+    private static Object convertAttributeValueAsObject(String attrValue) {
         Object value = null;
         if (attrValue.startsWith("[") && attrValue.endsWith("]")) {
             // attribute.
-            value = collectAttributes(attrValue.substring(1, attrValue.length() - 1), ",", "=");
+            value = collectAttributesMap(attrValue.substring(1, attrValue.length() - 1), ",", "=");
             return value;
         } else {
             try {
@@ -132,7 +139,7 @@ public class TileMapLoader {
         }
     }
 
-    private static Collection<Entity> createEntitiesAsChild(TileMap tm, Properties tmProps, Map<Object, Object> resources) {
+    private static Collection<Entity> createEntitiesAsChild(Scene scn, TileMap tm, Properties tmProps, Map<Object, Object> resources) {
         Collection<Entity> entities = new ArrayList<>();
         Map<Integer, Map<String, Object>> mapEntities = readMapEntities(tm, tmProps);
 
@@ -145,7 +152,7 @@ public class TileMapLoader {
             for (int ix = 0; ix < mapWidth; ix++) {
                 int tileId = tm.map[ix + (iy * mapWidth)];
                 if (Optional.ofNullable(mapEntities.get(tileId)).isPresent()) {
-                    Entity t = populateEntityWithAttr(mapEntities.get(tileId),
+                    Entity t = populateEntityWithAttr(scn, mapEntities.get(tileId),
                             ix * tileWidth, iy * tileHeight,
                             resources);
                     entities.add(t);
@@ -156,7 +163,7 @@ public class TileMapLoader {
         return entities;
     }
 
-    private static Entity populateEntityWithAttr(Map<String, Object> attributes, double x, double y, Map<Object, Object> resources) {
+    private static Entity populateEntityWithAttr(Scene scn, Map<String, Object> attributes, double x, double y, Map<Object, Object> resources) {
         String entityName = ((String) attributes.get("name")).replace("#", "" + (entityIndex++));
         String entityClassName = ((String) attributes.get("class"));
         Entity obj = null;
@@ -170,6 +177,23 @@ public class TileMapLoader {
                 BufferedImage img = convertImageAttributeToBufferedImage(resources, imageAttributes);
                 obj.setImage(img);
                 obj.setSize(img.getWidth(), img.getHeight());
+            }
+
+            if (attributes.containsKey("behaviors")) {
+                List<String> behaviorsClass = collectAttributesList(
+                        ((String) attributes.get("behaviors"))
+                                .substring(1,
+                                        ((String) attributes.get("behaviors")).length() - 1),
+                        ",");
+                behaviorsClass.forEach(b -> {
+                    try {
+                        Behavior instanceBehavior = (Behavior) Class.forName(b).getConstructor(Scene.class).newInstance(scn);
+                        System.out.printf("INFO : TileMapLoader|  Behavior %s added%n", b);
+                    } catch (InstantiationException | IllegalAccessException | NoSuchMethodException |
+                             ClassNotFoundException | InvocationTargetException e) {
+                        System.err.printf("ERR : TileMapLoader | Unable to add behavior %s to current Entity %n", b);
+                    }
+                });
             }
 
             // set the GameObject Material based on the material attribute

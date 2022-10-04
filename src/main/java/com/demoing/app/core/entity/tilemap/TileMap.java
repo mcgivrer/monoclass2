@@ -1,9 +1,9 @@
-package com.demoing.app.core.entity;
+package com.demoing.app.core.entity.tilemap;
 
+import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.service.physic.PhysicType;
 
 import java.awt.*;
-import java.util.List;
 import java.util.Map;
 
 /**
