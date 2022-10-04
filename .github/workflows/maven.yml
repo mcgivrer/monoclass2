@@ -25,8 +25,7 @@ jobs:
         run: Xvfb :19 -screen 0 1024x768x16 &
 
       - name: Build with Maven
-        #run: mvn --file pom.xml -Pcodecoverage -B package "-Djava.awt.headless=true"
         run: mvn --file pom.xml -Pcodecoverage -B package
         env:
           DISPLAY: :19
-          #CUCUMBER_PUBLISH_TOKEN: c31ffecc-9b74-4445-9817-60ec7f923927
+          CUCUMBER_PUBLISH_TOKEN: 582672c3-ad08-478f-8b80-409ceac2f1c7
