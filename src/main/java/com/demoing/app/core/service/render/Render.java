@@ -3,7 +3,8 @@ package com.demoing.app.core.service.render;
 import com.demoing.app.core.Application;
 import com.demoing.app.core.config.Configuration;
 import com.demoing.app.core.entity.*;
-import com.demoing.app.core.gfx.Window;
+import com.demoing.app.core.entity.helpers.TextAlign;
+import com.demoing.app.core.entity.tilemap.TileMap;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.World;
 import com.demoing.app.core.utils.Logger;
@@ -111,7 +112,7 @@ public class Render {
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, (int) config.screenWidth, (int) config.screenHeight);
         moveCamera(g, activeCamera, -1);
-        drawGrid(g, world, 16, 16);
+        //drawGrid(g, world, 16, 16);
         moveCamera(g, activeCamera, 1);
         gPipeline.stream()
                 .filter(e -> !(e instanceof Light)
@@ -160,6 +161,9 @@ public class Render {
             case Influencer ie -> {
                 drawInfluencer(g, ie);
             }
+            case TileMap tme -> {
+                drawTileMap(g, tme);
+            }
             // This is a basic entity or a PArticleSystem
             case Entity ee -> {
                 drawEntity(g, ee);
@@ -170,7 +174,29 @@ public class Render {
             moveCamera(g, activeCamera, 1);
         }
         // Draw all child entities.
-        e.getChild().forEach(ce->drawPipelineEntity(g,ce));
+        e.getChild().forEach(ce -> drawPipelineEntity(g, ce));
+    }
+
+    private void drawTileMap(Graphics2D g, TileMap tme) {
+        int tileCounter = 0;
+        g.setColor(Color.CYAN);
+        for (int ix = 0; ix < tme.mapWidth; ix++) {
+            for (int iy = 0; iy < tme.mapHeight; iy++) {
+                // temporary rendering process to satisfy tests.
+                // TODO implement the Tile based rendering
+                tileCounter++;
+                int tileIdx = tme.map[ix + (iy * tme.mapWidth)];
+                if (tileIdx != 0) {
+                    g.setColor(tme.tilesColor.get(tileIdx));
+                    g.fillRect(ix * tme.tileWidth, iy * tme.tileHeight, tme.tileWidth, tme.tileHeight);
+                } else {
+                    g.setColor(Color.BLUE);
+                    g.drawRect(ix * tme.tileWidth, iy * tme.tileHeight, tme.tileWidth, tme.tileHeight);
+                }
+            }
+        }
+        tme.drawn = true;
+        tme.tileDrawnCounter = tileCounter;
     }
 
     private void drawInfluencer(Graphics2D g, Influencer ie) {
@@ -418,7 +444,7 @@ public class Render {
      */
     private void drawValue(Graphics2D g, ValueEntity se) {
         String textValue = se.valueTxt.strip();
-        byte c[] = textValue.getBytes(StandardCharsets.US_ASCII);
+        byte[] c = textValue.getBytes(StandardCharsets.US_ASCII);
         for (int pos = 0; pos < textValue.length(); pos++) {
             //convert character ascii value to number from 0 to 9.
             int v = c[pos] - 48;

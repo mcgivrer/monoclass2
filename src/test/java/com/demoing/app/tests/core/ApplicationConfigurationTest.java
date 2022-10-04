@@ -3,6 +3,7 @@ package com.demoing.app.tests.core;
 import com.demoing.app.core.config.Configuration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 public class ApplicationConfigurationTest extends AbstractApplicationTest {
@@ -22,6 +23,7 @@ public class ApplicationConfigurationTest extends AbstractApplicationTest {
     }
 
     @Test
+    @DisplayName("Retrieve basic configuration about language, scree size and default Scene")
     public void testBasicConfiguration() {
         Assertions.assertEquals("en_EN", getConfig().defaultLanguage, "The default language configuration has not been set");
         Assertions.assertEquals(1, getConfig().debug, "The debug level configuration has not been set");
@@ -34,6 +36,7 @@ public class ApplicationConfigurationTest extends AbstractApplicationTest {
     }
 
     @Test
+    @DisplayName("Retrieve the PhysicEngine specific configuration  parameters")
     public void testPhysicEngineConfiguration() {
         Assertions.assertEquals(0.1, getConfig().speedMinValue, 0.001, "The minimum speed configuration has not been set");
         Assertions.assertEquals(3.2, getConfig().speedMaxValue, 0.001, "The maximum speed configuration has not been set");
@@ -42,12 +45,14 @@ public class ApplicationConfigurationTest extends AbstractApplicationTest {
     }
 
     @Test
+    @DisplayName("Retrieve the Collision service configuration")
     public void testCollisionConfiguration() {
         Assertions.assertEquals(0.1, getConfig().colSpeedMinValue, 0.001, "The minimum speed configuration has not been set");
         Assertions.assertEquals(3.2, getConfig().colSpeedMaxValue, 0.001, "The maximum speed configuration has not been set");
     }
 
     @Test
+    @DisplayName("Defining the default World parameters")
     public void testWorldConfiguration() {
         Assertions.assertEquals(960.0, getConfig().worldWidth, 0.1, "The World area Width configuration has not been set");
         Assertions.assertEquals(600.0, getConfig().worldHeight, 0.1, "The World area height configuration has not been set");
@@ -55,6 +60,7 @@ public class ApplicationConfigurationTest extends AbstractApplicationTest {
     }
 
     @Test
+    @DisplayName("Defining configuration for debug: activation, level and filter")
     public void testDebugAndLogConfiguration() {
         Assertions.assertEquals(1, getConfig().debug, 0, "The debug level has not been set");
         Assertions.assertEquals("test_ent_", getConfig().debugObjectFilter, "The debug object filter level has not been set");

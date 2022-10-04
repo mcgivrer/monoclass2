@@ -3,12 +3,13 @@ package com.demoing.app.tests.core;
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.entity.Influencer;
 import com.demoing.app.core.math.Vec2d;
-import com.demoing.app.core.entity.EntityType;
+import com.demoing.app.core.entity.helpers.EntityType;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.World;
 import com.demoing.app.core.service.physic.material.DefaultMaterial;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.awt.*;
@@ -28,6 +29,7 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
     }
 
     @Test
+    @DisplayName("World can support Influencer's")
     public void aWorldCanHaveInfluencer() {
         assertNotNull(
                 getApp().getPhysicEngine().getInfluencers(),
@@ -35,6 +37,7 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
     }
 
     @Test
+    @DisplayName("Adding an Influencer to the World")
     public void addingOneInfluencer() {
         Influencer i = new Influencer("influencer_1")
                 .setForce(new Vec2d(10, 10))
@@ -46,6 +49,7 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
     }
 
     @Test
+    @DisplayName("World's influencer effects are applied to an Entity ")
     public void addOneEntityUnderInfluencerAction() {
         World w = getApp().getPhysicEngine().getWorld();
         // stop gravity effect on the application's World instance.
