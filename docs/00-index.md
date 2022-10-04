@@ -1,10 +1,3 @@
----
-title: MonoClass2
-subtitle: a JDK fun sample game
-author: Frédéric Delorme
-createdAt: 2022/05/07
----
-
 # MonoClass 2, a JDK Fun sample game
 
 ![A gameplay screenshot](images/monoclass2-1.0.5-snapshot-screenshot.png "Screenshot of the 1.0.5 pre-release")
@@ -30,4 +23,5 @@ createdAt: 2022/05/07
 17. [World under Influencer](chapter-17-world_influencer.md)
 18. [A Window](chapter-18-a_window.md)
 19. [Adding some Particles](chapter-19-adding_some_particles.md)
-20. [The To Dos](100-todo.md)
+20. [Adding TileMap as level](chapter-20-adding_tilemap_as_level.md)
+21. [The To Dos](100-todo.md)
