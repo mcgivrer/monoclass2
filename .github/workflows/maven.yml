@@ -5,13 +5,14 @@ name: Java CI with Maven
 
 on:
   push:
-    branches: [ "master","develop" ]
+    branches: [ "master","develop" ,"feature/*" ]
   pull_request:
-    branches: [ "master", "develop" ]
+    branches: [ "develop" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: Test
     steps:
       - uses: actions/checkout@v3
       - name: Set up JDK 18
@@ -28,4 +29,3 @@ jobs:
         run: mvn --file pom.xml -Pcodecoverage -B package
         env:
           DISPLAY: :19
-          CUCUMBER_PUBLISH_TOKEN: 582672c3-ad08-478f-8b80-409ceac2f1c7
