@@ -28,4 +28,3 @@ jobs:
         run: mvn --file pom.xml -Pcodecoverage -B package
         env:
           DISPLAY: :19
-          CUCUMBER_PUBLISH_TOKEN: 582672c3-ad08-478f-8b80-409ceac2f1c7
