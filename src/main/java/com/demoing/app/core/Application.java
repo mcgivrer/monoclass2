@@ -18,7 +18,7 @@ import com.demoing.app.core.io.ActionHandler;
 import com.demoing.app.core.service.collision.CollisionDetector;
 import com.demoing.app.core.service.monitor.AppStatus;
 import com.demoing.app.core.service.physic.PhysicEngine;
-import com.demoing.app.core.service.render.Render;
+import com.demoing.app.core.service.render.Renderer;
 import com.demoing.app.core.service.scene.SceneManager;
 import com.demoing.app.core.utils.I18n;
 import com.demoing.app.core.utils.Logger;
@@ -71,7 +71,7 @@ public class Application extends JPanel {
     /**
      * The graphic component to assume all drawing.
      */
-    public Render render;
+    public Renderer render;
     /**
      * THe Scene manager to chnage between different gameplay or game state.
      */
@@ -248,7 +248,7 @@ public class Application extends JPanel {
         window = new Window(this);
         sceneMgr = new SceneManager(this, config);
         physicEngine = new PhysicEngine(this, config);
-        render = new Render(this, physicEngine.getWorld());
+        render = new Renderer(this, physicEngine.getWorld());
         collisionDetect = new CollisionDetector(this, config, physicEngine.getWorld());
         actionHandler = new ActionHandler(this);
     }
@@ -390,7 +390,7 @@ public class Application extends JPanel {
         return this.config;
     }
 
-    public Render getRender() {
+    public Renderer getRender() {
         return render;
     }
 

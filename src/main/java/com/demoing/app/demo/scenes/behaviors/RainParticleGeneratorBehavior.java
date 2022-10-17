@@ -10,12 +10,12 @@ import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.World;
 
 /**
- * the RainParticleUpdate wil perform the Particle rain drop generation regarding a max number of particle.
+ * the RainParticleGeneratorBehavior wil perform the Particle rain drop generation regarding a max number of particle.
  *
  * @author Frédéric Delorme.
  * @since 1.0.6
  */
-public class RainParticleUpdate implements Behavior {
+public class RainParticleGeneratorBehavior implements Behavior {
 
     /**
      * THe World defining the world area limit.
@@ -42,7 +42,7 @@ public class RainParticleUpdate implements Behavior {
      *
      * @param w the World object to take in account for Rain drop generation.
      */
-    public RainParticleUpdate(World w) {
+    public RainParticleGeneratorBehavior(World w) {
         this.world = w;
     }
 
@@ -87,8 +87,8 @@ public class RainParticleUpdate implements Behavior {
         Entity drop = new Entity(parent.name + "_drop_" + (parent.getChild().size() + 1))
                 .setType(EntityType.ELLIPSE)
                 .setPhysicType(PhysicType.DYNAMIC)
-                .setSize(1.0, 2.0)
-                .setColor(Color.CYAN)
+                .setSize(1.0, 1.0)
+                .setColor(Color.WHITE)
                 .setMass(0.01)
                 .setPriority(10)
                 .addBehavior(
@@ -106,8 +106,8 @@ public class RainParticleUpdate implements Behavior {
      */
     private void initDropParticle(Entity child) {
         child.setDuration(particleDuration)
-            .setPosition(Math.random() * (world.getArea().getWidth()*0.8)+(world.getArea().getWidth()*0.1), 0)
-            .addForce(0.05 , rainForce);
+                .setPosition(Math.random() * (world.getArea().getWidth() * 0.8) + (world.getArea().getWidth() * 0.1), 0)
+                .addForce(0.05, rainForce);
     }
 
     /**

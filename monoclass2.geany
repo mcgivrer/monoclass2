@@ -21,15 +21,17 @@ indent_mode=2
 name=MonoClass2
 base_path=./
 description=
-file_patterns=*.java;*.properties;*.xml;*.md;*.png;*.xcf;*.ttf;*.puml;
+file_patterns=*.java;*.properties;*.xml;*.md;*.png;*.xcf;*.ttf;*.puml;*.sh;
 
 [long line marker]
 long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=0
-FILE_NAME_0=63918;Java;0;EUTF-8;1;1;0;C%3A%5CUsers%5CM313104%5Cprojects%5Cpersonnal%5Cjava%5Cmonoclass2%5Csrc%5Cmain%5Cjava%5Ccom%5Cdemoing%5Capp%5Ccore%5CApplication.java;0;4
+current_page=1
+FILE_NAME_0=13472;Java;0;EUTF-8;1;1;0;C%3A%5CUsers%5CM313104%5Cprojects%5Cpersonnal%5Cjava%5Cmonoclass2%5Csrc%5Cmain%5Cjava%5Ccom%5Cdemoing%5Capp%5Ccore%5CApplication.java;0;4
+FILE_NAME_1=281;Sh;0;EUTF-8;1;1;0;C%3A%5CUsers%5CM313104%5Cprojects%5Cpersonnal%5Cjava%5Cmonoclass2%5Cscripts%5Cbuild.sh;0;4
+FILE_NAME_2=0;XML;0;EUTF-8;1;1;0;C%3A%5CUsers%5CM313104%5Cprojects%5Cpersonnal%5Cjava%5Cmonoclass2%5Cpom.xml;0;4
 
 [prjorg]
 source_patterns=*.c;*.C;*.cpp;*.cxx;*.c++;*.cc;*.m;
@@ -39,3 +41,9 @@ ignored_file_patterns=*.o;*.obj;*.a;*.lib;*.so;*.dll;*.lo;*.la;*.class;*.jar;*.p
 generate_tag_prefs=0
 show_empty_dirs=true
 external_dirs=
+
+[build-menu]
+ShFT_00_LB=_build
+ShFT_00_CM=scripts/build.sh a
+ShFT_00_WD=
+filetypes=Sh;

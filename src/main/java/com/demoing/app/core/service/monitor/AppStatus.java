@@ -60,7 +60,7 @@ public class AppStatus implements AppStatusMBean {
     public synchronized void update(Application app) {
         nbEntities = app.getEntities().size();
         realFPS = app.getRealFps();
-        pipelineSize = app.render.getgPipeline().size();
+        pipelineSize = app.render.getGPipeline().size();
         timeRendering = app.render.getRenderingTime();
         timeUpdate = app.getPhysicEngine().updateTime;
         pauseStatus = app.pause;
