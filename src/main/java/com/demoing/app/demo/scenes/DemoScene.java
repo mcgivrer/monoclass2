@@ -13,7 +13,7 @@ import com.demoing.app.core.entity.*;
 import com.demoing.app.core.utils.I18n;
 import com.demoing.app.demo.scenes.behaviors.EnemyOnCollisionBehavior;
 import com.demoing.app.demo.scenes.behaviors.PlayerOnCollisionBehavior;
-import com.demoing.app.demo.scenes.behaviors.RainParticleUpdate;
+import com.demoing.app.demo.scenes.behaviors.RainParticleGeneratorBehavior;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -44,6 +44,8 @@ public class DemoScene extends AbstractScene {
     public void prepare() {
         // prepare the Figures for score rendering
         prepareFigures("/images/tiles01.png");
+        wlcFont = Resources.loadFont("/fonts/FreePixel.ttf")
+                .deriveFont(12.0f);
     }
 
     @Override
@@ -56,13 +58,13 @@ public class DemoScene extends AbstractScene {
                 new Material(
                         "world",
                         1.0,
-                        0.0,
+                        0.001,
                         1.0));
 
         // define Game global variables
         app.setAttribute("life", 5);
         app.setAttribute("score", 0);
-        app.setAttribute("time", (long) (180 * 1000));
+        app.setAttribute("time", (long) 3 * (60 * 1000));
 
         Material matFloor = new Material("floor_mat", 1.0, 0.05, 0.20);
         Entity floor = new Entity("floor")
@@ -111,14 +113,14 @@ public class DemoScene extends AbstractScene {
         app.addEntity(la01);
 
         // Create an Influencer in the initialized app World
-        Influencer i1 = (Influencer) new Influencer("if_1_water")
+        Influencer i1 = (Influencer) new Influencer("iflu_1_water")
                 .setForce(new Vec2d(0.0, -0.19))
                 .setType(RECTANGLE)
-                .setMaterial(new Material("water", 0.6, 0, 0.8))
+                .setMaterial(new Material("water", 0.998, 0, 0.2))
                 .setPosition(0.0, world.area.getHeight() - 200.0)
                 .setSize(world.area.getWidth(), 200.0)
                 .setPhysicType(PhysicType.NONE)
-                .setColor(new Color(0.0f, 0.0f, 0.5f, .07f));
+                .setColor(new Color(0.2f, 0.5f, 0.7f, .90f));
         app.addEntity(i1);
 
         // Add some SPHERICAL light
@@ -166,8 +168,9 @@ public class DemoScene extends AbstractScene {
 
         // Test particle system to simulate rain.
         ParticleSystem ps = (ParticleSystem) new ParticleSystem("rain")
-                .setType(NONE)
-                .addBehavior(new RainParticleUpdate(world));
+                .addParticleGenerator(new RainParticleGeneratorBehavior(world))
+                .setColor(Color.WHITE)
+                .setType(NONE);
         app.addEntity(ps);
 
         Camera cam = new Camera("cam01")
@@ -178,8 +181,6 @@ public class DemoScene extends AbstractScene {
 
         generateEntity(app, "ball_", 10, 2.5);
 
-        wlcFont = Resources.loadFont("/fonts/FreePixel.ttf")
-                .deriveFont(12.0f);
 
         // ---- Everything about HUD -----
 
@@ -358,7 +359,7 @@ public class DemoScene extends AbstractScene {
         Entity pf = new Entity("pf_" + i)
                 .setType(RECTANGLE)
                 .setPhysicType(STATIC)
-                .setColor(Color.LIGHT_GRAY)
+                .setColor(new Color(0.7f, 0.7f, 0.7f, 1.0f))
                 .setPosition(
                         pfCol * 16,
                         pfRow * 48)
