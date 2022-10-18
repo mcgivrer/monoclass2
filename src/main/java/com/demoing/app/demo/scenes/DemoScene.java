@@ -29,12 +29,8 @@ import static com.demoing.app.core.entity.TextAlign.CENTER;
 
 public class DemoScene extends AbstractScene {
 
-    private World world;
-
-    private Font wlcFont;
 
     private boolean gameOver;
-    private BufferedImage[] figs;
 
     public DemoScene(String name) {
         super(name);
@@ -42,18 +38,16 @@ public class DemoScene extends AbstractScene {
 
     @Override
     public void prepare() {
-        // prepare the Figures for score rendering
-        prepareFigures("/images/tiles01.png");
-        wlcFont = Resources.loadFont("/fonts/FreePixel.ttf")
-                .deriveFont(12.0f);
+        super.prepare();
     }
 
     @Override
     public boolean create(Application app) throws IOException, FontFormatException {
 
         gameOver = false;
-        world = app.getPhysicEngine().getWorld();
+
         // define default world friction (air resistance ?)
+        world = app.getPhysicEngine().getWorld();
         world.setMaterial(
                 new Material(
                         "world",
@@ -185,106 +179,21 @@ public class DemoScene extends AbstractScene {
         // ---- Everything about HUD -----
 
         // Score Display
-        int score = (int) app.getAttribute("score", 0);
-
-        ValueEntity scoreEntity = (ValueEntity) new ValueEntity("score")
-                .setValue(score)
-                .setFormat("%06d")
-                .setFigures(figs)
-                .setPosition(20, 20)
-                .setSize(6 * 8, 16)
-                .setStickToCamera(true);
-        app.addEntity(scoreEntity);
-
-        long time = (long) app.getAttribute("time", 0);
-        Font timeFont = wlcFont.deriveFont(16.0f);
-        ValueEntity timeTxtE = (ValueEntity) new ValueEntity("time")
-                .setFormat("%3d")
-                .setValue((int) (time / 1000))
-                .setFigures(figs)
-                .setSize(3 * 8, 16)
-                .setPosition(app.config.screenWidth / 2, 20)
-                .setStickToCamera(true);
-        app.addEntity(timeTxtE);
-
-        ValueEntity lifeTxt = (ValueEntity) new ValueEntity("life")
-                .setValue(5)
-                .setFigures(figs)
-                .setSize(8, 16)
-                .setPosition(app.config.screenWidth - 40, 20)
-                .setPriority(10)
-                .setStickToCamera(true);
-        app.addEntity(lifeTxt);
-
-        GaugeEntity energyGauge = (GaugeEntity) new GaugeEntity("energy")
-                .setMax(100.0)
-                .setMin(0.0)
-                .setValue((int) player.getAttribute("energy", 100.0))
-                .setColor(Color.RED)
-                .setSize(32, 6)
-                .setPriority(10)
-                .setPosition(app.config.screenWidth - 40 - 4 - 32, 30);
-        app.addEntity(energyGauge);
-
-        GaugeEntity manaGauge = (GaugeEntity) new GaugeEntity("mana")
-                .setMax(100.0)
-                .setMin(0.0)
-                .setValue((int) player.getAttribute("mana", 100.0))
-                .setColor(Color.BLUE)
-                .setShadow(Color.BLACK)
-                .setSize(32, 6)
-                .setPriority(10)
-                .setPosition(app.config.screenWidth - 40 - 4 - 32, 20);
-        app.addEntity(manaGauge);
-
-        // Add a Map display
-        MapEntity mapEntity = (MapEntity) new MapEntity("map")
-                .setColorMapping(
-                        Map.of(
-                                "ball_", Color.RED,
-                                "player", Color.BLUE,
-                                "pf_", Color.LIGHT_GRAY,
-                                "floor", Color.GRAY,
-                                "outPlatform", Color.YELLOW))
-                .setRefEntities(app.getEntities().values().stream().toList())
-                .setWorld(world)
-                .setSize(48, 32)
-                .setPosition(10, app.config.screenHeight - 48);
-        app.addEntity(mapEntity);
-
-        // ---- Everything about Messages ----
-
-        // A welcome Text
-        TextEntity welcomeMsg = (TextEntity) new TextEntity("welcome")
-                .setText(I18n.get("app.message.welcome"))
-                .setAlign(CENTER)
-                .setFont(wlcFont)
-                .setPosition(
-                        app.config.screenWidth * 0.5,
-                        app.config.screenHeight * 0.8)
-                .setColor(Color.WHITE)
-                .setInitialDuration(5000)
-                .setPriority(20)
-                .setStickToCamera(true);
-        app.addEntity(welcomeMsg);
-
-        // You are dead Text
-        TextEntity youAreDeadTxt = (TextEntity) new TextEntity("YouAreDead")
-                .setText(I18n.get("app.player.dead"))
-                .setAlign(CENTER)
-                .setFont(wlcFont)
-                .setPosition(
-                        app.config.screenWidth * 0.5,
-                        app.config.screenHeight * 0.8)
-                .setColor(Color.WHITE)
-                .setInitialDuration(0)
-                .setPriority(20)
-                .setStickToCamera(true);
-        app.addEntity(youAreDeadTxt);
+        createHUD(
+            app,
+            player,
+            Map.of(
+            "ball_", Color.RED,
+            "player", Color.BLUE,
+            "pf_", Color.LIGHT_GRAY,
+            "floor", Color.GRAY,
+            "outPlatform", Color.YELLOW,
+            "default", Color.GRAY));
 
         // mapping of keys actions:
         return true;
     }
+
 
     private void generateLights(Application app) {
         boolean switchFront = false;
@@ -303,42 +212,22 @@ public class DemoScene extends AbstractScene {
         }
     }
 
-    public void reducePlayerEnergy(Application app, Entity player, Entity e) {
-        int hurt = (int) e.getAttribute("hurt", 0);
-        int energy = (int) player.getAttribute("energy", 0);
-        energy -= hurt;
-        if (energy < 0) {
-            int life = (int) app.getAttribute("life", 0);
-            life -= 1;
-            if (life < 0) {
-                app.setAttribute("endOfGame", true);
-                player.setDuration(0);
-            } else {
-                app.setAttribute("life", life);
-                player.setAttribute("energy", 100);
-            }
-        } else {
-            player.setAttribute("energy", energy -= hurt);
-        }
-    }
-
     private void generateAllPlatforms(Application app, int nbPf) {
         java.util.List<Entity> platforms = new ArrayList<>();
         Material matPF = new Material("matPF", 1.0, 0.2, 0.20);
-        Entity pf;
-        boolean found = false;
+        Entity pf = null;
+        boolean found;
+        int attempt = 0;
         for (int i = 0; i < nbPf; i++) {
-            while (true) {
+            found = false;
+            while (attempt < 10 && !found) {
                 pf = createOnePlatform(app, i, matPF);
-                found = false;
                 for (Entity p : platforms) {
                     if (p.cbox.intersects(pf.cbox.getBounds())) {
                         found = true;
                     }
                 }
-                if (!found) {
-                    break;
-                }
+                attempt += 1;
             }
             platforms.add(pf);
             app.addEntity(pf);
@@ -356,7 +245,7 @@ public class DemoScene extends AbstractScene {
         pfCol = pfCol < maxCols ? pfCol : maxRows - pfWidth;
         double pfRow = (int) ((Math.random() * maxRows) + 2);
 
-        Entity pf = new Entity("pf_" + i)
+        return new Entity("pf_" + i)
                 .setType(RECTANGLE)
                 .setPhysicType(STATIC)
                 .setColor(new Color(0.7f, 0.7f, 0.7f, 1.0f))
@@ -368,7 +257,6 @@ public class DemoScene extends AbstractScene {
                 .setMaterial(matPF)
                 .setMass(10000)
                 .setDuration(-1);
-        return pf;
     }
 
     @Override
@@ -507,11 +395,4 @@ public class DemoScene extends AbstractScene {
         }
     }
 
-    private void prepareFigures(String pathToImage) {
-        BufferedImage figuresImage = Resources.loadImage(pathToImage);
-        figs = new BufferedImage[10];
-        for (int i = 0; i < 10; i++) {
-            figs[i] = figuresImage.getSubimage(i * 8, 3 * 16, 8, 16);
-        }
-    }
 }

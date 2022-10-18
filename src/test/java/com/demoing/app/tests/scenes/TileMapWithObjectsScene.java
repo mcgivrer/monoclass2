@@ -17,7 +17,7 @@ public class TileMapWithObjectsScene extends TestScene {
 
     @Override
     public boolean create(Application app) throws Exception {
-        TileMap tileMap = TileMapLoader.load(app, "/maps/map_test_03.properties");
+        TileMap tileMap = TileMapLoader.load(app, this, "/maps/map_test_03.properties");
         app.addEntity(tileMap);
         return true;
     }

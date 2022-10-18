@@ -116,4 +116,8 @@ public class TileMap extends Entity {
     public Map<String, Object> getEntity(int entityNb) {
         return this.entities.get(entityNb);
     }
+
+    public Entity getEntity(String name) {
+        return this.getChild().stream().filter(e -> e.name.equals(name)).findFirst().orElse(null);
+    }
 }

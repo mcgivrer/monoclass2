@@ -100,6 +100,7 @@ public class Renderer {
         addPlugin(new EntityRenderPlugin());
         addPlugin(new ParticleSystemRenderPlugin());
         addPlugin(new InfluencerRenderPlugin());
+        addPlugin(new TileMapRenderPlugin());
 
 
     }
@@ -335,7 +336,7 @@ public class Renderer {
     public void addToPipeline(Entity entity) {
         if (!gPipeline.contains(entity)) {
             gPipeline.add(entity);
-            gPipeline.sort((o1, o2) -> o1.priority < o2.priority ? -1 : 1);
+            gPipeline.sort((o1, o2) -> o1.priority > o2.priority ? -1 : 1);
         }
     }
 
