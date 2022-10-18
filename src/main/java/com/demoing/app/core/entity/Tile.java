@@ -1,4 +1,4 @@
-package com.demoing.app.core.entity.tilemap;
+package com.demoing.app.core.entity;
 
 import java.awt.image.BufferedImage;
 import java.util.HashMap;

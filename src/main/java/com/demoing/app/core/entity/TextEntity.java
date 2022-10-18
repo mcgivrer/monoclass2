@@ -1,6 +1,5 @@
 package com.demoing.app.core.entity;
 
-import com.demoing.app.core.entity.helpers.TextAlign;
 import com.demoing.app.core.service.physic.PhysicType;
 
 import java.awt.*;

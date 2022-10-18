@@ -537,7 +537,7 @@ public class TileMapLoader {
      * @return the converted typed value.
      */
     private static Object convertAttributeValue(String attrValue) {
-        Object value;
+        Object value = null;
         if (attrValue.startsWith("[") && attrValue.endsWith("]")) {
             // attribute.
             value = collectAttributes(attrValue.substring(1, attrValue.length() - 1), ",", "=");

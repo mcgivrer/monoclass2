@@ -1,9 +1,9 @@
-package com.demoing.app.core.entity.tilemap;
+package com.demoing.app.core.entity;
 
-import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.service.physic.PhysicType;
 
 import java.awt.*;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -118,6 +118,10 @@ public class TileMap extends Entity {
     }
 
     public Entity getEntity(String name) {
-        return this.getChild().stream().filter(e -> e.name.equals(name)).findFirst().orElse(null);
+        if (this.getChild().stream().anyMatch(e -> e.name.equals(name))) {
+            return this.getChild().stream().filter(e -> e.name.equals(name)).findFirst().get();
+        } else {
+            return null;
+        }
     }
 }

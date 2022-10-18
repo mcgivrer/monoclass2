@@ -1,12 +1,11 @@
 package com.demoing.app.core.entity;
 
-import com.demoing.app.core.entity.helpers.LightType;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.scene.Scene;
 
 import java.awt.*;
 
-import static com.demoing.app.core.entity.helpers.EntityType.NONE;
+import static com.demoing.app.core.entity.EntityType.NONE;
 
 /**
  * <p>A {@link Light} class to simulate lights in a {@link Scene}.</p>

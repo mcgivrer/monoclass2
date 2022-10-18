@@ -1,6 +1,4 @@
-package com.demoing.app.core.entity.helpers;
-
-import com.demoing.app.core.entity.Entity;
+package com.demoing.app.core.entity;
 
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Rectangle2D;
