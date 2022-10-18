@@ -37,7 +37,7 @@ Root package is `com.demoing.app`, and sub-packages are
 - `core` is the game framework,
 - and `demo` ... the Demo project !
 
-![2022 Gitkraken Project Timeline](docs/images/project-timeline-2022.png "2022 Gitkraken Project Timeline")
+[![2022 Gitkraken Project Timeline](docs/images/project-timeline-2022.png "2022 Gitkraken Project Timeline")](https://timelines.gitkraken.com/timeline/7611459f03de41c09848c1cd543f87bb)
 
 And a last constrain is to reduce as much as possible the number of LoC, using enhancement from latest JDK.
 
