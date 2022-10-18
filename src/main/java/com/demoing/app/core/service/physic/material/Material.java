@@ -2,7 +2,7 @@ package com.demoing.app.core.service.physic.material;
 
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.entity.Influencer;
-import com.demoing.app.core.service.render.Render;
+import com.demoing.app.core.service.render.Renderer;
 import com.demoing.app.core.service.physic.PhysicEngine;
 
 import java.awt.*;
@@ -63,7 +63,7 @@ public class Material {
     /**
      * Define the new Color for this Material.
      *
-     * @param c the new {@link Color} used by {@link Render} to draw this {@link Material}.
+     * @param c the new {@link Color} used by {@link Renderer} to draw this {@link Material}.
      * @return the updated Material.
      */
     public Material setColor(Color c) {
@@ -72,7 +72,7 @@ public class Material {
     }
 
     /**
-     * Define the new Alpha channel (transparency) for this Material, to be used by {@link Render} at draw time.
+     * Define the new Alpha channel (transparency) for this Material, to be used by {@link Renderer} at draw time.
      *
      * @param a the new alpha value to compute transparency at rendering time;
      * @return the updated Material.

@@ -3,7 +3,7 @@ package com.demoing.app.core.entity;
 import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.service.collision.CollisionDetector;
 import com.demoing.app.core.gfx.Animation;
-import com.demoing.app.core.service.render.Render;
+import com.demoing.app.core.service.render.Renderer;
 import com.demoing.app.core.math.*;
 import com.demoing.app.core.service.physic.material.DefaultMaterial;
 import com.demoing.app.core.service.physic.material.Material;
@@ -30,7 +30,7 @@ import static com.demoing.app.core.entity.EntityType.RECTANGLE;
  * methods
  * to ease the Entity initialization.
  * <p>
- * Support some {@link PhysicEngine}, {@link Render}, {@link Animation}, and
+ * Support some {@link PhysicEngine}, {@link Renderer}, {@link Animation}, and
  * {@link CollisionDetector} information,
  * mandatory attributes for multiple services.
  *

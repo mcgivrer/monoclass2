@@ -1,7 +1,7 @@
 package com.demoing.app.core.service.monitor;
 
 import com.demoing.app.core.Application;
-import com.demoing.app.core.service.render.Render;
+import com.demoing.app.core.service.render.Renderer;
 
 /**
  * This MBean is for metrics and action exposition through the JMX service. Connecting with the JConsole
@@ -30,7 +30,7 @@ public interface AppStatusMBean {
     Integer getNbEntities();
 
     /**
-     * Return the number of elements in  the {@link Render} graphic pipeline (see {@link Render#gPipeline}).
+     * Return the number of elements in  the {@link Renderer} graphic pipeline (see {@link Renderer#gPipeline}).
      *
      * @return the size fo the gPipeline list.
      */
