@@ -3,7 +3,7 @@ package com.demoing.app.tests.core;
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.entity.Influencer;
 import com.demoing.app.core.math.Vec2d;
-import com.demoing.app.core.entity.EntityType;
+import com.demoing.app.core.entity.helpers.EntityType;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.World;
 import com.demoing.app.core.service.physic.material.DefaultMaterial;

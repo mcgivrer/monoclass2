@@ -1,7 +1,7 @@
 package com.demoing.app.tests.scenes;
 
 import com.demoing.app.core.Application;
-import com.demoing.app.core.entity.TileMap;
+import com.demoing.app.core.entity.tilemap.TileMap;
 import com.demoing.app.core.io.TileMapLoader;
 
 public class TileMapScene extends TestScene {

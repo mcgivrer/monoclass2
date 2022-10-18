@@ -1,6 +1,7 @@
 package com.demoing.app.core.entity;
 
 import com.demoing.app.core.behavior.Behavior;
+import com.demoing.app.core.entity.helpers.EntityType;
 import com.demoing.app.core.service.collision.CollisionDetector;
 import com.demoing.app.core.gfx.Animation;
 import com.demoing.app.core.service.render.Renderer;
@@ -21,7 +22,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static com.demoing.app.core.entity.EntityType.RECTANGLE;
+import static com.demoing.app.core.entity.helpers.EntityType.RECTANGLE;
 
 /**
  * Definition for all {@link Entity} managed by the small game framework.

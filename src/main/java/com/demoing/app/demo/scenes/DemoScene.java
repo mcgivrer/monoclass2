@@ -1,6 +1,7 @@
 package com.demoing.app.demo.scenes;
 
 import com.demoing.app.core.behavior.Behavior;
+import com.demoing.app.core.entity.helpers.LightType;
 import com.demoing.app.core.gfx.Window;
 import com.demoing.app.core.io.Resources;
 import com.demoing.app.core.service.physic.World;
@@ -23,9 +24,9 @@ import java.io.IOException;
 import java.util.*;
 import java.util.List;
 
-import static com.demoing.app.core.entity.EntityType.*;
+import static com.demoing.app.core.entity.helpers.EntityType.*;
 import static com.demoing.app.core.service.physic.PhysicType.STATIC;
-import static com.demoing.app.core.entity.TextAlign.CENTER;
+import static com.demoing.app.core.entity.helpers.TextAlign.CENTER;
 
 public class DemoScene extends AbstractScene {
 

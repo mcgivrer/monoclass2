@@ -5,7 +5,7 @@ import java.awt.Color;
 import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.entity.Entity;
-import com.demoing.app.core.entity.EntityType;
+import com.demoing.app.core.entity.helpers.EntityType;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.World;
 
