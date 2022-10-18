@@ -3,8 +3,8 @@ package com.demoing.app.core.service.render.plugins;
 import com.demoing.app.core.config.Configuration;
 import com.demoing.app.core.entity.Camera;
 import com.demoing.app.core.entity.Light;
-import com.demoing.app.core.service.render.Renderer;
 import com.demoing.app.core.service.render.RenderPlugin;
+import com.demoing.app.core.service.render.Renderer;
 
 import java.awt.*;
 import java.awt.geom.Area;

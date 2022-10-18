@@ -1,13 +1,15 @@
 package com.demoing.app.demo.scenes.behaviors;
 
-import java.awt.Color;
-
 import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
-import com.demoing.app.core.entity.Entity;
-import com.demoing.app.core.entity.EntityType;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.World;
+import com.demoing.app.core.entity.Entity;
+import com.demoing.app.core.entity.ParticleSystem;
+
+import java.awt.*;
+
+import static com.demoing.app.core.entity.EntityType.ELLIPSE;
 
 /**
  * the RainParticleGeneratorBehavior wil perform the Particle rain drop generation regarding a max number of particle.
@@ -81,11 +83,11 @@ public class RainParticleGeneratorBehavior implements Behavior {
     /**
      * Create a brand-new particle with color, type and name, and then initialize it with duration, position and speed.
      *
-     * @param parent the parent {@link com.demoing.app.core.entity.ParticleSystem}.
+     * @param parent the parent {@link ParticleSystem}.
      */
     private void createDropParticleFromParent(Entity parent) {
         Entity drop = new Entity(parent.name + "_drop_" + (parent.getChild().size() + 1))
-                .setType(EntityType.ELLIPSE)
+                .setType(ELLIPSE)
                 .setPhysicType(PhysicType.DYNAMIC)
                 .setSize(1.0, 1.0)
                 .setColor(Color.WHITE)

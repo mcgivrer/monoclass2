@@ -3,12 +3,16 @@
 Collision Detection has 2 possibilities : 2 dynamic object are colliding, or a dynamic and sa static object are
 colliding. These are the 2 cases we will process in our `CollisionDetector` service.
 
-Our collision algorithm will be based on ethe famous AABB principle: [Axis Aligned Bounding Box](https://en.wikipedia.org/wiki/Minimum_bounding_box#Axis-aligned_minimum_bounding_box "as each time, Wikipedia knows best").
+Our collision algorithm will be based on ethe famous AABB
+principle: [Axis Aligned Bounding Box](https://en.wikipedia.org/wiki/Minimum_bounding_box#Axis-aligned_minimum_bounding_box "as each time, Wikipedia knows best")
+.
 
 Each object (Entity) is enclosed in a RECTANGULAR or an ELLIPSE box, and the x and y coordinated are compared regarding
 their width and height:
 
 ![the AABB bounding box](https://learnopengl.com/img/in-practice/breakout/collisions_overlap.png)
+
+_fig 8.1 - The basic collision principle_
 
 Those entities will also provide how the collision detection must behave regarding their physic type: we need to use
 carefully the PhysicType with STATIC and DYNAMIC values.
@@ -156,7 +160,8 @@ then, we detect is we are in front of (1) DYNAMIC vs. DYNAMIC collision or a (2)
 
 1. The first case is the more tricky and require more mathematics. I won't go in details, because this not my special
    skills. please, go and visit the very good post on [the Spicy Yoghurt](https://spicyyoghurt.com/) :
-   ['Collision Detection Physic'](https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics "Go and visit the really good article about javascript game development"), all is really crystal clear.
+   ['Collision Detection Physic'](https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics "Go and visit the really good article about javascript game development")
+   , all is really crystal clear.
 
 ```java
 public static class CollisionDetector {
@@ -210,22 +215,21 @@ public static class CollisionDetector {
 
 You may have noticed the new configuration attributes:
 
-- `speedMinValue` the minimum speed value below the value is reduced to 0.0 to remove noise effect on Entity's speed
-  computation (default value in configuration properties file : `app.physic.speed.min=0.1`),
-- `speedMaxValue` the maximum speed that will be used as a max threshold for any Entity (default value in configuration
-  properties file : `app.physic.speed.max=3.2`),.
-
-- `accMinValue` the minimum acceleration value below the value is reduced to 0.0 to remove noise effect on Entity's
-  acceleration (default value in configuration properties file : `app.physic.acceleration.min=0.01`),
-- `accMaxValue` the maximum acceleration that will be used as a max threshold for any Entity (default value in
-  configuration properties file : `app.physic.acceleration.max=3.5`),.
+|      key        | Description                                                                                                                                                                                            |
+|:---------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `speedMinValue` | the minimum speed value below the value is reduced to 0.0 to remove noise effect on Entity's speed computation (default value in configuration properties file : `app.physic.speed.min=0.1`)           |
+| `speedMaxValue` | the maximum speed that will be used as a max threshold for any Entity (default value in configuration properties file : `app.physic.speed.max=3.2`)                                                    |
+|  `accMinValue`  | the minimum acceleration value below the value is reduced to 0.0 to remove noise effect on Entity's acceleration (default value in configuration properties file : `app.physic.acceleration.min=0.01`) | 
+|  `accMaxValue`  | the maximum acceleration that will be used as a max threshold for any Entity (default value in configuration properties file : `app.physic.acceleration.max=3.5`)                                      |
 
 And specific values for collision resolution:
 
-- `colSpeedMinValue` the minimum speed value below the value is reduced to 0.0 to remove noise effect on Entity's speed
-  computation on collision (default value in configuration properties file : `app.physic.speed.min=0.1`),
-- `colSpeedMaxValue` the maximum speed that will be used as a max threshold for any Entity on collision (default value
-  in configuration properties file : `app.physic.speed.max=3.2`),.
+|       key          | Description                                                                                                                                                                                               |
+|:------------------:|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `colSpeedMinValue` | the minimum speed value below the value is reduced to 0.0 to remove noise effect on Entity's speed computation on collision (default value in configuration properties file : `app.physic.speed.min=0.1`) |
+| `colSpeedMaxValue` | the maximum speed that will be used as a max threshold for any Entity on collision (default value in configuration properties file : `app.physic.speed.max=3.2`)                                          |
+
+So the corresponding properties entries :
 
 ```properties
 app.physic.speed.min=0.1
@@ -238,8 +242,8 @@ app.collision.speed.max=1.2
 
 _figure $fig+ - `app.properties` file modified with new `PhysicEngine` threshold values._
 
-Here is a screen capture from the new CollisionDetector with platforms implementation:
+Here is a screen capture from the new CollisionDetector with platforms implementation, orange square are collision boxes:
 
 ![Collision Detecion and platforms](images/collision-detection-and-platform.png "Collision detection and platforms")
 
-_figure $fig+ - Collision detection and platforms_
+_figure 8.2 - Collision detection and platforms_

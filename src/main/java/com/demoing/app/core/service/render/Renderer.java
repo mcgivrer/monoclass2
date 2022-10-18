@@ -2,9 +2,10 @@ package com.demoing.app.core.service.render;
 
 import com.demoing.app.core.Application;
 import com.demoing.app.core.config.Configuration;
-import com.demoing.app.core.entity.*;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.World;
+import com.demoing.app.core.entity.Camera;
+import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.service.render.plugins.*;
 import com.demoing.app.core.utils.Logger;
 import com.demoing.app.core.utils.Utils;
@@ -100,6 +101,7 @@ public class Renderer {
         addPlugin(new EntityRenderPlugin());
         addPlugin(new ParticleSystemRenderPlugin());
         addPlugin(new InfluencerRenderPlugin());
+        addPlugin(new TileMapRenderPlugin());
 
 
     }
@@ -335,7 +337,7 @@ public class Renderer {
     public void addToPipeline(Entity entity) {
         if (!gPipeline.contains(entity)) {
             gPipeline.add(entity);
-            gPipeline.sort((o1, o2) -> o1.priority < o2.priority ? -1 : 1);
+            gPipeline.sort((o1, o2) -> o1.priority > o2.priority ? -1 : 1);
         }
     }
 

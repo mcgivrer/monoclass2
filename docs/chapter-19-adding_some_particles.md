@@ -89,6 +89,8 @@ As said just before, we need to render child element of any `Entity` having ones
 
 So at the draw Entity level on the Render service, we will add a call to the rendering to all child elements:
 
+// TODO write implmentation documentation for Particle renderer. 
+
 ```java
 public class Render implements System {
 

@@ -54,7 +54,6 @@ public class SceneManager {
                     final Constructor<?> sceneConstructor = clazzScene.getConstructor(String.class);
                     Scene s = (Scene) sceneConstructor.newInstance(sceneStr[0]);
                     scenes.put(sceneStr[0], s);
-                    activateScene(config.defaultScene);
                 } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException |
                          IllegalAccessException |
                          InvocationTargetException e) {
@@ -65,6 +64,7 @@ public class SceneManager {
                     return false;
                 }
             }
+            activateScene(config.defaultScene);
         }
         return true;
     }

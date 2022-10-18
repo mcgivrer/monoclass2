@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import static com.demoing.app.core.entity.EntityType.IMAGE;
 import static com.demoing.app.core.entity.EntityType.RECTANGLE;
 
 /**
@@ -50,6 +51,7 @@ public class Entity {
     public List<Entity> colliders = new CopyOnWriteArrayList<>();
 
     // Rendering attributes
+    private int layer;
     public int priority;
     public EntityType type = RECTANGLE;
     public Image image;
@@ -86,6 +88,7 @@ public class Entity {
     private Color shadowColor = Color.BLACK;
 
     private List<Entity> child = new ArrayList<>();
+
 
     public Entity(String name) {
         this.name = name;
@@ -148,6 +151,8 @@ public class Entity {
 
     public Entity setImage(BufferedImage img) {
         this.image = img;
+        this.type = IMAGE;
+        setSize(img.getWidth(), img.getHeight());
         return this;
     }
 
@@ -354,12 +359,24 @@ public class Entity {
 
     /**
      * Add a force to the Entity.
+     *
      * @param dx
      * @param dy
-     * @return
+     * @return the updated Entity.
      */
     public Entity addForce(double dx, double dy) {
-        this.forces.add(new Vec2d(dx,dy));
+        this.forces.add(new Vec2d(dx, dy));
+        return this;
+    }
+
+    /**
+     * Set  layer for this Entity.
+     *
+     * @param l an integer value defining the layer number to attach this entity to.
+     * @return the updated Entity.
+     */
+    public Entity setLayer(int l) {
+        this.layer = l;
         return this;
     }
 }

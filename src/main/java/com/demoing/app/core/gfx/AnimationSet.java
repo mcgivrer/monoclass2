@@ -2,12 +2,11 @@ package com.demoing.app.core.gfx;
 
 import java.awt.image.BufferedImage;
 
-import com.demoing.app.core.entity.Entity;
 
 /**
  * {@link AnimationSet} defining a series of Frames and their duration for a specific animation name.
  * This animationSet object is used in the {@link Animation#animationSet} attributes, to defined all the possible
- * animation into an Entity (see {@link Entity#animations}.
+ * animation into an Entity (see {@link com.demoing.app.core.entity.Entity#animations}.
  * <p>
  * Here is a Fluent API to ease the Animation set definition.
  *

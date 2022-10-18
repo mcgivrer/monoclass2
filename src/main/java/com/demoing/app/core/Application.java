@@ -46,14 +46,14 @@ import com.demoing.app.core.utils.Logger;
 public class Application extends JPanel {
     /**
      * Exit flag to request exit from application from the main loop.
-     * 
+     *
      * @see Application#loop()
      */
     public boolean exit = false;
     /**
      * a Pause flag to set the game in pause mode from the mao loop,
      * preventing from rendering and updating applicaiton entities.
-     * 
+     *
      * @see Application#loop()
      */
     public boolean pause = false;
@@ -123,7 +123,7 @@ public class Application extends JPanel {
      * THe main constructor to start the Applciatiopn.
      * The only input are the possible command line arguments for configuration
      * purpose, overloading the default ones coming from configuration file.
-     * 
+     *
      * @param args the array of arguents coming from the java command line.
      */
     public Application(String[] args) {
@@ -348,6 +348,7 @@ public class Application extends JPanel {
         render.addToPipeline(entity);
         collisionDetect.add(entity);
         entities.put(entity.name, entity);
+        entity.getChild().forEach(this::addEntity);
     }
 
     public void removeEntity(String filterValue, int i) {
@@ -369,12 +370,11 @@ public class Application extends JPanel {
     }
 
     public List<Entity> filterEntitiesOnName(String filterValue, int i) {
-        List<Entity> etbr = entities.values()
+        return entities.values()
                 .stream()
                 .filter(e -> e.name.contains(filterValue))
                 .limit(i)
                 .toList();
-        return etbr;
     }
 
     public synchronized Entity getEntity(String name) {
