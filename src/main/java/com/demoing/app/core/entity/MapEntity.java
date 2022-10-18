@@ -1,6 +1,6 @@
 package com.demoing.app.core.entity;
 
-import com.demoing.app.core.service.render.Render;
+import com.demoing.app.core.service.render.Renderer;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.World;
 
@@ -12,7 +12,7 @@ import java.util.Map;
 
 /**
  * <p>{@link MapEntity} is a displayed map of the all Scene existing active objects.</p>
- * <p>The {@link Render} will display all object according to a defined color code.
+ * <p>The {@link Renderer} will display all object according to a defined color code.
  * <pre>
  * MapEntity mapEntity = (MapEntity) new MapEntity("map")
  *   .setColorMapping(

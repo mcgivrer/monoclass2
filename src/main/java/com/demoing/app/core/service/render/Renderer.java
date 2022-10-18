@@ -3,37 +3,32 @@ package com.demoing.app.core.service.render;
 import com.demoing.app.core.Application;
 import com.demoing.app.core.config.Configuration;
 import com.demoing.app.core.entity.*;
-import com.demoing.app.core.gfx.Window;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.World;
+import com.demoing.app.core.service.render.plugins.*;
 import com.demoing.app.core.utils.Logger;
 import com.demoing.app.core.utils.Utils;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.geom.Area;
-import java.awt.geom.Ellipse2D;
-import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.RescaleOp;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * The {@link Render} service will provide the drawing process to  display entities to the {@link Application}
+ * The {@link Renderer} service will provide the drawing process to  display entities to the {@link Application}
  * display buffer,  and then copy the buffer to the application window (see {@link JFrame}.
  */
-public class Render {
+public class Renderer {
 
     /**
      * The World object defining the play area limit.
@@ -54,10 +49,15 @@ public class Render {
      * Internal metric to measure rendering time.
      */
     public long renderingTime = 0;
+
+    /**
+     * The list of rendering plugin to be used to render all the type of entities.
+     */
+    private final Map<Class<? extends Entity>, RenderPlugin<Entity>> plugins = new ConcurrentHashMap<>();
     /**
      * The list of object to be rendered: the rendering pipeline.
      */
-    private List<Entity> gPipeline = new CopyOnWriteArrayList<>();
+    private final List<Entity> gPipeline = new CopyOnWriteArrayList<>();
 
 
     /**
@@ -76,13 +76,12 @@ public class Render {
      * @param app   the parent application of this Render service.
      * @param world the World object defining the play area limits.
      */
-    public Render(Application app, World world) {
+    public Renderer(Application app, World world) {
         this.config = app.getConfiguration();
         this.window = app.getWindow();
         this.world = world;
         buffer = new BufferedImage((int) config.screenWidth, (int) config.screenHeight,
                 BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = buffer.createGraphics();
         try {
             debugFont = Font.createFont(
                             Font.PLAIN,
@@ -91,10 +90,32 @@ public class Render {
         } catch (FontFormatException | IOException e) {
             Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to initialize Render: " + e.getLocalizedMessage());
         }
+
+        addPlugin(new TextRenderPlugin());
+        addPlugin(new GaugeRenderPlugin());
+        addPlugin(new MapRenderPlugin());
+        addPlugin(new ValueRenderPlugin());
+        addPlugin(new LightRenderPlugin());
+        addPlugin(new EntityRenderPlugin());
+        addPlugin(new ParticleSystemRenderPlugin());
+        addPlugin(new InfluencerRenderPlugin());
+
+
     }
 
     /**
-     * Drawing all object in the {@link Render#gPipeline}, according to the priority
+     * Add a new Rendering plugin to provide new rendering capabilities for {@link Entity} inheritance.
+     *
+     * @param renderPlugin the new {@link RenderPlugin} implementation to serve new rendering needs.
+     * @return the updated {@link Renderer} system.
+     */
+    public Renderer addPlugin(RenderPlugin renderPlugin) {
+        plugins.put(renderPlugin.getRegisteringClass(), renderPlugin);
+        return this;
+    }
+
+    /**
+     * Drawing all object in the {@link Renderer#gPipeline}, according to the priority
      * sort order.
      *
      * @param realFps the real measured Frame Per Second value to be displayed in
@@ -114,187 +135,30 @@ public class Render {
         drawGrid(g, world, 16, 16);
         moveCamera(g, activeCamera, 1);
         gPipeline.stream()
-                .filter(e -> !(e instanceof Light)
+                .filter(e -> !e.getClass().equals(Light.class)
                         && e.isAlive() || e.isPersistent())
-                .forEach(e -> {
-                    drawPipelineEntity(g, e);
-                });
-        // Draw all lights
-        gPipeline.stream().filter(e -> e instanceof Light).forEach(l -> {
-            if (l.isNotStickToCamera()) {
-                moveCamera(g, activeCamera, -1);
-            }
-            drawLight(g, (Light) l);
-            if (l.isNotStickToCamera()) {
-                moveCamera(g, activeCamera, 1);
-            }
-        });
+                .forEach(e -> drawEntity(g, e));
         g.dispose();
         renderToScreen(realFps);
         renderingTime = System.nanoTime() - startTime;
     }
 
-    private void drawPipelineEntity(Graphics2D g, Entity e) {
+    private void drawEntity(Graphics2D g, Entity e) {
         if (e.isNotStickToCamera()) {
             moveCamera(g, activeCamera, -1);
         }
-        g.setColor(e.color);
-        switch (e) {
-            // This is a TextEntity
-            case TextEntity te -> {
-                drawText(g, e, te);
-            }
-            // This is a GaugeEntity
-            case GaugeEntity ge -> {
-                drawGauge(g, ge);
-            }
-            // This is a ValueEntity
-            case ValueEntity se -> {
-                drawValue(g, se);
-            }
-            // This is a MapEntity
-            case MapEntity me -> {
-                drawMapEntity(g, me);
-            }
-            // This is an Influencer
-            case Influencer ie -> {
-                drawInfluencer(g, ie);
-            }
-            // This is a basic entity or a PArticleSystem
-            case Entity ee -> {
-                drawEntity(g, ee);
-            }
+        if (plugins.containsKey(e.getClass())) {
+            plugins.get(e.getClass()).draw(this, g, e);
+        } else {
+            Logger.log(Logger.ERROR, this.getClass(), "No RenderPlugin implementation found for %s.",
+                    e.getClass().toString());
         }
         drawDebugInfo(g, e);
         if (e.isNotStickToCamera()) {
             moveCamera(g, activeCamera, 1);
         }
         // Draw all child entities.
-        e.getChild().forEach(ce->drawPipelineEntity(g,ce));
-    }
-
-    private void drawInfluencer(Graphics2D g, Influencer ie) {
-        drawEntity(g, ie);
-    }
-
-    private void drawLight(Graphics2D g, Light l) {
-        switch (l.lightType) {
-            case SPOT -> drawSpotLight(g, l);
-            case SPHERICAL -> drawSphericalLight(g, l);
-            case AMBIENT -> drawAmbiantLight(g, l);
-            case AREA_RECTANGLE -> drawLightArea(g, l);
-        }
-    }
-
-    private void drawLightArea(Graphics2D g, Light l) {
-
-        final Area ambientArea = new Area(new Rectangle2D.Double(l.pos.x, l.pos.y, l.width, l.height));
-        g.setColor(l.color);
-        Composite c = g.getComposite();
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) l.energy));
-        g.fill(ambientArea);
-        g.setComposite(c);
-    }
-
-    private void drawAmbiantLight(Graphics2D g, Light l) {
-        final Area ambientArea = new Area(
-                new Rectangle2D.Double(
-                        activeCamera.pos.x, activeCamera.pos.y,
-                        config.screenWidth, config.screenHeight));
-        g.setColor(l.color);
-        Composite c = g.getComposite();
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) l.energy));
-        g.fill(ambientArea);
-        g.setComposite(c);
-    }
-
-    private void drawSphericalLight(Graphics2D g, Light l) {
-        l.color = brighten(l.color, l.energy);
-        Color medColor = brighten(l.color, l.energy * 0.5);
-        Color endColor = new Color(0.0f, 0.0f, 0.0f, 0.2f);
-
-        l.colors = new Color[]{l.color,
-                medColor,
-                endColor};
-        l.dist = new float[]{0.0f, 0.05f, 0.5f};
-        l.rgp = new RadialGradientPaint(
-                new Point(
-                        (int) (l.pos.x + (l.width * 0.5) + (10 * Math.random() * l.glitterEffect)),
-                        (int) (l.pos.y + (l.width * 0.5) + (10 * Math.random() * l.glitterEffect))),
-                (int) (l.width),
-                l.dist,
-                l.colors);
-        g.setPaint(l.rgp);
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) l.energy));
-        g.fill(new Ellipse2D.Double(l.pos.x, l.pos.y, l.width, l.width));
-    }
-
-    private void drawSpotLight(Graphics2D g, Light l) {
-
-    }
-
-    /**
-     * Make a color brighten.
-     *
-     * @param color    Color to make brighten.
-     * @param fraction Darkness fraction.
-     * @return Lighter color.
-     * @link https://stackoverflow.com/questions/18648142/creating-brighter-color-java
-     */
-    public static Color brighten(Color color, double fraction) {
-
-        int red = (int) Math.round(Math.min(255, color.getRed() + 255 * fraction));
-        int green = (int) Math.round(Math.min(255, color.getGreen() + 255 * fraction));
-        int blue = (int) Math.round(Math.min(255, color.getBlue() + 255 * fraction));
-
-        int alpha = color.getAlpha();
-
-        return new Color(red, green, blue, alpha);
-
-    }
-
-    private void drawMapEntity(Graphics2D g, MapEntity me) {
-        g.setColor(me.color);
-        g.drawRect((int) me.pos.x, (int) me.pos.y, (int) me.width, (int) me.height);
-        g.setColor(me.backgroundColor);
-        g.fillRect((int) me.pos.x, (int) me.pos.y, (int) me.width, (int) me.height);
-        me.entitiesRef.stream()
-                .filter(e -> (e.isAlive() || e.isPersistent()))
-                .forEach(e -> {
-                    me.colorEntityMapping.entrySet().forEach(cm -> {
-                        if (e.name.contains(cm.getKey())) {
-                            g.setColor(cm.getValue());
-                            int px = (int) (me.pos.x + (me.width * (e.pos.x / me.world.area.getWidth())));
-                            int py = (int) (me.pos.y + me.height * (e.pos.y / me.world.area.getHeight()));
-                            int pw = (int) (me.width * (e.width / me.world.area.getWidth()));
-                            int ph = (int) (me.height * (e.height / me.world.area.getHeight()));
-                            g.drawRect(px, py, pw, ph);
-                        }
-                    });
-                });
-    }
-
-    private void drawEntity(Graphics2D g, Entity ee) {
-        switch (ee.type) {
-            case RECTANGLE -> g.fillRect((int) ee.pos.x, (int) ee.pos.y, (int) ee.width, (int) ee.height);
-            case ELLIPSE -> g.fillArc((int) ee.pos.x, (int) ee.pos.y, (int) ee.width, (int) ee.height, 0, 360);
-            case IMAGE -> {
-                if (ee.getDirection() > 0) {
-                    g.drawImage(
-                            ee.getImage(),
-                            (int) ee.pos.x, (int) ee.pos.y,
-                            null);
-                } else {
-                    g.drawImage(
-                            ee.getImage(),
-                            (int) (ee.pos.x + ee.width), (int) ee.pos.y,
-                            (int) (-ee.width), (int) ee.height,
-                            null);
-                }
-            }
-            case NONE -> {
-            }
-        }
+        e.getChild().forEach(ce -> drawEntity(g, ce));
     }
 
     public BufferedImage setAlpha(BufferedImage sprite, float alpha) {
@@ -312,27 +176,6 @@ public class Render {
         return drawImage;
     }
 
-    private void drawText(Graphics2D g, Entity e, TextEntity te) {
-        g.setFont(te.font);
-        int size = g.getFontMetrics().stringWidth(te.text);
-        double offsetX = te.align.equals(TextAlign.RIGHT) ? -size
-                : te.align.equals(TextAlign.CENTER) ? -size * 0.5 : 0;
-        g.drawString(te.text, (int) (te.pos.x + offsetX), (int) te.pos.y);
-        e.width = size;
-        e.height = g.getFontMetrics().getHeight();
-        e.box.setRect(e.pos.x + offsetX, e.pos.y - e.height + g.getFontMetrics().getDescent(), e.width,
-                e.height);
-    }
-
-    private void drawGauge(Graphics2D g, GaugeEntity ge) {
-        g.setColor(ge.shadow);
-        g.fillRect((int) ge.pos.x - 1, (int) ge.pos.y - 1, (int) ge.width + 2, (int) ge.height + 2);
-        g.setColor(ge.border);
-        g.fillRect((int) ge.pos.x, (int) ge.pos.y, (int) ge.width, (int) ge.height);
-        int value = (int) ((ge.value / ge.maxValue) * ge.width - 2);
-        g.setColor(ge.color);
-        g.fillRect((int) (ge.pos.x) + 1, (int) (ge.pos.y) + 1, value, (int) (ge.height) - 2);
-    }
 
     /**
      * Display debug information on the {@link Entity } according to the current
@@ -400,7 +243,7 @@ public class Render {
 
     private void drawLifeBar(Graphics2D g, Entity e) {
         g.setColor(Color.RED);
-        float ratio = 0.0f;
+        float ratio;
         if (e.isPersistent()) {
             g.setColor(Color.ORANGE);
             ratio = 1.0f;
@@ -410,35 +253,6 @@ public class Render {
         g.fillRect((int) e.pos.x, (int) e.pos.y - 4, (int) (32.0 * ratio), 2);
     }
 
-    /**
-     * Draw score with digital characters
-     *
-     * @param g  the Graphics2D API
-     * @param se ValueEntity object
-     */
-    private void drawValue(Graphics2D g, ValueEntity se) {
-        String textValue = se.valueTxt.strip();
-        byte c[] = textValue.getBytes(StandardCharsets.US_ASCII);
-        for (int pos = 0; pos < textValue.length(); pos++) {
-            //convert character ascii value to number from 0 to 9.
-            int v = c[pos] - 48;
-            drawFig(g, se, v, se.pos.x + (pos * 8), se.pos.y);
-        }
-    }
-
-    /**
-     * Draw a simple figure
-     *
-     * @param g     the Graphics2D API
-     * @param value number value to draw
-     * @param x     horizontal position
-     * @param y     vertical position
-     */
-    private void drawFig(Graphics2D g, ValueEntity se, int value, double x, double y) {
-        assert (value > -1);
-        assert (value < 10);
-        g.drawImage(se.figures[value], (int) x, (int) y, null);
-    }
 
     /**
      * Draw a global grid corresponding to the World object defining the play area.
@@ -465,7 +279,7 @@ public class Render {
     }
 
     /**
-     * After the Buffer rendering operation performed in {@link Render#draw(long)},
+     * After the Buffer rendering operation performed in {@link Renderer#draw(long)},
      * the buffer is coped to the JFrame content.
      *
      * @param realFps the measured frame rate per seconds
@@ -475,7 +289,7 @@ public class Render {
         Graphics2D g2 = (Graphics2D) frame.getBufferStrategy().getDrawGraphics();
         g2.drawImage(
                 buffer,
-                0, 0, (int) frame.getWidth(), (int) frame.getHeight(),
+                0, 0, frame.getWidth(), frame.getHeight(),
                 0, 0, (int) config.screenWidth, (int) config.screenHeight,
                 null);
         drawDebugString(g2, realFps);
@@ -495,7 +309,7 @@ public class Render {
                             gPipeline.size(),
                             world.gravity.y * 1000.0,
                             world.area.getWidth(), world.area.getHeight()),
-                    20, (int) window.getHeight() - 20);
+                    20, window.getHeight() - 20);
         }
 
     }
@@ -589,7 +403,11 @@ public class Render {
         return renderingTime;
     }
 
-    public List<Entity> getgPipeline() {
+    public List<Entity> getGPipeline() {
         return gPipeline;
+    }
+
+    public Configuration getConfiguration() {
+        return config;
     }
 }
