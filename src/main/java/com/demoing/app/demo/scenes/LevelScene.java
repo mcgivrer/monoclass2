@@ -62,19 +62,7 @@ public class LevelScene extends AbstractScene {
         app.addEntity(tm);
         // retrieve the "player" Entity.
         Entity player = tm.getEntity("player").setType(IMAGE)
-                .setPosition(
-                        world.area.getWidth() * 0.5,
-                        world.area.getHeight() * 0.5)
-                .setSize(32.0, 32.0)
-                .setMaterial(
-                        new Material("player_mat", 1.0, 0.3, 0.98))
-                .setColor(Color.RED)
-                .setPriority(1)
-                .setMass(40.0)
                 .setCollisionBox(+4, -8, -4, -2)
-                .setAttribute("energy", 100)
-                .setAttribute("mana", 100)
-                .setAttribute("accStep", 0.05)
                 .addAnimation("idle",
                         0, 0,
                         32, 32,
@@ -95,8 +83,7 @@ public class LevelScene extends AbstractScene {
                         32, 32,
                         new int[]{160, 160, 160, 160, 160, 160, 500},
                         "/images/sprites01.png", 0)
-                .activateAnimation("idle")
-                .addBehavior(new PlayerOnCollisionBehavior(this));
+                .activateAnimation("idle");
 
         // define the Camera.
         Camera cam = new Camera("cam01")
@@ -110,8 +97,8 @@ public class LevelScene extends AbstractScene {
                 player,
                 Map.of(
                         "player", Color.BLUE,
-                        "enemy_", Color.RED,
-                        "coin_", Color.YELLOW
+                        "enemy", Color.RED,
+                        "coin", Color.YELLOW
                 ));
 
         world.area.setRect(0, 0, tm.width, tm.height);

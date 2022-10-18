@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import static com.demoing.app.core.entity.EntityType.IMAGE;
 import static com.demoing.app.core.entity.EntityType.RECTANGLE;
 
 /**
@@ -150,6 +151,8 @@ public class Entity {
 
     public Entity setImage(BufferedImage img) {
         this.image = img;
+        this.type = IMAGE;
+        setSize(img.getWidth(), img.getHeight());
         return this;
     }
 

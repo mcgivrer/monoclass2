@@ -125,12 +125,16 @@ public class TileMapLoader {
             Entity background = new Entity("background")
                     .setType(EntityType.IMAGE)
                     .setPhysicType(PhysicType.NONE)
-                    .setLayer(11)
+                    .setLayer(4)
                     .setPriority(1)
                     .setPosition(0.0, 0.0)
                     .setStickToCamera(true)
                     .setImage(Resources.loadImage((String) resources.get(backGroundResourceId)));
             app.addEntity(background);
+            System.out.printf(
+                    "INFO : TileMapLoader | added a Background image entity named %s with resource %s%n",
+                    background.name,
+                    (String) resources.get(backGroundResourceId));
         }
     }
 
@@ -163,6 +167,7 @@ public class TileMapLoader {
                     // reset the tile id to
                     tm.map[ix + (iy * mapWidth)] = 0;
                     entities.add(t);
+                    System.out.printf("INFO : TileMapLoader | added and Entity %s named %s%n", t.getClass(), t.name);
                     tm.getChild().add(t);
                 }
             }
@@ -251,6 +256,10 @@ public class TileMapLoader {
             if (attributes.containsKey("behaviors")) {
                 generateEntityBehaviorsImplementations(scn, attributes, obj);
             }
+
+            if (attributes.containsKey("animations")) {
+                generateAnimationsForEntity(scn, attributes, obj);
+            }
             // all letting attributes are moved to the Entity attributes itself
             retrieveAllOtherEntityAttributes(attributes, obj);
 
@@ -259,6 +268,26 @@ public class TileMapLoader {
             throw new RuntimeException(e);
         }
         return obj;
+    }
+
+    /**
+     * Parse the "animations" and "defaultAnimation" attributes to populate Entity with animation frames.
+     *
+     * <pre>
+     *   animations:{\
+     *     idle={x=0,y=0,tw=32,th=32,time=[450, 60, 60, 250, 60, 60, 60, 450, 60, 60, 60, 250, 60],resource=3},\
+     *     walk={x=0,y=32,tw=32,th=32,time=[60, 60, 60, 150, 60, 60, 60, 150],resource=3},\
+     *     jump={x=0,y=160,tw=32,th=32,time=[60, 60, 250, 250, 60, 60],resource=3},\
+     *     dead={x=0,y=224,tw=32,th=32,time=[160, 160, 160, 160, 160, 160, 500],resource=3}};\
+     *   defaultAnimation:idle
+     * </pre>
+     *
+     * @param scn        the parent {@link Scene} instance hosting this {@link TileMap}.
+     * @param attributes the entity "animations" attribute.
+     * @param obj        the Entity to be updated with those attribute values.
+     */
+    private static void generateAnimationsForEntity(Scene scn, Map<String, Object> attributes, Entity obj) {
+        // TODO read animation from attribute list and create Animation instances in obj.
     }
 
 
@@ -305,7 +334,6 @@ public class TileMapLoader {
                 "=");
         BufferedImage img = convertImageAttributeToBufferedImage(resources, imageAttributes);
         obj.setImage(img);
-        obj.setSize(img.getWidth(), img.getHeight());
     }
 
     /**
@@ -329,6 +357,7 @@ public class TileMapLoader {
                 (double) matAttributes.get("density"),
                 (double) matAttributes.get("friction"));
         obj.setMaterial(material);
+
     }
 
     /**
@@ -452,12 +481,12 @@ public class TileMapLoader {
                         .getConstructor(Scene.class).newInstance(scn);
                 obj.addBehavior(instanceBehavior);
 
-                System.out.printf("INFO : TileMapLoader | Behavior %s added to GameObject %s",
+                System.out.printf("INFO : TileMapLoader | Behavior %s added to GameObject %s%n",
                         b, obj.name);
 
             } catch (InstantiationException | IllegalAccessException | NoSuchMethodException |
                      ClassNotFoundException | InvocationTargetException e) {
-                System.out.printf("ERROR : TileMapLoader | Unable to add behavior %s to current Entity %s",
+                System.out.printf("ERROR : TileMapLoader | Unable to add behavior %s to current Entity %s%n",
                         b, obj.name);
             }
         }
