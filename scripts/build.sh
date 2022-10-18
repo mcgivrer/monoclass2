@@ -4,7 +4,7 @@
 
 # ---- Project definition (Manifest entries)
 export PROGRAM_NAME=monoclass2
-export PROGRAM_VERSION=1.0.5
+export PROGRAM_VERSION=1.0.6
 export PROGRAM_TITLE=MonoClass2
 # Entry point for your program (used to create mainClass manifest entry)
 export MAIN_CLASS=com.demoing.app.core.Application

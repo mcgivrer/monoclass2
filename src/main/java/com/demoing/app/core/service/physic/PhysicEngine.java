@@ -8,7 +8,7 @@ import com.demoing.app.core.entity.Influencer;
 import com.demoing.app.core.math.Vec2d;
 import com.demoing.app.core.service.physic.material.DefaultMaterial;
 import com.demoing.app.core.service.physic.material.Material;
-import com.demoing.app.core.service.render.Render;
+import com.demoing.app.core.service.render.Renderer;
 import com.demoing.app.core.utils.Logger;
 
 import java.util.Map;
@@ -94,7 +94,7 @@ public class PhysicEngine {
                     .forEach(b -> b.update(app, elapsed));
         }
         //  update active camera if presents.
-        Render r = app.getRender();
+        Renderer r = app.getRender();
         if (Optional.ofNullable(r.getActiveCamera()).isPresent()) {
             r.getActiveCamera().update(elapsed);
         }
@@ -161,8 +161,11 @@ public class PhysicEngine {
         double collisionFriction = e.colliders.stream()
                 .filter(c -> c.collide)
                 .mapToDouble(c -> c.material.friction)
-                .reduce(m.friction, (a, b) -> a * b);
-        e.friction = Double.min(collisionFriction, world.getMaterial().friction);
+                .reduce(m.friction, (a, b) -> Math.min(a, b));
+
+        // Math. expression of air friction : F[friction]=1/2*ρ*S*Cx*v² where Cx is a penetration factor.
+        e.friction =Double.min(collisionFriction, world.getMaterial().friction);
+
 
         // compute resulting elasticity
         double collisionElasticity = e.colliders.stream()
@@ -171,10 +174,11 @@ public class PhysicEngine {
                 .reduce(m.elasticity, (a, b) -> a * b);
         e.elasticity = Double.max(collisionElasticity, world.getMaterial().elasticity);
 
+        // Compute velocity with entity friction & resulting material density from world.
         e.vel.add(e.acc
                 .minMax(config.accMinValue, config.accMaxValue)
                 .multiply(0.5 * elapsed * e.friction * m.density));
-
+        // fetch velocity into a controlled range.
         e.vel.minMax(config.speedMinValue, config.speedMaxValue);
 
         e.pos.add(e.vel);
@@ -215,25 +219,25 @@ public class PhysicEngine {
             e.pos.x = 0.0;
             e.vel.x *= -1 * e.elasticity;
             e.acc.x = 0.0;
-            e.collide=true;
+            e.collide = true;
         }
         if (e.cbox.getBounds().getY() < 0.0) {
             e.pos.y = 0.0;
             e.vel.y *= -1 * e.elasticity;
             e.acc.y = 0.0;
-            e.collide=true;
+            e.collide = true;
         }
         if (e.cbox.getBounds().getX() + e.cbox.getBounds().getWidth() > world.area.getWidth()) {
             e.pos.x = world.area.getWidth() - e.width;
             e.vel.x *= -1 * e.elasticity;
             e.acc.x = 0.0;
-            e.collide=true;
+            e.collide = true;
         }
         if (e.cbox.getBounds().getY() + e.cbox.getBounds().getHeight() > world.area.getHeight()) {
             e.pos.y = world.area.getHeight() - e.height;
             e.vel.x *= -1 * e.elasticity;
             e.acc.x = 0.0;
-            e.collide=true;
+            e.collide = true;
         }
     }
 

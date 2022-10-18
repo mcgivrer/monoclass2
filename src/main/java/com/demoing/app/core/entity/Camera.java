@@ -92,4 +92,8 @@ public class Camera extends Entity {
         pos.x += Math.round((target.pos.x + target.width - (viewport.getWidth() * 0.5) - pos.x) * tweenFactor * elapsed);
         pos.y += Math.round((target.pos.y + target.height - (viewport.getHeight() * 0.5) - pos.y) * tweenFactor * elapsed);
     }
+
+    public Rectangle2D getViewport() {
+        return viewport;
+    }
 }
