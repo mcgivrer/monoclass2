@@ -54,16 +54,17 @@ public class Renderer {
      * The list of rendering plugin to be used to render all the type of entities.
      */
     private final Map<Class<? extends Entity>, RenderPlugin<Entity>> plugins = new ConcurrentHashMap<>();
+
     /**
      * The list of object to be rendered: the rendering pipeline.
      */
     private final List<Entity> gPipeline = new CopyOnWriteArrayList<>();
 
-
     /**
      * The current active camera to draw all the scene entities from this point of view.
      */
     private Camera activeCamera;
+
     /**
      * Internal Counter for screenshots
      */
@@ -88,7 +89,7 @@ public class Renderer {
                             Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
                     .deriveFont(9.0f);
         } catch (FontFormatException | IOException e) {
-            Logger.log(Logger.ERROR, this.getClass(), "ERR: Unable to initialize Render: " + e.getLocalizedMessage());
+            Logger.log(Logger.ERROR, this.getClass(), "Unable to initialize Renderer: {0}",e.getLocalizedMessage());
         }
 
         addPlugin(new TextRenderPlugin());
@@ -135,8 +136,7 @@ public class Renderer {
         drawGrid(g, world, 16, 16);
         moveCamera(g, activeCamera, 1);
         gPipeline.stream()
-                .filter(e -> !e.getClass().equals(Light.class)
-                        && e.isAlive() || e.isPersistent())
+                .filter(e -> e.isAlive() || e.isPersistent())
                 .forEach(e -> drawEntity(g, e));
         g.dispose();
         renderToScreen(realFps);
