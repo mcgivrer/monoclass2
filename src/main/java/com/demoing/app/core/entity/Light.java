@@ -36,7 +36,6 @@ public class Light extends Entity {
         super(name);
         setType(NONE);
         setPhysicType(PhysicType.NONE);
-        setStickToCamera(false);
     }
 
     /**

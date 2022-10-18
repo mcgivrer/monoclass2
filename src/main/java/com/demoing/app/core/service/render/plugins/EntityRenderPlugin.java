@@ -20,6 +20,7 @@ public class EntityRenderPlugin implements RenderPlugin<Entity> {
 
     @Override
     public void draw(Renderer r, Graphics2D g, Entity ee) {
+        g.setColor(ee.color);
         switch (ee.type) {
             case RECTANGLE -> g.fillRect((int) ee.pos.x, (int) ee.pos.y, (int) ee.width, (int) ee.height);
             case ELLIPSE -> g.fillArc((int) ee.pos.x, (int) ee.pos.y, (int) ee.width, (int) ee.height, 0, 360);
