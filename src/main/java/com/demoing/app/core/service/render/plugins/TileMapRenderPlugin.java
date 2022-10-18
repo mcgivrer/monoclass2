@@ -1,6 +1,5 @@
 package com.demoing.app.core.service.render.plugins;
 
-import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.entity.Tile;
 import com.demoing.app.core.entity.TileMap;
 import com.demoing.app.core.service.render.RenderPlugin;

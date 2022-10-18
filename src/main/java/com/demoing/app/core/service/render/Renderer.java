@@ -2,11 +2,10 @@ package com.demoing.app.core.service.render;
 
 import com.demoing.app.core.Application;
 import com.demoing.app.core.config.Configuration;
-import com.demoing.app.core.entity.*;
-import com.demoing.app.core.entity.helpers.TextAlign;
-import com.demoing.app.core.entity.tilemap.TileMap;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.World;
+import com.demoing.app.core.entity.Camera;
+import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.service.render.plugins.*;
 import com.demoing.app.core.utils.Logger;
 import com.demoing.app.core.utils.Utils;

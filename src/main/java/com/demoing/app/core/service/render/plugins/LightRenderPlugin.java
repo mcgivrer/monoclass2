@@ -3,8 +3,8 @@ package com.demoing.app.core.service.render.plugins;
 import com.demoing.app.core.config.Configuration;
 import com.demoing.app.core.entity.Camera;
 import com.demoing.app.core.entity.Light;
-import com.demoing.app.core.service.render.Renderer;
 import com.demoing.app.core.service.render.RenderPlugin;
+import com.demoing.app.core.service.render.Renderer;
 
 import java.awt.*;
 import java.awt.geom.Area;
@@ -12,9 +12,10 @@ import java.awt.geom.Ellipse2D;
 import java.awt.geom.Rectangle2D;
 
 /**
- * @author : M313104
- * @mailto : buy@mail.com
- * @created : 17/10/2022
+ * Implementation of the Light render plugin.
+ *
+ * @author Frédéric Delorme
+ * @since 1.0.6
  **/
 public class LightRenderPlugin implements RenderPlugin<Light> {
 

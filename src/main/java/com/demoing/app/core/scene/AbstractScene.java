@@ -2,9 +2,9 @@ package com.demoing.app.core.scene;
 
 import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
-import com.demoing.app.core.entity.*;
 import com.demoing.app.core.io.Resources;
 import com.demoing.app.core.service.physic.World;
+import com.demoing.app.core.entity.*;
 import com.demoing.app.core.utils.I18n;
 
 import java.awt.*;

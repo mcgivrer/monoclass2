@@ -1,7 +1,7 @@
 package com.demoing.app.tests.features;
 
 import com.demoing.app.core.entity.Entity;
-import com.demoing.app.core.entity.tilemap.TileMap;
+import com.demoing.app.core.entity.TileMap;
 import com.demoing.app.core.scene.Scene;
 import com.demoing.app.tests.core.AbstractApplicationTest;
 import io.cucumber.java8.En;

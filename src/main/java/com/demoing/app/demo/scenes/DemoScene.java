@@ -1,17 +1,13 @@
 package com.demoing.app.demo.scenes;
 
+import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
-import com.demoing.app.core.entity.helpers.LightType;
 import com.demoing.app.core.gfx.Window;
-import com.demoing.app.core.io.Resources;
-import com.demoing.app.core.service.physic.World;
-import com.demoing.app.core.service.physic.material.Material;
-import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.math.Vec2d;
 import com.demoing.app.core.scene.AbstractScene;
-import com.demoing.app.core.Application;
+import com.demoing.app.core.service.physic.PhysicType;
+import com.demoing.app.core.service.physic.material.Material;
 import com.demoing.app.core.entity.*;
-import com.demoing.app.core.utils.I18n;
 import com.demoing.app.demo.scenes.behaviors.EnemyOnCollisionBehavior;
 import com.demoing.app.demo.scenes.behaviors.PlayerOnCollisionBehavior;
 import com.demoing.app.demo.scenes.behaviors.RainParticleGeneratorBehavior;
@@ -19,14 +15,14 @@ import com.demoing.app.demo.scenes.behaviors.RainParticleGeneratorBehavior;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.geom.Rectangle2D;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import static com.demoing.app.core.entity.helpers.EntityType.*;
 import static com.demoing.app.core.service.physic.PhysicType.STATIC;
-import static com.demoing.app.core.entity.helpers.TextAlign.CENTER;
+import static com.demoing.app.core.entity.EntityType.*;
 
 public class DemoScene extends AbstractScene {
 

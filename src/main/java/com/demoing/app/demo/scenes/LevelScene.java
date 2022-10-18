@@ -1,12 +1,12 @@
 package com.demoing.app.demo.scenes;
 
 import com.demoing.app.core.Application;
-import com.demoing.app.core.entity.*;
 import com.demoing.app.core.gfx.Window;
 import com.demoing.app.core.io.TileMapLoader;
 import com.demoing.app.core.math.Vec2d;
 import com.demoing.app.core.scene.AbstractScene;
 import com.demoing.app.core.service.physic.material.Material;
+import com.demoing.app.core.entity.*;
 import com.demoing.app.demo.scenes.behaviors.PlayerOnCollisionBehavior;
 
 import java.awt.*;
