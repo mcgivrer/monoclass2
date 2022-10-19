@@ -1,11 +1,10 @@
 package com.demoing.app.core.service.render.plugins;
 
 import com.demoing.app.core.entity.MapEntity;
-import com.demoing.app.core.service.render.Renderer;
 import com.demoing.app.core.service.render.RenderPlugin;
+import com.demoing.app.core.service.render.Renderer;
 
 import java.awt.Graphics2D;
-import java.awt.Color;
 
 /**
  * Implementation of the MapEntity render plugin.
@@ -29,23 +28,17 @@ public class MapRenderPlugin implements RenderPlugin<MapEntity> {
         me.entitiesRef.stream()
                 .filter(e -> (e.isAlive() || e.isPersistent()))
                 .forEach(e -> {
-                    me.colorEntityMapping.entrySet().forEach(cm -> {
-                        if (e.name.contains(cm.getKey())) {
-                            g.setColor(cm.getValue());
-                            int px = (int) (me.pos.x + (me.width * (e.pos.x / me.world.area.getWidth())));
-                            int py = (int) (me.pos.y + me.height * (e.pos.y / me.world.area.getHeight()));
-                            int pw = (int) (me.width * (e.width / me.world.area.getWidth()));
-                            int ph = (int) (me.height * (e.height / me.world.area.getHeight()));
-                            g.drawRect(px, py, pw, ph);
-                        } else {
-                            g.setColor(Color.GRAY);
-                            int px = (int) (me.pos.x + (me.width * (e.pos.x / me.world.area.getWidth())));
-                            int py = (int) (me.pos.y + me.height * (e.pos.y / me.world.area.getHeight()));
-                            int pw = (int) (me.width * (e.width / me.world.area.getWidth()));
-                            int ph = (int) (me.height * (e.height / me.world.area.getHeight()));
-                            g.drawRect(px, py, pw, ph);
-                        }
-                    });
+
+                    String colorMapping = me.colorEntityMapping.keySet().stream()
+                            .filter(k -> e.name.contains(k)).findFirst()
+                            .orElse("default");
+
+                    g.setColor(me.colorEntityMapping.get(colorMapping));
+                    int px = (int) (me.pos.x + (me.width * (e.pos.x / me.world.area.getWidth())));
+                    int py = (int) (me.pos.y + me.height * (e.pos.y / me.world.area.getHeight()));
+                    int pw = (int) (me.width * (e.width / me.world.area.getWidth()));
+                    int ph = (int) (me.height * (e.height / me.world.area.getHeight()));
+                    g.drawRect(px, py, pw, ph);
                 });
     }
 }

@@ -102,8 +102,8 @@ public class DemoScene extends AbstractScene {
                 .setType(RECTANGLE)
                 .setPriority(5)
                 .setMaterial(new Material("water", 0.998, 0, 0.998))
-                .setPosition(0.0, world.area.getHeight() - 200.0)
-                .setSize(world.area.getWidth(), 200.0)
+                .setPosition(0.0, world.area.getHeight() * 0.75)
+                .setSize(world.area.getWidth(), world.area.getHeight() * 0.25)
                 .setPhysicType(PhysicType.NONE)
                 .setColor(new Color(0.2f, 0.5f, 0.7f, .90f));
         app.addEntity(i1);
@@ -169,13 +169,13 @@ public class DemoScene extends AbstractScene {
                 .setStickToCamera(true)
                 .setPosition(0.0, 0.0)
                 .setSize(cam.getViewport().getWidth(), cam.getViewport().getHeight())
-                .setColor(new Color(0.4f, 1.0f, 0.1f, 0.9f));
+                .setColor(new Color(0.6f, 0.2f, 0.0f, 0.9f));
         app.addEntity(la01);
 
         // Add some SPHERICAL light
         generateLights(app, 20,
-                cam.getViewport().getWidth(),cam.getViewport().getHeight(),
-                30.0,30.0,
+                world.area.getWidth(), world.area.getHeight() * 0.75,
+                30.0, 30.0,
                 0.8,
                 0.05);
 
@@ -187,15 +187,16 @@ public class DemoScene extends AbstractScene {
 
         // Score Display
         createHUD(
-            app,
-            player,
-            Map.of(
-            "ball_", Color.RED,
-            "player", Color.BLUE,
-            "pf_", Color.LIGHT_GRAY,
-            "floor", Color.GRAY,
-            "outPlatform", Color.YELLOW,
-            "default", Color.GRAY));
+                app,
+                player,
+                Map.of(
+                        "ball_", Color.RED,
+                        "player", Color.BLUE,
+                        "pf_", Color.LIGHT_GRAY,
+                        "floor", Color.GRAY,
+                        "out_", Color.YELLOW,
+                        "iflu_", Color.CYAN,
+                        "default", Color.DARK_GRAY));
         return true;
     }
 
@@ -228,16 +229,7 @@ public class DemoScene extends AbstractScene {
         boolean found;
         int attempt = 0;
         for (int i = 0; i < nbPf; i++) {
-            found = false;
-            while (attempt < 10 && !found) {
-                pf = createOnePlatform(app, i, matPF);
-                for (Entity p : platforms) {
-                    if (p.cbox.intersects(pf.cbox.getBounds())) {
-                        found = true;
-                    }
-                }
-                attempt += 1;
-            }
+            pf = createOnePlatform(app, i, matPF);
             platforms.add(pf);
             app.addEntity(pf);
         }
@@ -245,13 +237,13 @@ public class DemoScene extends AbstractScene {
     }
 
     private Entity createOnePlatform(Application app, int i, Material matPF) {
-        double pfWidth = ((int) (Math.random() * 5) + 4);
+        double pfWidth = ((int) (Math.random() * 5) + 3);
         double maxCols = (world.area.getWidth() / 16.0);
         // 48=height of 1 pf + 1 player, -(3 + 3) to prevent create platform too low and
         // too high
         double maxRows = (world.area.getHeight() / 48) - 6;
         double pfCol = (int) (Math.random() * (maxCols * (Math.random() > 0.5 ? 1.0 : 0.75)));
-        pfCol = pfCol < maxCols ? pfCol : maxRows - pfWidth;
+        pfCol = pfCol < maxCols-pfWidth ? pfCol : maxRows - pfWidth;
         double pfRow = (int) ((Math.random() * maxRows) + 2);
 
         return new Entity("pf_" + i)

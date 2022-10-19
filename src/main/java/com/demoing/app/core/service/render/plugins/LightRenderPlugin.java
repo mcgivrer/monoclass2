@@ -26,22 +26,23 @@ public class LightRenderPlugin implements RenderPlugin<Light> {
 
     @Override
     public void draw(Renderer r, Graphics2D g, Light l) {
+
+        Composite c = g.getComposite();
         switch (l.lightType) {
             case SPOT -> drawSpotLight(g, l);
             case SPHERICAL -> drawSphericalLight(g, l);
             case AMBIENT -> drawAmbiantLight(g, l);
             case AREA_RECTANGLE -> drawLightArea(g, l);
         }
+        g.setComposite(c);
     }
 
     private void drawLightArea(Graphics2D g, Light l) {
 
         final Area areaLight = new Area(new Rectangle2D.Double(l.pos.x, l.pos.y, l.width, l.height));
         g.setColor(l.color);
-        Composite c = g.getComposite();
         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) l.energy));
         g.fill(areaLight);
-        g.setComposite(c);
     }
 
     private void drawAmbiantLight(Graphics2D g, Light l) {
@@ -52,14 +53,11 @@ public class LightRenderPlugin implements RenderPlugin<Light> {
                         l.width,
                         l.height));
         g.setColor(l.color);
-        Composite c = g.getComposite();
         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) l.energy));
         g.fill(ambientArea);
-        g.setComposite(c);
     }
 
     private void drawSphericalLight(Graphics2D g, Light l) {
-        Composite c = g.getComposite();
         l.color = brighten(l.color, l.energy);
         Color medColor = brighten(l.color, l.energy * 0.5);
         Color endColor = new Color(0.0f, 0.0f, 0.0f, 0.2f);
@@ -78,7 +76,6 @@ public class LightRenderPlugin implements RenderPlugin<Light> {
         g.setPaint(l.rgp);
         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) l.energy));
         g.fill(new Ellipse2D.Double(l.pos.x, l.pos.y, l.width, l.width));
-        g.setComposite(c);
     }
 
     private void drawSpotLight(Graphics2D g, Light l) {
