@@ -130,7 +130,7 @@ public class TileMapLoader {
                     .setPosition(0.0, 0.0)
                     .setStickToCamera(true)
                     .setImage(Resources.loadImage((String) resources.get(backGroundResourceId)));
-            app.addEntity(background);
+            //app.addEntity(background);
             System.out.printf(
                     "INFO : TileMapLoader | added a Background image entity named %s with resource %s%n",
                     background.name,
@@ -288,6 +288,7 @@ public class TileMapLoader {
      */
     private static void generateAnimationsForEntity(Scene scn, Map<String, Object> attributes, Entity obj) {
         // TODO read animation from attribute list and create Animation instances in obj.
+
     }
 
 
