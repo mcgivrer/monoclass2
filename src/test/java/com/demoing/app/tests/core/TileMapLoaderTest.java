@@ -2,7 +2,6 @@ package com.demoing.app.tests.core;
 
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.gfx.Animation;
-import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
