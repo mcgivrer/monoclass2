@@ -20,7 +20,7 @@ public class InfluencerApplyForceToEntityTest extends AbstractApplicationTest {
 
     @BeforeEach
     public void setup() {
-        super.setup("test-influencers.properties");
+        super.setup("app", "test-influencers.properties");
     }
 
     @AfterEach

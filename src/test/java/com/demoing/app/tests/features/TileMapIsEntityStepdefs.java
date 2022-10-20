@@ -110,4 +110,8 @@ public class TileMapIsEntityStepdefs extends AbstractApplicationTest implements 
         }
         return null;
     }
+
+    private Optional<Entity> findEntity(TileMap tm, String game) {
+        return tm.getChild().stream().filter(e -> e.name.equals(game)).limit(1).findFirst();
+    }
 }
