@@ -32,6 +32,11 @@ public final class PlayerOnCollisionBehavior implements Behavior {
     }
 
     @Override
+    public void input(Application a, Scene s) {
+
+    }
+
+    @Override
     public void update(Application a, Entity e, double d) {
 
     }

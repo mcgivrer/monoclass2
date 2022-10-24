@@ -361,7 +361,7 @@ public class DemoScene extends AbstractScene {
 
     @Override
     public Map<String, Behavior> getBehaviors() {
-        return behaviors;
+        return null;
     }
 
     @Override

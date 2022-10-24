@@ -85,10 +85,13 @@ public class Entity {
     public Map<String, Object> attributes = new ConcurrentHashMap<>();
 
     public Map<String, List<Behavior>> behaviors = new ConcurrentHashMap<>();
-    private Color shadowColor = Color.BLACK;
+
 
     private List<Entity> child = new ArrayList<>();
 
+    public Color backGroundColor;
+
+    public Color shadowColor = Color.BLACK;
 
     public Entity(String name) {
         this.name = name;
@@ -259,7 +262,7 @@ public class Entity {
         BufferedImage img = (BufferedImage) (getAnimations()
                 ? animations.getFrame()
                 : image);
-        setSize(img.getWidth(),img.getHeight());
+        setSize(img.getWidth(), img.getHeight());
         return img;
     }
 
@@ -287,11 +290,6 @@ public class Entity {
 
     public String toString() {
         return this.getClass().getSimpleName() + "[name:" + name + "]";
-    }
-
-    public Entity setShadow(Color shadow) {
-        this.shadowColor = shadow;
-        return this;
     }
 
     /**
@@ -348,8 +346,8 @@ public class Entity {
                 behaviorEventType,
                 (s, behaviorList) ->
                         behaviorList == null ?
-                        new ArrayList<Behavior>() :
-                        behaviorList).add(b);
+                                new ArrayList<Behavior>() :
+                                behaviorList).add(b);
 
         return this;
     }
@@ -384,6 +382,17 @@ public class Entity {
      */
     public Entity setLayer(int l) {
         this.layer = l;
+        return this;
+    }
+
+
+    public Entity setShadow(Color shadow) {
+        this.shadowColor = shadow;
+        return this;
+    }
+
+    public Entity setBackgroundColor(Color backgroundColor) {
+        this.backGroundColor = backgroundColor;
         return this;
     }
 }

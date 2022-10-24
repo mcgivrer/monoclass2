@@ -414,4 +414,19 @@ public class Renderer {
     public Configuration getConfiguration() {
         return config;
     }
+
+
+    public void drawTextShadow(Graphics2D g, String text, int x, int y, int shadowWidth, Color shadowColor) {
+        g.setColor(shadowColor);
+        for (int dx = 0; dx < shadowWidth; dx++) {
+            g.drawString(text, x + dx, y + dx);
+        }
+    }
+
+    public void drawRectangleObject(Graphics2D g, Color bckColor, Color borderColor, int x, int y, int w, int h) {
+        g.setColor(bckColor);
+        g.fillRect(x, y, w, h);
+        g.setColor(borderColor);
+        g.drawRect(x, y, w, h);
+    }
 }

@@ -12,6 +12,11 @@ public class TextEntity extends Entity {
     public String text;
     public Font font;
     public TextAlign align = TextAlign.LEFT;
+    public int shadowOffsetX = 1;
+    public int shadowOffsetY = 1;
+    public int backgroundOffset = 4;
+
+    public Color borderColor;
 
     /**
      * Create a new {@link TextEntity} with a name.
@@ -53,6 +58,22 @@ public class TextEntity extends Entity {
      */
     public TextEntity setAlign(TextAlign a) {
         this.align = a;
+        return this;
+    }
+
+    public TextEntity setBackgroundOffset(int backgroundOffset) {
+        this.backgroundOffset = backgroundOffset;
+        return this;
+    }
+
+    public TextEntity setBorderColor(Color borderColor) {
+        this.borderColor = borderColor;
+        return this;
+    }
+
+    public TextEntity setShadowOffset(int dx, int dy) {
+        this.shadowOffsetX = dx;
+        this.shadowOffsetY = dy;
         return this;
     }
 
