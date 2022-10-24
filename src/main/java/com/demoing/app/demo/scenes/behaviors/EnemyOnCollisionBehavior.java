@@ -3,6 +3,7 @@ package com.demoing.app.demo.scenes.behaviors;
 import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.entity.Entity;
+import com.demoing.app.core.scene.Scene;
 
 public final class EnemyOnCollisionBehavior implements Behavior {
     @Override
@@ -19,6 +20,11 @@ public final class EnemyOnCollisionBehavior implements Behavior {
             a.setAttribute("score", score + points);
             e1.setDuration(0);
         }
+    }
+
+    @Override
+    public void input(Application a, Scene s) {
+
     }
 
     @Override

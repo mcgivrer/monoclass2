@@ -197,7 +197,7 @@ public class DemoScene extends AbstractScene {
                         "floor", Color.GRAY,
                         "out_", Color.YELLOW,
                         "iflu_", Color.CYAN,
-                        "light", new Color(0.0f, 0.0f, 0.0f, 0.0f),
+                        "light", new Color(0.6f, 0.6f, 0.2f, 0.7f),
                         "default", Color.DARK_GRAY));
         return true;
     }
@@ -361,7 +361,7 @@ public class DemoScene extends AbstractScene {
 
     @Override
     public Map<String, Behavior> getBehaviors() {
-        return behaviors;
+        return null;
     }
 
     @Override

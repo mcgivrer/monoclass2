@@ -21,8 +21,6 @@ public class MapRenderPlugin implements RenderPlugin<MapEntity> {
 
     @Override
     public void draw(Renderer r, Graphics2D g, MapEntity me) {
-        g.setColor(me.color);
-        g.drawRect((int) me.pos.x, (int) me.pos.y, (int) me.width, (int) me.height);
         g.setColor(me.backgroundColor);
         g.fillRect((int) me.pos.x, (int) me.pos.y, (int) me.width, (int) me.height);
         me.entitiesRef.stream()
@@ -33,10 +31,10 @@ public class MapRenderPlugin implements RenderPlugin<MapEntity> {
                             .filter(k -> e.name.contains(k)).findFirst()
                             .orElse("default");
 
-                    g.setColor(me.colorEntityMapping.get(colorMapping));
 
                     int pw = (int) (me.width * (e.width / me.world.area.getWidth()));
                     int ph = (int) (me.height * (e.height / me.world.area.getHeight()));
+                    g.setColor(me.colorEntityMapping.get(colorMapping));
                     switch (e) {
                         case TileMap tm -> {
                             drawTileMap(g, me, tm, pw, ph);
@@ -50,13 +48,22 @@ public class MapRenderPlugin implements RenderPlugin<MapEntity> {
                         case GaugeEntity ge -> {
                             // Do nothing
                         }
-                        default -> {
-                            int px = (int) (me.pos.x + (me.width * (e.pos.x / me.world.area.getWidth())));
-                            int py = (int) (me.pos.y + me.height * (e.pos.y / me.world.area.getHeight()));
-                            g.drawRect(px, py, pw, ph);
+                        case Light le -> {
+                            drawFillBox(g, me, le, pw, ph);
+                        }
+                        case default -> {
+                            drawFillBox(g, me, e, pw, ph);
                         }
                     }
                 });
+        g.setColor(me.color);
+        g.drawRect((int) me.pos.x, (int) me.pos.y, (int) me.width, (int) me.height);
+    }
+
+    private void drawFillBox(Graphics2D g, MapEntity me, Entity e, int pw, int ph) {
+        int px = (int) (me.pos.x + (me.width * (e.pos.x / me.world.area.getWidth())));
+        int py = (int) (me.pos.y + me.height * (e.pos.y / me.world.area.getHeight()));
+        g.fillRect(px, py, pw, ph);
     }
 
     private void drawTileMap(Graphics2D g, MapEntity me, Entity e, int pw, int ph) {

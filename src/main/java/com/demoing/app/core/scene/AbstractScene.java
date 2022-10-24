@@ -30,7 +30,7 @@ public abstract class AbstractScene implements Scene {
     /**
      * Specific Scene behaviors.
      */
-    protected Map<String, Behavior> behaviors = new ConcurrentHashMap<>();
+    public Map<String, List<Behavior>> behaviors = new ConcurrentHashMap<>();
     /**
      * The list of Light manage by this scene
      */
@@ -138,7 +138,7 @@ public abstract class AbstractScene implements Scene {
                 .setRefEntities(app.getEntities().values().stream().toList())
                 .setWorld(world)
                 .setSize(48, 32)
-                .setPosition(10, app.config.screenHeight - 48)
+                .setPosition(8, app.config.screenHeight - 40)
                 .setLayer(1);
         app.addEntity(mapEntity);
 
@@ -149,13 +149,18 @@ public abstract class AbstractScene implements Scene {
                 .setText(I18n.get("app.message.welcome"))
                 .setAlign(CENTER)
                 .setFont(messagesFont)
+                .setBackgroundOffset(8)
+                .setShadowOffset(4, 3)
+                .setBorderColor(Color.LIGHT_GRAY)
+                .setColor(Color.WHITE)
+                .setShadow(new Color(0.0f, 0.0f, 0.0f, 0.5f))
                 .setPosition(
                         app.config.screenWidth * 0.5,
                         app.config.screenHeight * 0.8)
-                .setColor(Color.WHITE)
                 .setInitialDuration(5000)
-                .setPriority(20)
-                .setLayer(1)
+                .setBackgroundColor(new Color(0.0f,0.0f,0.6f,0.7f))
+                .setPriority(5)
+                .setLayer(0)
                 .setStickToCamera(true);
         app.addEntity(welcomeMsg);
 
@@ -179,14 +184,21 @@ public abstract class AbstractScene implements Scene {
     public abstract void update(Application app, double elapsed);
 
     @Override
-    public abstract void input(Application app);
+    public void input(Application app) {
+        getBehaviors(Behavior.ON_INPUT_SCENE).stream()
+                .filter(e ->
+                        e.filterOnEvent().contains(Behavior.ON_INPUT_SCENE))
+                .forEach(b -> {
+                    b.input(app, this);
+                });
+    }
 
     @Override
     public abstract String getName();
 
     @Override
-    public Map<String, Behavior> getBehaviors() {
-        return null;
+    public List<Behavior> getBehaviors(String eventType) {
+        return behaviors.get(eventType);
     }
 
     @Override
@@ -205,5 +217,23 @@ public abstract class AbstractScene implements Scene {
         for (int i = 0; i < 10; i++) {
             figs[i] = figuresImage.getSubimage(i * 8, 4 * 16, 8, 16);
         }
+    }
+
+    public Scene addBehavior(Behavior b) {
+        this.addBehavior(b.filterOnEvent(), b);
+        b.initialization(this);
+        return this;
+    }
+
+
+    protected Scene addBehavior(String behaviorEventType, Behavior b) {
+        behaviors.compute(
+                behaviorEventType,
+                (s, behaviorList) ->
+                        behaviorList == null ?
+                                new ArrayList<Behavior>() :
+                                behaviorList).add(b);
+
+        return this;
     }
 }

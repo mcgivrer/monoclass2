@@ -4,6 +4,7 @@ import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.entity.Influencer;
+import com.demoing.app.core.scene.Scene;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.World;
 
@@ -38,5 +39,10 @@ public class RainDropCollideBehavior implements Behavior {
         if (e2.physicType == PhysicType.STATIC) {
             e1.setDuration(0);
         }
+    }
+
+    @Override
+    public void input(Application a, Scene s) {
+
     }
 }

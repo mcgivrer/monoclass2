@@ -4,6 +4,7 @@ import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.entity.ParticleSystem;
+import com.demoing.app.core.scene.Scene;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,11 @@ public class ParticleSystemCanHaveBehaviorsTest {
             public void onCollide(Application a, Entity e1, Entity e2) {
                 // nothing to do there
             }
+
+            @Override
+            public void input(Application a, Scene s) {
+
+            }
         });
 
         Assertions.assertNotEquals(0, ps.getBehaviors(Behavior.ON_UPDATE_ENTITY).size(), "THe ParticleSystem has no Update behavior");
@@ -63,6 +69,11 @@ public class ParticleSystemCanHaveBehaviorsTest {
             @Override
             public void onCollide(Application a, Entity e1, Entity e2) {
                 // nothing to do there
+            }
+
+            @Override
+            public void input(Application a, Scene s) {
+
             }
         });
 

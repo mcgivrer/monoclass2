@@ -47,6 +47,11 @@ public class TestScene implements Scene {
     }
 
     @Override
+    public List<Behavior> getBehaviors(String eventType) {
+        return null;
+    }
+
+    @Override
     public List<Light> getLights() {
         return new ArrayList<>();
     }

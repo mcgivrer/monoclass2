@@ -9,6 +9,7 @@ import com.demoing.app.core.entity.TileMap;
 import com.demoing.app.core.scene.Scene;
 import com.demoing.app.core.service.physic.PhysicType;
 import com.demoing.app.core.service.physic.material.Material;
+import com.demoing.app.core.utils.Logger;
 
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
@@ -261,8 +262,8 @@ public class TileMapLoader {
 
             if (attributes.containsKey("animations")) {
                 generateAnimationsForEntity(scn, attributes, obj, resources);
-                if(attributes.containsKey("defaultAnimation")){
-                    obj.activateAnimation((String)attributes.get("defaultAnimation"));
+                if (attributes.containsKey("defaultAnimation")) {
+                    obj.activateAnimation((String) attributes.get("defaultAnimation"));
                 }
             }
             // all letting attributes are moved to the Entity attributes itself
@@ -322,7 +323,6 @@ public class TileMapLoader {
             loadedData.put(name, item);
             last = matcher.end();
 
-
             int[] timeFrames = Arrays.stream(item.get("time")
                             .split(","))
                     .mapToInt(s -> Integer.parseInt(s.trim()))
@@ -336,6 +336,8 @@ public class TileMapLoader {
                     timeFrames,
                     (String) resources.get(Integer.valueOf(item.get("resource"))),
                     Integer.valueOf(item.get("loop")));
+
+            Logger.log(Logger.INFO, TileMapLoader.class, "Add animation %s if %d frames", item.get("name"), timeFrames.length);
 
         }
     }

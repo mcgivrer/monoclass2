@@ -1,6 +1,7 @@
 package com.demoing.app.demo.scenes;
 
 import com.demoing.app.core.Application;
+import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.gfx.Window;
 import com.demoing.app.core.io.TileMapLoader;
 import com.demoing.app.core.math.Vec2d;
@@ -81,10 +82,14 @@ public class LevelScene extends AbstractScene {
                         "coin_", Color.YELLOW,
                         "enemy_", Color.RED,
                         "iflu_", Color.CYAN,
-                        tm.name, Color.DARK_GRAY
+                        tm.name, Color.DARK_GRAY,
+                        "pf_", Color.GRAY
                 ));
 
         world.area.setRect(0, 0, tm.width, tm.height);
+
+        addBehavior(new com.demoing.app.demo.scenes.PlayerOnInputBehavior());
+
         return true;
     }
 
@@ -141,48 +146,16 @@ public class LevelScene extends AbstractScene {
 
     @Override
     public void input(Application app) {
-        Window win = app.getWindow();
-        Entity p = app.getEntity("player");
-        if (Optional.ofNullable(p).isPresent()) {
-            double speed = (double) p.getAttribute("accStep", 0.05);
-            double jumpFactor = (double) p.getAttribute("jumpFactor", 12.0);
-            boolean action = (boolean) p.getAttribute("action", false);
-            if (win.isCtrlPressed()) {
-                speed *= 2;
-            }
-            if (win.isShiftPressed()) {
-                speed *= 4;
-            }
-            p.activateAnimation("idle");
-            if (win.isKeyPressed(KeyEvent.VK_LEFT)) {
-                p.activateAnimation("walk");
-                p.forces.add(new Vec2d(-speed, 0.0));
-                action = true;
-            }
-            if (win.isKeyPressed(KeyEvent.VK_RIGHT)) {
-                p.activateAnimation("walk");
-                p.forces.add(new Vec2d(speed, 0.0));
-                action = true;
-            }
-            if (win.isKeyPressed(KeyEvent.VK_UP)) {
-                p.activateAnimation("jump");
-                p.forces.add(new Vec2d(0.0, -jumpFactor * speed));
-                action = true;
-            }
-            if (win.isKeyPressed(KeyEvent.VK_DOWN)) {
-                p.forces.add(new Vec2d(0.0, speed));
-                action = true;
-            }
-
-            if (!action) {
-                p.vel.x *= (p.friction);
-                p.vel.x *= (p.friction);
-            }
-        }
+        super.input(app);
     }
 
     @Override
     public String getName() {
         return "level";
+    }
+
+    @Override
+    public Map<String, Behavior> getBehaviors() {
+        return null;
     }
 }
