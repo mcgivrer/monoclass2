@@ -21,6 +21,7 @@ public class ParticleSystemRenderPlugin implements RenderPlugin<ParticleSystem> 
 
     @Override
     public void draw(Renderer r, Graphics2D g, ParticleSystem entity) {
+
         RenderPlugin.super.draw(r, g, entity);
     }
 }

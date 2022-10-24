@@ -31,5 +31,5 @@ createdAt: 2022/05/07
 18. [A Window](chapter-18-a_window.md)
 19. [Adding some Particles](chapter-19-adding_some_particles.md)
 20. [Add a Plugin architetcure to renderer](chapter-20-adding_plugin_to_render.md)
-21.[Adding TileMap as level](chapter-20-adding_tilemap_as_level.md)
+21. [Adding TileMap as level](chapter-20-adding_tilemap_as_level.md)
 22. [The To Dos](100-todo.md)

@@ -61,29 +61,9 @@ public class LevelScene extends AbstractScene {
                 .setLayer(3);
         app.addEntity(tm);
         // retrieve the "player" Entity.
-        Entity player = tm.getEntity("player").setType(IMAGE)
-                .setCollisionBox(+4, -8, -4, -2)
+        Entity player = tm.getEntity("player")
                 .setSize(32, 32)
-                .addAnimation("idle",
-                        0, 0,
-                        32, 32,
-                        new int[]{450, 60, 60, 250, 60, 60, 60, 450, 60, 60, 60, 250, 60},
-                        "/images/sprites01.png", -1)
-                .addAnimation("walk",
-                        0, 32,
-                        32, 32,
-                        new int[]{60, 60, 60, 150, 60, 60, 60, 150},
-                        "/images/sprites01.png", -1)
-                .addAnimation("jump",
-                        0, 5 * 32,
-                        32, 32,
-                        new int[]{60, 60, 250, 250, 60, 60},
-                        "/images/sprites01.png", -1)
-                .addAnimation("dead",
-                        0, 7 * 32,
-                        32, 32,
-                        new int[]{160, 160, 160, 160, 160, 160, 500},
-                        "/images/sprites01.png", 0)
+                .setCollisionBox(+4, -8, -4, -2)
                 .activateAnimation("idle");
 
         // define the Camera.

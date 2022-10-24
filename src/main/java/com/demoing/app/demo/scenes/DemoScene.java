@@ -98,7 +98,7 @@ public class DemoScene extends AbstractScene {
 
         // Create an Influencer in the initialized app World
         Influencer i1 = (Influencer) new Influencer("iflu_1_water")
-                .setForce(new Vec2d(0.0, -0.19))
+                .setForce(new Vec2d(-0.02, -0.19))
                 .setType(RECTANGLE)
                 .setPriority(5)
                 .setMaterial(new Material("water", 0.998, 0, 0.998))
@@ -114,7 +114,7 @@ public class DemoScene extends AbstractScene {
                 .setPosition(
                         world.area.getWidth() * 0.5,
                         world.area.getHeight() * 0.5)
-                .setSize(32.0, 32.0)
+                //.setSize(32.0, 32.0)
                 .setMaterial(
                         new Material("player_mat", 1.0, 0.3, 0.98))
                 .setColor(Color.RED)
@@ -151,6 +151,7 @@ public class DemoScene extends AbstractScene {
         // Test particle system to simulate rain.
         ParticleSystem ps = (ParticleSystem) new ParticleSystem("rain")
                 .addParticleGenerator(new RainParticleGeneratorBehavior(world))
+                .setType(ELLIPSE)
                 .setColor(Color.WHITE)
                 .setType(NONE);
         app.addEntity(ps);
@@ -162,7 +163,7 @@ public class DemoScene extends AbstractScene {
         app.render.addCamera(cam);
 
         // Add some AMBIENT light
-        Light la01 = (Light) new Light("ambientLight")
+        Light la01 = (Light) new Light("ambient_light")
                 .setLightType(LightType.AMBIENT)
                 .setEnergy(0.2)
                 .setPriority(10)
@@ -196,6 +197,7 @@ public class DemoScene extends AbstractScene {
                         "floor", Color.GRAY,
                         "out_", Color.YELLOW,
                         "iflu_", Color.CYAN,
+                        "light", new Color(0.0f, 0.0f, 0.0f, 0.0f),
                         "default", Color.DARK_GRAY));
         return true;
     }
@@ -209,7 +211,7 @@ public class DemoScene extends AbstractScene {
         boolean switchFront = false;
         for (int i = 0; i < nbLights; i++) {
             switchFront = !switchFront;
-            Light l = (Light) new Light("sphericalLight_" + i)
+            Light l = (Light) new Light("spherical_light_" + i)
                     .setLightType(LightType.SPHERICAL)
                     .setEnergy(Math.random() * energy)
                     .setGlitterEffect(Math.random() * glitterEffect)
@@ -243,7 +245,7 @@ public class DemoScene extends AbstractScene {
         // too high
         double maxRows = (world.area.getHeight() / 48) - 6;
         double pfCol = (int) (Math.random() * (maxCols * (Math.random() > 0.5 ? 1.0 : 0.75)));
-        pfCol = pfCol < maxCols-pfWidth ? pfCol : maxRows - pfWidth;
+        pfCol = pfCol < maxCols - pfWidth ? pfCol : maxRows - pfWidth;
         double pfRow = (int) ((Math.random() * maxRows) + 2);
 
         return new Entity("pf_" + i)

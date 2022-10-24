@@ -75,28 +75,30 @@ public class RainParticleGeneratorBehavior implements Behavior {
     @Override
     public void update(Application a, Entity e, double elapsed) {
         e.getChild()
-                .stream()
-                .filter(child -> !child.isAlive())
-                .forEach(this::initDropParticle);
+            .stream()
+            .filter(child -> !child.isAlive())
+            .forEach(this::initDropParticle);
     }
 
     /**
-     * Create a brand-new particle with color, type and name, and then initialize it with duration, position and speed.
+     * Create a brand-new particle with color, type and name, and then initialize it
+     * with duration, position and speed.
      *
      * @param parent the parent {@link ParticleSystem}.
      */
     private void createDropParticleFromParent(Entity parent) {
         Entity drop = new Entity(parent.name + "_drop_" + (parent.getChild().size() + 1))
-                .setType(ELLIPSE)
-                .setPhysicType(PhysicType.DYNAMIC)
-                .setSize(1.0, 1.0)
-                .setColor(Color.WHITE)
-                .setMass(0.01)
-                .setPriority(10)
-                .addBehavior(
-                        new RainDropParticleUpdate(world))
-                .addBehavior(
-                        new RainDropCollideBehavior(world));
+            .setType(ELLIPSE)
+            .setPhysicType(PhysicType.DYNAMIC)
+            .setSize(1.0, 1.0)
+            .setColor(Color.WHITE)
+            .setMass(0.01)
+            .setLayer(1)
+            .setPriority(1)
+            .addBehavior(
+                    new RainDropParticleUpdate(world))
+            .addBehavior(
+                    new RainDropCollideBehavior(world));
         initDropParticle(drop);
         parent.getChild().add(drop);
     }
@@ -108,8 +110,10 @@ public class RainParticleGeneratorBehavior implements Behavior {
      */
     private void initDropParticle(Entity child) {
         child.setDuration(particleDuration)
-                .setPosition(Math.random() * (world.getArea().getWidth() * 0.8) + (world.getArea().getWidth() * 0.1), 0)
-                .addForce(0.05, rainForce);
+            .setPosition(
+                Math.random() * (world.getArea().getWidth() * 0.8) + (world.getArea().getWidth() * 0.1),
+                0)
+            .addForce(0.05, rainForce);
     }
 
     /**

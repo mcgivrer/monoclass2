@@ -6,6 +6,7 @@ import com.demoing.app.core.io.Resources;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * {@link Animation} is the animations manager for an {@link Entity}.
@@ -56,18 +57,20 @@ public class Animation {
     }
 
     public synchronized void update(long elapsedTime) {
-        internalAnimationTime += elapsedTime;
-        AnimationSet aSet = animationSet.get(currentAnimationSet);
-        currentFrame = aSet.durations.length > currentFrame ? currentFrame : 0;
-        if (aSet.durations[currentFrame] <= internalAnimationTime) {
-            internalAnimationTime = 0;
-            if (currentFrame + 1 < aSet.frames.length) {
-                currentFrame = currentFrame + 1;
-            } else {
-                if (aSet.counter + 1 < aSet.loop) {
-                    aSet.counter++;
+        if (Optional.ofNullable(currentAnimationSet).isPresent()) {
+            internalAnimationTime += elapsedTime;
+            AnimationSet aSet = animationSet.get(currentAnimationSet);
+            currentFrame = aSet.durations.length > currentFrame ? currentFrame : 0;
+            if (aSet.durations[currentFrame] <= internalAnimationTime) {
+                internalAnimationTime = 0;
+                if (currentFrame + 1 < aSet.frames.length) {
+                    currentFrame = currentFrame + 1;
+                } else {
+                    if (aSet.counter + 1 < aSet.loop) {
+                        aSet.counter++;
+                    }
+                    currentFrame = 0;
                 }
-                currentFrame = 0;
             }
         }
     }
