@@ -256,9 +256,11 @@ public class Entity {
     }
 
     public BufferedImage getImage() {
-        return (BufferedImage) (getAnimations()
+        BufferedImage img = (BufferedImage) (getAnimations()
                 ? animations.getFrame()
                 : image);
+        setSize(img.getWidth(),img.getHeight());
+        return img;
     }
 
     public Entity addAnimation(String key, int x, int y, int tw, int th, int[] durations, String pathToImage,
@@ -342,7 +344,12 @@ public class Entity {
      * @return the updated Entity.
      */
     public Entity addBehavior(String behaviorEventType, Behavior b) {
-        behaviors.compute(behaviorEventType, (s, behaviorList) -> behaviorList == null ? new ArrayList<Behavior>() : behaviorList).add(b);
+        behaviors.compute(
+                behaviorEventType,
+                (s, behaviorList) ->
+                        behaviorList == null ?
+                        new ArrayList<Behavior>() :
+                        behaviorList).add(b);
 
         return this;
     }

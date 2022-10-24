@@ -45,44 +45,25 @@ public class LevelScene extends AbstractScene {
         world.setMaterial(
                 new Material(
                         "world",
-                        1.0,
+                        0.1,
                         0.001,
                         1.0));
 
         // define Game global variables
         app.setAttribute("life", 5);
         app.setAttribute("score", 0);
-        app.setAttribute("time", (long) 3 * (60 * 1000));
+        app.setAttribute("time", (long) 3 * (10 * 1000));
 
         // prepare Scene
 
         TileMap tm = (TileMap) TileMapLoader.load(app, this, "/maps/map_0_1.properties")
-                .setPriority(4)
-                .setLayer(10);
+                .setPriority(8)
+                .setLayer(3);
         app.addEntity(tm);
         // retrieve the "player" Entity.
-        Entity player = tm.getEntity("player").setType(IMAGE)
+        Entity player = tm.getEntity("player")
+                .setSize(32, 32)
                 .setCollisionBox(+4, -8, -4, -2)
-                .addAnimation("idle",
-                        0, 0,
-                        32, 32,
-                        new int[]{450, 60, 60, 250, 60, 60, 60, 450, 60, 60, 60, 250, 60},
-                        "/images/sprites01.png", -1)
-                .addAnimation("walk",
-                        0, 32,
-                        32, 32,
-                        new int[]{60, 60, 60, 150, 60, 60, 60, 150},
-                        "/images/sprites01.png", -1)
-                .addAnimation("jump",
-                        0, 5 * 32,
-                        32, 32,
-                        new int[]{60, 60, 250, 250, 60, 60},
-                        "/images/sprites01.png", -1)
-                .addAnimation("dead",
-                        0, 7 * 32,
-                        32, 32,
-                        new int[]{160, 160, 160, 160, 160, 160, 500},
-                        "/images/sprites01.png", 0)
                 .activateAnimation("idle");
 
         // define the Camera.
@@ -97,8 +78,10 @@ public class LevelScene extends AbstractScene {
                 player,
                 Map.of(
                         "player", Color.BLUE,
-                        "enemy", Color.RED,
-                        "coin", Color.YELLOW
+                        "coin_", Color.YELLOW,
+                        "enemy_", Color.RED,
+                        "iflu_", Color.CYAN,
+                        tm.name, Color.DARK_GRAY
                 ));
 
         world.area.setRect(0, 0, tm.width, tm.height);
@@ -121,7 +104,7 @@ public class LevelScene extends AbstractScene {
             timeTxt.setValue((int) (time / 1000));
 
             // if time=0 => game over !
-            if (time == 0 && !gameOver) {
+            if (time <= 0 && !gameOver) {
                 gameOver(app, player);
             }
 

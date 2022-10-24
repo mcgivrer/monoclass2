@@ -1,45 +1,55 @@
 # README
 
+[![Java CI with Maven](https://github.com/mcgivrer/monoclass2/actions/workflows/maven.yml/badge.svg)](https://github.com/mcgivrer/monoclass2/actions/workflows/maven.yml)
+[![Known Vulnerabilities](https://snyk.io//test/github/mcgivrer/monoclass2/badge.svg?targetFile=pom.xml)](https://snyk.io//test/github/mcgivrer/monoclass2?targetFile=pom.xml) 
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fmcgivrer%2Fmonoclass2.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fmcgivrer%2Fmonoclass2?ref=badge_shield) 
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/005379698de87a7a17cc9c8fa9b8b109ea8d893f)](https://www.codacy.com/gh/mcgivrer/monoclass2/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=mcgivrer/monoclass2&amp;utm_campaign=Badge_Grade)
+
 A **MonoClass 2** v1.0.6 project test.
 
-## UPDATE 2022-JULY-01
+## Introduction
 
-The project evolves to a too big number of feature, and debugging a `monoclass` is annoying; I reach the point of "class
-splitting", or refactoring.
-I've also introduced Maven to perform a better build (see [pom.xml](./pom.xml "open the maven build file"))
-As for now, the project _small_ is now _standard_ and need standard tools and classes.
+This small Java project with only one (master) class is a proof-of-concept of an over simplified java program to deliver maximum feature in a minimum number lines of code, and WITHOUT dependencies out of the JDK itself (but only for test purpose, using JUnit and Cucumber). 
 
-the project is now structured through multiple packages :
-
-```text
-[com.demoing.app]
-  |_core
-  |  |_  behavior
-  |  |_  config
-  |  |_  entity
-  |  |_  gfx
-  |  |_  io
-  |  |_  math
-  |  |_  scene
-  |  |_  services
-  |  |   |_  collision
-  |  |   |_  monitor
-  |  |   |_  physic
-  |  |   |_  render
-  |  |   |_  scene
-  |  |_  utils
-  |_ demo
-       |_ scenes
-```
+> **UPDATE 2022-JULY-01**<br/>
+>The project evolves to a too big number of feature, and debugging a `monoclass` is annoying; I reach the point of "class
+>splitting", or refactoring.
+>I've also introduced Maven to perform a better build (see [pom.xml](./pom.xml "open the maven build file"))
+>As for now, the project _small_ is now _standard_ and need standard tools and classes.
+>
+>the project is now structured through multiple packages :
+>
+>```text
+>[com.demoing.app]
+>  |_core
+>  |  |_  behavior
+>  |  |_  config
+>  |  |_  entity
+>  |  |_  gfx
+>  |  |_  io
+>  |  |_  math
+>  |  |_  scene
+>  |  |_  services
+>  |  |   |_  collision
+>  |  |   |_  monitor
+>  |  |   |_  physic
+>  |  |   |_  render
+>  |  |   |_  scene
+>  |  |_  utils
+>  |_ demo
+>       |_ scenes
+>```
 
 Root package is `com.demoing.app`, and sub-packages are
 
 - `core` is the game framework,
 - and `demo` ... the Demo project !
 
+## Roadmap
+
 [![2022 Gitkraken Project Timeline](docs/images/project-timeline-2022.png "2022 Gitkraken Project Timeline")](https://timelines.gitkraken.com/timeline/7611459f03de41c09848c1cd543f87bb)
 
-And a last constrain is to reduce as much as possible the number of LoC, using enhancement from latest JDK.
+T reduce as much as possible the number of LoC, using enhancement from latest JDK.
 
 Have fun discover this beast of code, to learn and take benefits of some latest JDK features (like
 the [pattern matching for switch](https://openjdk.java.net/jeps/406 "ssee the official specification")), and moreover,

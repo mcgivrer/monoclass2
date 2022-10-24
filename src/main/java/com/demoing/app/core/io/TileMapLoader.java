@@ -17,6 +17,8 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -130,7 +132,7 @@ public class TileMapLoader {
                     .setPosition(0.0, 0.0)
                     .setStickToCamera(true)
                     .setImage(Resources.loadImage((String) resources.get(backGroundResourceId)));
-            app.addEntity(background);
+            //app.addEntity(background);
             System.out.printf(
                     "INFO : TileMapLoader | added a Background image entity named %s with resource %s%n",
                     background.name,
@@ -258,7 +260,10 @@ public class TileMapLoader {
             }
 
             if (attributes.containsKey("animations")) {
-                generateAnimationsForEntity(scn, attributes, obj);
+                generateAnimationsForEntity(scn, attributes, obj, resources);
+                if(attributes.containsKey("defaultAnimation")){
+                    obj.activateAnimation((String)attributes.get("defaultAnimation"));
+                }
             }
             // all letting attributes are moved to the Entity attributes itself
             retrieveAllOtherEntityAttributes(attributes, obj);
@@ -275,19 +280,64 @@ public class TileMapLoader {
      *
      * <pre>
      *   animations:{\
-     *     idle={x=0,y=0,tw=32,th=32,time=[450, 60, 60, 250, 60, 60, 60, 450, 60, 60, 60, 250, 60],resource=3},\
-     *     walk={x=0,y=32,tw=32,th=32,time=[60, 60, 60, 150, 60, 60, 60, 150],resource=3},\
-     *     jump={x=0,y=160,tw=32,th=32,time=[60, 60, 250, 250, 60, 60],resource=3},\
-     *     dead={x=0,y=224,tw=32,th=32,time=[160, 160, 160, 160, 160, 160, 500],resource=3}};\
+     *     idle={x=0,y=0,tw=32,th=32,time=[450, 60, 60, 250, 60, 60, 60, 450, 60, 60, 60, 250, 60],resource=3,loop=1},\
+     *     walk={x=0,y=32,tw=32,th=32,time=[60, 60, 60, 150, 60, 60, 60, 150],resource=3,loop=1},\
+     *     jump={x=0,y=160,tw=32,th=32,time=[60, 60, 250, 250, 60, 60],resource=3,loop=0},\
+     *     dead={x=0,y=224,tw=32,th=32,time=[160, 160, 160, 160, 160, 160, 500],resource=3,loop=0}};\
      *   defaultAnimation:idle
      * </pre>
      *
      * @param scn        the parent {@link Scene} instance hosting this {@link TileMap}.
      * @param attributes the entity "animations" attribute.
      * @param obj        the Entity to be updated with those attribute values.
+     * @param resources  list of already defined resources.
      */
-    private static void generateAnimationsForEntity(Scene scn, Map<String, Object> attributes, Entity obj) {
+    public static void generateAnimationsForEntity(Scene scn, Map<String, Object> attributes, Entity obj, Map<Object, Object> resources) {
         // TODO read animation from attribute list and create Animation instances in obj.
+
+        final String regexTemplate = "((?<name>(\\S*))=\\{x=(?<x>\\d+),y=(?<y>\\d+),tw=(?<tw>\\d+),th=(?<th>\\d+),time=\\[(?<time>[0-9, ]*)\\],resource=(?<resource>\\d+),loop=(?<loop>\\d+)\\}(,*))";
+
+        String data = ((String) attributes.get("animations"));
+        // remove "{" and "}"
+        data = data.substring(1, data.length() - 1);
+
+        Map<String, Map<String, String>> loadedData = new ConcurrentHashMap<>();
+
+        final Pattern pattern = Pattern.compile(regexTemplate, Pattern.UNIX_LINES);
+        final Matcher matcher = pattern.matcher(data);
+        int last = 0;
+        while (matcher.find() && last <= data.length()) {
+
+            String name = matcher.group("name");
+
+            Map<String, String> item = new HashMap<>();
+            item.put("name", name);
+            item.put("x", matcher.group("x"));
+            item.put("y", matcher.group("y"));
+            item.put("tw", matcher.group("tw"));
+            item.put("th", matcher.group("th"));
+            item.put("time", matcher.group("time"));
+            item.put("resource", matcher.group("resource"));
+            item.put("loop", matcher.group("loop"));
+            loadedData.put(name, item);
+            last = matcher.end();
+
+
+            int[] timeFrames = Arrays.stream(item.get("time")
+                            .split(","))
+                    .mapToInt(s -> Integer.parseInt(s.trim()))
+                    .toArray();
+            obj.addAnimation(
+                    name,
+                    Integer.valueOf(item.get("x")),
+                    Integer.valueOf(item.get("x")),
+                    Integer.valueOf(item.get("tw")),
+                    Integer.valueOf(item.get("th")),
+                    timeFrames,
+                    (String) resources.get(Integer.valueOf(item.get("resource"))),
+                    Integer.valueOf(item.get("loop")));
+
+        }
     }
 
 

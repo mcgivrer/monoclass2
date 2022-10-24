@@ -152,8 +152,10 @@ public class Renderer {
         if (plugins.containsKey(e.getClass())) {
             plugins.get(e.getClass()).draw(this, g, e);
         } else {
-            Logger.log(Logger.ERROR, this.getClass(), "No RenderPlugin implementation found for %s.",
-                    e.getClass().toString());
+            Logger.log(Logger.ERROR,
+                this.getClass(),
+                "No RenderPlugin implementation found for %s.",
+                e.getClass().toString());
         }
         drawDebugInfo(g, e);
         if (e.isNotStickToCamera()) {

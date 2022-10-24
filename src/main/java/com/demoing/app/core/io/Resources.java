@@ -1,6 +1,7 @@
 package com.demoing.app.core.io;
 
 import com.demoing.app.core.Application;
+import com.demoing.app.core.utils.Logger;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -35,8 +36,8 @@ public class Resources {
                 InputStream is = Resources.class.getResourceAsStream(path);
                 img = ImageIO.read(Objects.requireNonNull(is));
                 resources.put(path, img);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            } catch (NullPointerException | IOException e) {
+                Logger.log(Logger.ERROR, Resources.class, "Unable to load resource %s: %s%n", path, e.getMessage());
             }
         }
         return img;

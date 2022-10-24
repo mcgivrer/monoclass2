@@ -170,6 +170,7 @@ public abstract class AbstractScene implements Scene {
                 .setColor(Color.WHITE)
                 .setInitialDuration(0)
                 .setPriority(20)
+                .setLayer(1)
                 .setStickToCamera(true);
         app.addEntity(youAreDeadTxt);
     }
