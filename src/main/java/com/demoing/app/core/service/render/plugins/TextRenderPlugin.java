@@ -2,6 +2,7 @@ package com.demoing.app.core.service.render.plugins;
 
 import com.demoing.app.core.entity.TextAlign;
 import com.demoing.app.core.entity.TextEntity;
+import com.demoing.app.core.service.render.BoxDecoration;
 import com.demoing.app.core.service.render.Renderer;
 import com.demoing.app.core.service.render.RenderPlugin;
 
@@ -77,19 +78,22 @@ public class TextRenderPlugin implements RenderPlugin<TextEntity> {
                         txt.backGroundColor,
                         txt.color,
                         (int) (x + dx - txt.shadowOffsetX),
-                        (int) (y - ((paragraphHeight * 0.5) + txt.shadowOffsetX)),
+                        (int) (y - textHeight),
                         (int) (textWidth + (2 * txt.shadowOffsetX)),
-                        (int) ((paragraphHeight) + (2 * txt.shadowOffsetY)));
+                        (int) ((paragraphHeight) + (2 * txt.shadowOffsetY)),
+                        BoxDecoration.SQUARE_LINE);
             }
             // draw text to display
             int lineId = 0;
             for (String textLine : lines) {
+                int ox = (txt.align.equals(TextAlign.CENTER) ? dx + (textWidth - g.getFontMetrics().stringWidth(textLine)) / 2 : dx);
                 // draw shadow if required
                 if (Optional.ofNullable(txt.shadowColor).isPresent() && (txt.shadowOffsetX != 0 || txt.shadowOffsetY != 0)) {
-                    r.drawTextShadow(g, textLine, x + dx, y + (lineId * textHeight), txt.shadowOffsetX, txt.shadowColor);
+                    r.drawTextShadow(g, textLine, x + ox, y + (lineId * textHeight), txt.shadowOffsetX, txt.shadowColor);
                 }
+                // And draw text !
                 g.setColor(txt.color);
-                g.drawString(textLine, x + dx, y + (lineId * textHeight));
+                g.drawString(textLine, x + ox, y + (lineId * textHeight));
                 lineId++;
             }
         }

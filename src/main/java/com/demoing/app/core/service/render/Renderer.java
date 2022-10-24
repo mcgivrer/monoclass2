@@ -90,7 +90,7 @@ public class Renderer {
                             Objects.requireNonNull(this.getClass().getResourceAsStream("/fonts/FreePixel.ttf")))
                     .deriveFont(9.0f);
         } catch (FontFormatException | IOException e) {
-            Logger.log(Logger.ERROR, this.getClass(), "Unable to initialize Renderer: {0}",e.getLocalizedMessage());
+            Logger.log(Logger.ERROR, this.getClass(), "Unable to initialize Renderer: {0}", e.getLocalizedMessage());
         }
 
         addPlugin(new TextRenderPlugin());
@@ -153,9 +153,9 @@ public class Renderer {
             plugins.get(e.getClass()).draw(this, g, e);
         } else {
             Logger.log(Logger.ERROR,
-                this.getClass(),
-                "No RenderPlugin implementation found for %s.",
-                e.getClass().toString());
+                    this.getClass(),
+                    "No RenderPlugin implementation found for %s.",
+                    e.getClass().toString());
         }
         drawDebugInfo(g, e);
         if (e.isNotStickToCamera()) {
@@ -416,6 +416,17 @@ public class Renderer {
     }
 
 
+    /**
+     * Draw a Shadow under a Text at (x,y) with shadowColor color and a width of shadowWidth.
+     * The Shadow font used is the latest activated.
+     *
+     * @param g           the Graphics2D API.
+     * @param text        the text to draw shadow for.
+     * @param x           the horizontal position of the text.
+     * @param y           the vertical position of the text.
+     * @param shadowWidth the shadow width (in pixel).
+     * @param shadowColor te shadow {@link Color}.
+     */
     public void drawTextShadow(Graphics2D g, String text, int x, int y, int shadowWidth, Color shadowColor) {
         g.setColor(shadowColor);
         for (int dx = 0; dx < shadowWidth; dx++) {
@@ -423,10 +434,61 @@ public class Renderer {
         }
     }
 
-    public void drawRectangleObject(Graphics2D g, Color bckColor, Color borderColor, int x, int y, int w, int h) {
+    /**
+     * Draw a Box with a border color and a background color.
+     *
+     * @param g           the Graphics2D API
+     * @param bckColor    the background color
+     * @param borderColor the border color
+     * @param x           the horizontal position of the rectangle
+     * @param y           the vertical position of the rectangle
+     * @param w           the width of the rectangle
+     * @param h           the height of the rectangle
+     * @param bd          the {@link BoxDecoration} for that box
+     */
+    public void drawRectangleObject(Graphics2D g, Color bckColor, Color borderColor, int x, int y, int w, int h, BoxDecoration bd) {
+        int b = 2;
         g.setColor(bckColor);
         g.fillRect(x, y, w, h);
-        g.setColor(borderColor);
-        g.drawRect(x, y, w, h);
+        switch (bd) {
+            case NONE -> {
+
+            }
+            case DOT -> {
+                g.setColor(borderColor);
+                g.drawRect(x - 1, y - 1, 1, 1);
+                g.drawRect(x + w - 1, y - 1, 1, 1);
+                g.drawRect(x - 1, y + h - 1, 1, 1);
+                g.drawRect(x + w - 1, y + h - 1, 1, 1);
+            }
+            case LINE -> {
+                g.setColor(borderColor);
+                g.drawRect(x, y, w, h);
+            }
+            case SQUARE -> {
+                g.setColor(borderColor);
+                g.drawRect(x - 1, y - 1, b, b);
+                g.drawRect(x + w - 1, y - 1, b, b);
+                g.drawRect(x - 1, y + h - 1, b, b);
+                g.drawRect(x + w - 1, y + h - 1, b, b);
+            }
+            case SQUARE_LINE -> {
+                g.setColor(borderColor);
+                g.drawRect(x, y, w, h);
+                g.drawRect(x - 1, y - 1, b, b);
+                g.drawRect(x + w - 1, y - 1, b, b);
+                g.drawRect(x - 1, y + h - 1, b, b);
+                g.drawRect(x + w - 1, y + h - 1, b, b);
+            }
+            case SQUARE_LINE_DUAL -> {
+                g.setColor(borderColor);
+                g.drawRect(x, y, w, h);
+                g.drawRect(x + 2, y + 2, w - 4, h - 4);
+                g.drawRect(x - 1, y - 1, b, b);
+                g.drawRect(x + w - 1, y - 1, b, b);
+                g.drawRect(x - 1, y + h - 1, b, b);
+                g.drawRect(x + w - 1, y + h - 1, b, b);
+            }
+        }
     }
 }

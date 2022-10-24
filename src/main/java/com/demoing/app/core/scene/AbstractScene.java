@@ -138,7 +138,7 @@ public abstract class AbstractScene implements Scene {
                 .setRefEntities(app.getEntities().values().stream().toList())
                 .setWorld(world)
                 .setSize(48, 32)
-                .setPosition(4, app.config.screenHeight - 36)
+                .setPosition(8, app.config.screenHeight - 40)
                 .setLayer(1);
         app.addEntity(mapEntity);
 
@@ -150,7 +150,7 @@ public abstract class AbstractScene implements Scene {
                 .setAlign(CENTER)
                 .setFont(messagesFont)
                 .setBackgroundOffset(8)
-                .setShadowOffset(2, 2)
+                .setShadowOffset(4, 3)
                 .setBorderColor(Color.LIGHT_GRAY)
                 .setColor(Color.WHITE)
                 .setShadow(new Color(0.0f, 0.0f, 0.0f, 0.5f))
@@ -158,7 +158,7 @@ public abstract class AbstractScene implements Scene {
                         app.config.screenWidth * 0.5,
                         app.config.screenHeight * 0.8)
                 .setInitialDuration(5000)
-                .setBackgroundColor(Color.BLUE)
+                .setBackgroundColor(new Color(0.0f,0.0f,0.6f,0.7f))
                 .setPriority(5)
                 .setLayer(0)
                 .setStickToCamera(true);
