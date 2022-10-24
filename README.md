@@ -9,16 +9,13 @@ A **MonoClass 2** v1.0.6 project test.
 
 ## Introduction
 
-This small Java project with only one (master) class is a proof-of-concept of an over simplified java program to deliver
-maximum feature in a minimum number lines of code, and WITHOUT dependencies out of the JDK itself (but only for test
-purpose, using JUnit and Cucumber).
+This small Java project with only one (master) class is a proof-of-concept of an over simplified java program to deliver maximum feature in a minimum number lines of code, and WITHOUT dependencies out of the JDK itself (but only for test purpose, using JUnit and Cucumber). 
 
 > **UPDATE 2022-JULY-01**<br/>
-> The project evolves to a too big number of feature, and debugging a `monoclass` is annoying; I reach the point of "
-> class
-> splitting", or refactoring.
-> I've also introduced Maven to perform a better build (see [pom.xml](./pom.xml "open the maven build file"))
-> As for now, the project _small_ is now _standard_ and need standard tools and classes.
+>The project evolves to a too big number of feature, and debugging a `monoclass` is annoying; I reach the point of "class
+>splitting", or refactoring.
+>I've also introduced Maven to perform a better build (see [pom.xml](./pom.xml "open the maven build file"))
+>As for now, the project _small_ is now _standard_ and need standard tools and classes.
 >
 >the project is now structured through multiple packages :
 >
@@ -152,6 +149,7 @@ You can configure dynamically some internal parameters:
 | `d`, `debug`         | app.debug.level        | Debug level (0=no debug to 5=max debut)                                                                             | 0       |
 | `of`, `objectFilter` | app.debug.objectFilter | String coma separated of objects named to activate details debug display information for.                           | ""      |
 | `ll`, `logLevel`     | app.logger.level       | Logger level (0=none, 5=all)                                                                                        | 0       |
+
 
 ### Usage example
 
