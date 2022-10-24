@@ -3,6 +3,7 @@ package com.demoing.app.demo.scenes.behaviors;
 import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
 import com.demoing.app.core.entity.Entity;
+import com.demoing.app.core.scene.Scene;
 import com.demoing.app.core.service.physic.World;
 
 public class RainDropParticleUpdate implements Behavior {
@@ -44,6 +45,11 @@ public class RainDropParticleUpdate implements Behavior {
      */
     @Override
     public void onCollide(Application a, Entity e1, Entity e2) {
+
+    }
+
+    @Override
+    public void input(Application a, Scene s) {
 
     }
 }

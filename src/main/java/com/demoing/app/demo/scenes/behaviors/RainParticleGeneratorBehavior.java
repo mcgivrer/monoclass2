@@ -2,10 +2,12 @@ package com.demoing.app.demo.scenes.behaviors;
 
 import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
-import com.demoing.app.core.service.physic.PhysicType;
-import com.demoing.app.core.service.physic.World;
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.entity.ParticleSystem;
+import com.demoing.app.core.scene.AbstractScene;
+import com.demoing.app.core.scene.Scene;
+import com.demoing.app.core.service.physic.PhysicType;
+import com.demoing.app.core.service.physic.World;
 
 import java.awt.*;
 
@@ -75,9 +77,9 @@ public class RainParticleGeneratorBehavior implements Behavior {
     @Override
     public void update(Application a, Entity e, double elapsed) {
         e.getChild()
-            .stream()
-            .filter(child -> !child.isAlive())
-            .forEach(this::initDropParticle);
+                .stream()
+                .filter(child -> !child.isAlive())
+                .forEach(this::initDropParticle);
     }
 
     /**
@@ -88,17 +90,17 @@ public class RainParticleGeneratorBehavior implements Behavior {
      */
     private void createDropParticleFromParent(Entity parent) {
         Entity drop = new Entity(parent.name + "_drop_" + (parent.getChild().size() + 1))
-            .setType(ELLIPSE)
-            .setPhysicType(PhysicType.DYNAMIC)
-            .setSize(1.0, 1.0)
-            .setColor(Color.WHITE)
-            .setMass(0.01)
-            .setLayer(1)
-            .setPriority(1)
-            .addBehavior(
-                    new RainDropParticleUpdate(world))
-            .addBehavior(
-                    new RainDropCollideBehavior(world));
+                .setType(ELLIPSE)
+                .setPhysicType(PhysicType.DYNAMIC)
+                .setSize(1.0, 1.0)
+                .setColor(Color.WHITE)
+                .setMass(0.01)
+                .setLayer(1)
+                .setPriority(1)
+                .addBehavior(
+                        new RainDropParticleUpdate(world))
+                .addBehavior(
+                        new RainDropCollideBehavior(world));
         initDropParticle(drop);
         parent.getChild().add(drop);
     }
@@ -110,10 +112,10 @@ public class RainParticleGeneratorBehavior implements Behavior {
      */
     private void initDropParticle(Entity child) {
         child.setDuration(particleDuration)
-            .setPosition(
-                Math.random() * (world.getArea().getWidth() * 0.8) + (world.getArea().getWidth() * 0.1),
-                0)
-            .addForce(0.05, rainForce);
+                .setPosition(
+                        Math.random() * (world.getArea().getWidth() * 0.8) + (world.getArea().getWidth() * 0.1),
+                        0)
+                .addForce(0.05, rainForce);
     }
 
     /**
@@ -136,5 +138,10 @@ public class RainParticleGeneratorBehavior implements Behavior {
      */
     @Override
     public void onCollide(Application a, Entity e1, Entity e2) {
+    }
+
+    @Override
+    public void input(Application a, Scene s) {
+
     }
 }

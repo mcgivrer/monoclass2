@@ -2,6 +2,7 @@ package com.demoing.app.core.entity;
 
 import com.demoing.app.core.Application;
 import com.demoing.app.core.behavior.Behavior;
+import com.demoing.app.core.scene.Scene;
 import com.demoing.app.core.service.physic.material.Material;
 import com.demoing.app.core.math.Vec2d;
 
@@ -37,6 +38,11 @@ public class Influencer extends Entity {
             public void onCollide(Application a, Entity e1, Entity e2) {
                 Influencer i1 = (Influencer) e1;
                 e2.forces.add(i1.getForce());
+            }
+
+            @Override
+            public void input(Application a, Scene s) {
+
             }
         });
     }

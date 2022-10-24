@@ -41,6 +41,8 @@ public interface Scene {
      */
     Map<String, Behavior> getBehaviors();
 
+    List<Behavior> getBehaviors(String eventType);
+
     /**
      * Retrieve the list of Light manage by the scene.
      *
