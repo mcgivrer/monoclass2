@@ -1,6 +1,9 @@
 # README
 
-
+[![Java CI with Maven](https://github.com/mcgivrer/monoclass2/actions/workflows/main.yml/badge.svg)](https://github.com/mcgivrer/monoclass2/actions/workflows/main.yml)
+[![Known Vulnerabilities](https://snyk.io//test/github/mcgivrer/monoclass2/badge.svg?targetFile=pom.xml)](https://snyk.io//test/github/mcgivrer/monoclass2?targetFile=pom.xml) 
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fmcgivrer%2Fmonoclass2.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fmcgivrer%2Fmonoclass2?ref=badge_shield) 
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/b65b99b96d1b4c6e8d3d7e7a96022bb9)](https://www.codacy.com/gh/mcgivrer/monoclass2/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=mcgivrer/monoclass2&amp;utm_campaign=Badge_Grade)
 
 A **MonoClass 2** v1.0.6 project test.
 
