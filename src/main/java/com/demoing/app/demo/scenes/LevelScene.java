@@ -80,7 +80,8 @@ public class LevelScene extends AbstractScene {
                         "player", Color.BLUE,
                         "coin_", Color.YELLOW,
                         "enemy_", Color.RED,
-                        "iflu_", Color.CYAN
+                        "iflu_", Color.CYAN,
+                        tm.name, Color.DARK_GRAY
                 ));
 
         world.area.setRect(0, 0, tm.width, tm.height);

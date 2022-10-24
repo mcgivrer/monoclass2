@@ -1,10 +1,10 @@
 package com.demoing.app.core.service.render.plugins;
 
-import com.demoing.app.core.entity.MapEntity;
+import com.demoing.app.core.entity.*;
 import com.demoing.app.core.service.render.RenderPlugin;
 import com.demoing.app.core.service.render.Renderer;
 
-import java.awt.Graphics2D;
+import java.awt.*;
 
 /**
  * Implementation of the MapEntity render plugin.
@@ -34,11 +34,42 @@ public class MapRenderPlugin implements RenderPlugin<MapEntity> {
                             .orElse("default");
 
                     g.setColor(me.colorEntityMapping.get(colorMapping));
-                    int px = (int) (me.pos.x + (me.width * (e.pos.x / me.world.area.getWidth())));
-                    int py = (int) (me.pos.y + me.height * (e.pos.y / me.world.area.getHeight()));
+
                     int pw = (int) (me.width * (e.width / me.world.area.getWidth()));
                     int ph = (int) (me.height * (e.height / me.world.area.getHeight()));
-                    g.drawRect(px, py, pw, ph);
+                    switch (e) {
+                        case TileMap tm -> {
+                            drawTileMap(g, me, tm, pw, ph);
+                        }
+                        case TextEntity te -> {
+                            // Do nothing !
+                        }
+                        case ValueEntity te -> {
+                            // Do nothing
+                        }
+                        case GaugeEntity ge -> {
+                            // Do nothing
+                        }
+                        default -> {
+                            int px = (int) (me.pos.x + (me.width * (e.pos.x / me.world.area.getWidth())));
+                            int py = (int) (me.pos.y + me.height * (e.pos.y / me.world.area.getHeight()));
+                            g.drawRect(px, py, pw, ph);
+                        }
+                    }
                 });
+    }
+
+    private void drawTileMap(Graphics2D g, MapEntity me, Entity e, int pw, int ph) {
+        TileMap tm = (TileMap) e;
+        for (int y = 0; y < tm.mapHeight; y++) {
+            for (int x = 0; x < tm.mapWidth; x++) {
+                int index = x + (y * tm.mapWidth);
+                if (tm.map[index] != 0) {
+                    int px = (int) (me.pos.x + (me.width * (e.pos.x + (x * tm.tileWidth) / me.world.area.getWidth())));
+                    int py = (int) (me.pos.y + (me.height * (e.pos.y + (y * tm.tileHeight) / me.world.area.getHeight())));
+                    g.drawRect(px, py, 1, 1);
+                }
+            }
+        }
     }
 }
