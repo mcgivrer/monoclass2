@@ -2,7 +2,6 @@ package com.demoing.app.tests.core;
 
 import com.demoing.app.core.entity.Entity;
 import com.demoing.app.core.gfx.Animation;
-import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,13 +31,13 @@ public class TileMapLoaderTest {
 
         obj.animations = new Animation();
 
-        final String regexTemplate = "((?<name>\\S*)=\\{x=(?<x>\\d+),y=(?<y>\\d+),tw=(?<tw>\\d+),th=(?<th>\\d+),time=\\[(?<time>.*!\\])\\],resource=(?<resource>\\d+),loop=(?<loop>\\d+)\\}(,*))";
+        final String regexTemplate = "((?<name>(\\S*))=\\{x=(?<x>\\d+),y=(?<y>\\d+),tw=(?<tw>\\d+),th=(?<th>\\d+),time=\\[(?<time>[0-9, ]*)\\],resource=(?<resource>\\d+),loop=(?<loop>\\d+)\\}(,*))";
 
-        final String data = "{idle={x=0,y=0,tw=32,th=32,time=[450, 60, 60, 250, 60, 60, 60, 450, 60, 60, 60, 250, 60],resource=3,loop=1},"
-                + "walk={x=0,y=32,tw=32,th=32,time=[60, 60, 60, 150, 60, 60, 60, 150],resource=3,loop=1},"
-                + "jump={x=0,y=160,tw=32,th=32,time=[60, 60, 250, 250, 60, 60],resource=3,loop=0},"
-                + "dead={x=0,y=224,tw=32,th=32,time=[160, 160, 160, 160, 160, 160, 500],resource=3,loop=0}"
-                + "}";
+        final String data = "{\\\n" +
+                "    idle={x=0,y=0,tw=32,th=32,time=[450, 60, 60, 250, 60, 60, 60, 450, 60, 60, 60, 250, 60],resource=3,loop=1},\\\n" +
+                "    walk={x=0,y=32,tw=32,th=32,time=[60, 60, 60, 150, 60, 60, 60, 150],resource=3,loop=1},\\\n" +
+                "    jump={x=0,y=160,tw=32,th=32,time=[60, 60, 250, 250, 60, 60],resource=3,loop=0},\\\n" +
+                "    dead={x=0,y=224,tw=32,th=32,time=[160, 160, 160, 160, 160, 160, 500],resource=3,loop=0}};\\";
 
         final Pattern pattern = Pattern.compile(regexTemplate, Pattern.UNIX_LINES);
         final Matcher matcher = pattern.matcher(data.substring(1, data.length() - 1));
@@ -64,7 +63,7 @@ public class TileMapLoaderTest {
                     matcher.group("name"),
                     (String) resources.get(Integer.valueOf(matcher.group("resource"))),
                     Integer.parseInt(matcher.group("x")),
-                    Integer.parseInt(matcher.group("x")),
+                    Integer.parseInt(matcher.group("y")),
                     Integer.parseInt(matcher.group("tw")),
                     Integer.parseInt(matcher.group("th")),
                     timeFrames, Integer.parseInt(matcher.group("loop")));
