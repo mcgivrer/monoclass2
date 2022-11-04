@@ -138,7 +138,7 @@ public class Renderer {
         drawGrid(g, world, 16, 16);
         moveCamera(g, activeCamera, 1);
         gPipeline.stream()
-                .filter(e -> e.isAlive() || e.isPersistent())
+                .filter(e -> (e.isAlive()  || e.isPersistent()) && e.isActive())
                 .forEach(e -> drawEntity(g, e));
         g.dispose();
         renderToScreen(realFps);

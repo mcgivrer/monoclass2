@@ -93,8 +93,19 @@ public class Entity {
 
     public Color shadowColor = Color.BLACK;
 
+    /**
+     * Define if this Entity is active.
+     */
+    private boolean active;
+
+    /**
+     * Flag defining if this Define
+     */
+    private boolean visible;
+
     public Entity(String name) {
         this.name = name;
+        this.active = true;
     }
 
     public Entity setPosition(double x, double y) {
@@ -394,5 +405,14 @@ public class Entity {
     public Entity setBackgroundColor(Color backgroundColor) {
         this.backGroundColor = backgroundColor;
         return this;
+    }
+
+    public Entity setActive(boolean active) {
+        this.active = active;
+        return this;
+    }
+
+    public boolean isActive() {
+        return this.active;
     }
 }

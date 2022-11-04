@@ -8,6 +8,7 @@ import com.demoing.app.core.entity.*;
 import com.demoing.app.core.utils.I18n;
 
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
@@ -158,11 +159,32 @@ public abstract class AbstractScene implements Scene {
                         app.config.screenWidth * 0.5,
                         app.config.screenHeight * 0.8)
                 .setInitialDuration(5000)
-                .setBackgroundColor(new Color(0.0f,0.0f,0.6f,0.7f))
+                .setBackgroundColor(new Color(0.0f, 0.0f, 0.6f, 0.7f))
                 .setPriority(5)
                 .setLayer(0)
                 .setStickToCamera(true);
         app.addEntity(welcomeMsg);
+
+
+        // A welcome Text
+        TextEntity helpMsg = (TextEntity) new TextEntity("help")
+                .setText(I18n.get("app.message.help"))
+                .setAlign(TextAlign.LEFT)
+                .setFont(messagesFont)
+                .setBackgroundOffset(8)
+                .setShadowOffset(4, 3)
+                .setBorderColor(Color.LIGHT_GRAY)
+                .setColor(Color.WHITE)
+                .setShadow(new Color(0.0f, 0.0f, 0.0f, 0.5f))
+                .setPosition(
+                        app.config.screenWidth * 0.2,
+                        app.config.screenHeight * 0.5)
+                .setBackgroundColor(new Color(0.0f, 0.0f, 0.6f, 0.7f))
+                .setPriority(0)
+                .setLayer(0)
+                .setStickToCamera(true)
+                .setActive(false);
+        app.addEntity(helpMsg);
 
         // You are dead Text
         TextEntity youAreDeadTxt = (TextEntity) new TextEntity("YouAreDead")
@@ -178,6 +200,13 @@ public abstract class AbstractScene implements Scene {
                 .setLayer(1)
                 .setStickToCamera(true);
         app.addEntity(youAreDeadTxt);
+
+
+        app.getActionHandler().actionMapping.put(KeyEvent.VK_H, (e) -> {
+            boolean active = !app.getEntity("help").isActive();
+            app.getEntity("help").setActive(active);
+            return this;
+        });
     }
 
     @Override
