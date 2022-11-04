@@ -94,9 +94,13 @@ $> java --enable-preview -jar target/monoclass2-{project.version}.jar
 
 You will get the following window
 
-![LightAndShadow pre-release preparing the v1.0.5 with Light and Influences](docs/images/monoclass2-1.0.5-snapshot-screenshot.png "LightAndShadow pre-release preparing the v1.0.5 with Light and Influences")
+![An overview of the coming release with latest enhnacement like tile map support](docs/images/monoclass2-1.0.6-tilemap-screenshot.png "An overview of the coming release with latest enhnacement like tile map support")
 
-_figure 1 - LightAndShadow pre-release preparing the v1.0.5 with Light and Influences_
+_figure 1 - An overview of the coming release with latest enhnacement like tile map support_
+
+![The same view but in a new debug mode display](docs/images/monoclass2-1.0.6-tilemap-debugmode-screenshot.png "The same view but in a new debug mode display")
+
+_figure 2 - The same view but in a new debug mode display_
 
 > :blue_book: _**NOTE**_
 > _You can notice the new Time display, limiting the time play._
