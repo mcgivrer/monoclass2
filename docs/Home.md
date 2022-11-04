@@ -1,15 +1,15 @@
 ---
-title: MonoClass2
-subtitle: a JDK fun sample game
+title: MonoClass 2
+subtitle: a JDK based fun sample game
 author: Frédéric Delorme
 createdAt: 2022/05/07
 ---
 
-# MonoClass 2, a JDK Fun sample game
+## MonoClass 2 - A JDK based Fun sample game
 
-![A gameplay screenshot](images/monoclass2-1.0.5-snapshot-screenshot.png "Screenshot of the 1.0.5 pre-release")
+![A gameplay screenshot](images/monoclass2-1.0.6-tilemap-screenshot.png "Screenshot of the 1.0.6 in dev release")
 
-## Summary
+### Summary
 
 1. [Introduction](chapter-01-introduction.md)
 2. [A Master Class](chapter-02-master_class.md)

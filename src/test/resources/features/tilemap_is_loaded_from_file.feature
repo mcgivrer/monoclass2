@@ -1,7 +1,7 @@
 Feature: Add a new entity TileMap to define full level of a platform game.
 
   The TileMap is an Entity containing sub entities which define a full platform game level
-  with player and ennemies.
+  with player and enemies.
 
   Scenario: A "test_01" Scene has a TileMap "tm_01"
     Given a Scene "test_01"
